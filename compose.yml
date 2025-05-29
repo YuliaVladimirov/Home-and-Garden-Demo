@@ -1,0 +1,12 @@
+name: "home_and_garden"
+services:
+  db:
+    container_name: "home_and_garden_db"
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "home_and_garden"
+      POSTGRES_USER: "USERNAME"
+      POSTGRES_PASSWORD: "PASSWORD"
+    restart: "unless-stopped"

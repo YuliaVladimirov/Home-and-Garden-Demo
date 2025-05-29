@@ -1,0 +1,303 @@
+package org.example.homeandgarden.user.controller;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import org.example.homeandgarden.cart.dto.CartItemResponse;
+import org.example.homeandgarden.cart.service.CartService;
+import org.example.homeandgarden.order.dto.OrderResponse;
+import org.example.homeandgarden.order.service.OrderService;
+import org.example.homeandgarden.shared.ErrorResponse;
+import org.example.homeandgarden.shared.MessageResponse;
+import org.example.homeandgarden.swagger.GroupFourErrorResponses;
+import org.example.homeandgarden.swagger.GroupOneErrorResponses;
+import org.example.homeandgarden.swagger.GroupTwoErrorResponses;
+import org.example.homeandgarden.user.dto.*;
+import org.example.homeandgarden.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.example.homeandgarden.wishlist.dto.WishListItemResponse;
+import org.example.homeandgarden.wishlist.service.WishListService;
+import org.springframework.data.web.PagedModel;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+
+@RestController
+@RequestMapping("/users")
+@RequiredArgsConstructor
+@Validated
+@Tag(name = "User controller", description = "Controller fo managing user's accounts")
+public class UserController {
+
+    private final UserService userService;
+    private final WishListService wishListService;
+    private final CartService cartService;
+    private final OrderService orderService;
+
+    @Operation(summary = "Get users", description = "Provides functionality for getting all users")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @GroupTwoErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @GetMapping
+    public ResponseEntity<PagedModel<UserResponse>> getAllUsers(
+
+            @RequestParam(value = "isEnabled", defaultValue = "true")
+            @Parameter(description = "Enabled status: 'true' or 'false'", schema = @Schema(allowableValues = {"true", "false"}))
+            Boolean isEnabled,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "registeredAt")
+            @Pattern(regexp = "^(firstName|lastName|registeredAt|updatedAt)$", message = "Invalid value: Must be one of the following: firstName, lastName, registeredAt, updatedAt")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"firstName", "lastName", "registeredAt", "updatedAt"}))
+            String sortBy) {
+
+        PagedModel<UserResponse> pageResponse = userService.getAllUsers(isEnabled, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get user by id", description = "Provides functionality for getting user by id")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserResponse> getUserById(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format in path variable")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId) {
+
+        UserResponse user = userService.getUserById(userId);
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get user's wish list items", description = "Provides functionality for getting all user's wish list items")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}/wishlist")
+    public ResponseEntity<PagedModel<WishListItemResponse>> getUserWishListItems(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order) {
+
+        PagedModel<WishListItemResponse> pageResponse = wishListService.getUserWishListItems(userId, size, page, order);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get user's cart items", description = "Provides functionality for getting all user's cart items")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}/cart")
+    public ResponseEntity<PagedModel<CartItemResponse>> getUserCartItems(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "addedAt")
+            @Pattern(regexp = "^(addedAt|quantity)$", message = "Invalid value: Must be either: addedAt or quantity")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"addedAt", "quantity"}))
+            String sortBy) {
+
+        PagedModel<CartItemResponse> pageResponse = cartService.getUserCartItems(userId, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get user's orders", description = "Provides functionality for getting all user's orders")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}/orders")
+    public ResponseEntity<PagedModel<OrderResponse>> getUserOrders(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "createdAt")
+            @Pattern(regexp = "^(status|createdAt)$", message = "Invalid value: Must be either: orderStatus or createdAt")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"status", "createdAt"}))
+            String sortBy) {
+
+        PagedModel<OrderResponse> pageResponse = orderService.getUserOrders(userId, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Register user", description = "Provides functionality for registering a new user")
+    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @ApiResponse(responseCode = "409", description = "CONFLICT", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @GroupFourErrorResponses
+    @PreAuthorize("permitAll()")
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> registerUser(
+
+            @RequestBody
+            @Valid
+            UserRegisterRequest userRegisterRequest) {
+
+        UserResponse registeredUser = userService.registerUser(userRegisterRequest);
+        return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Unregister user", description = "Provides functionality for unregistering an existing user")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('CLIENT')")
+    @PatchMapping("/{userId}/unregister")
+    public ResponseEntity<MessageResponse> unregisterUser(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestBody
+            @Valid
+            UserUnregisterRequest userUnregisterRequest) {
+
+        MessageResponse messageResponse = userService.unregisterUser(userId, userUnregisterRequest);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Update user", description = "Provides functionality for updating user")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('CLIENT')")
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserResponse> updateUser(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestBody
+            @Valid
+            UserUpdateRequest userUpdateRequest) {
+
+        UserResponse userResponse = userService.updateUser(userId, userUpdateRequest);
+        return new ResponseEntity<>(userResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Set user's userRole", description = "Provides functionality for setting user's userRole'")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PatchMapping("/{userId}/role")
+    public ResponseEntity<MessageResponse> setUserRole(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestParam(value = "role")
+            @Pattern(regexp = "^(CLIENT|ADMINISTRATOR|client|administrator)$", message = "Invalid order orderStatus: Must be one of the: CLIENT or ADMINISTRATOR (client or administrator)")
+            @Parameter(description = "UserRole of the user in the system", schema = @Schema(allowableValues = {"CLIENT", "ADMINISTRATOR", "client", "administrator"}))
+            String role) {
+
+        MessageResponse messageResponse = userService.setUserRole(userId, role);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Toggle the lock state", description = "Provides functionality for toggling the lock state of an existing user")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PatchMapping("/{userId}/toggle-lock")
+    public ResponseEntity<MessageResponse> toggleLockState(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId) {
+
+        MessageResponse messageResponse = userService.toggleLockState(userId);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+}
+

@@ -1,0 +1,12 @@
+
+oooo   ooooo                                                                      .o8       .oooooo.                             .o8
+`888'   `888'                                                                     "888      d8P'  `Y8b                           "888
+ 888     888   .ooooo.  ooo. .oo.  .oo.    .ooooo.      .oooo.   ooo. .oo.    .oooo888     888            .oooo.   oooo d8b  .oooo888   .ooooo.  ooo. .oo.
+ 888ooooo888  d88' `88b `888P"Y88bP"Y88b  d88' `88b    `P  )88b  `888P"Y88b  d88' `888     888           `P  )88b  `888""8P d88' `888  d88' `88b `888P"Y88b
+ 888     888  888   888  888   888   888  888ooo888     .oP"888   888   888  888   888     888     ooooo  .oP"888   888     888   888  888ooo888  888   888
+ 888     888  888   888  888   888   888  888    .o    d8(  888   888   888  888   888     `88.    .88'  d8(  888   888     888   888  888    .o  888   888
+o888o   o888o `Y8bod8P' o888o o888o o888o `Y8bod8P'    `Y888""8o o888o o888o `Y8bod88P"     `Y8bood8P'   `Y888""8o d888b    `Y8bod88P" `Y8bod8P' o888o o888o
+
+
+${application.title} ${application.version}
+Powered by Spring Boot ${spring-boot.version}
