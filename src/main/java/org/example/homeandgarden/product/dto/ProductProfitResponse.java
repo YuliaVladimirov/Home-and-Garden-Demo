@@ -22,9 +22,9 @@ public class ProductProfitResponse {
     @Schema(description = "Units of time (days, weeks, months, years)")
     private String timeUnit;
 
-    @JsonProperty("period")
+    @JsonProperty("timePeriod")
     @Schema(description = "Amount of time for the query")
-    private Integer period;
+    private Integer timePeriod;
 
     @JsonProperty("profit")
     @Schema(description = "Profit for a certain period")
