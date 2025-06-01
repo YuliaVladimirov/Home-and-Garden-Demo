@@ -36,8 +36,8 @@ public class OrderController {
     private final OrderService orderService;
     private final OrderItemService orderItemService;
 
-    @Operation(summary = "Get order items", description = "Provides functionality for getting order items by order id")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderItemResponse.class)))
+    @Operation(summary = "Get order items for a specific order", description = "Fetches a paginated and sortable list of order items within a given order, identified by its unique order Id.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved order items. Returns an empty page if the order has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -74,8 +74,8 @@ public class OrderController {
     }
 
 
-    @Operation(summary = "Get order by id", description = "Provides functionality for getting user's order by order id")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @Operation(summary = "Get order by id", description = "Fetches the details of a single order using its unique identifier (UUID).")
+    @ApiResponse(responseCode = "200", description = "Order successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -91,8 +91,8 @@ public class OrderController {
         return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get order status", description = "Provides functionality for getting current order status by order id")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Get the status of an order", description = "Fetches the current status of a specific order identified by its unique ID.")
+    @ApiResponse(responseCode = "200", description = "Order status successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -109,8 +109,8 @@ public class OrderController {
     }
 
 
-    @Operation(summary = "Add a new order", description = "Provides functionality for adding a new order")
-    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @Operation(summary = "Add a new order", description = "Initiates a new order in the system. The order details are provided in the request body.")
+    @ApiResponse(responseCode = "201", description = "Order successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -125,8 +125,8 @@ public class OrderController {
         return new ResponseEntity<>(orderResponse, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Update an order", description = "Provides functionality for updating an order")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @Operation(summary = "Update an existing order", description = "Modifies an existing order identified by its unique Id. The details that need to be updated are provided in the request body.")
+    @ApiResponse(responseCode = "200", description = "Order successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -146,8 +146,8 @@ public class OrderController {
         return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Cancel order", description = "Provides functionality for canceling an already placed order")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Cancel an existing order", description = "Changes the status of a specific order to 'CANCELED', identified by its unique ID.")
+    @ApiResponse(responseCode = "200", description = "Order successfully canceled.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasAnyRole('CLIENT')")
@@ -163,20 +163,20 @@ public class OrderController {
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Change order status ", description = "Provides functionality for changing the status of an already placed order")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Advance the status of an order", description = "Transitions a specific order, identified by its unique ID, to its next logical status within the order processing workflow (e.g., from 'CREATED' to 'PAID', or 'PAID' to 'ON_THE_WAY'). This endpoint does not take an explicit status parameter, instead inferring the next state.")
+    @ApiResponse(responseCode = "200", description = "Order status successfully updated to the next stage.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping(value = "/{orderId}/status")
-    public ResponseEntity<MessageResponse> setOrderStatus(
+    public ResponseEntity<MessageResponse> advanceOrderStatus(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
             @Parameter(description = "Unique order id (UUID)")
             String orderId) {
 
-        MessageResponse messageResponse = orderService.setOrderStatus(orderId);
+        MessageResponse messageResponse = orderService.advanceOrderStatus(orderId);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 }

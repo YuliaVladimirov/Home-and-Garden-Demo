@@ -44,8 +44,8 @@ public class UserController {
     private final CartService cartService;
     private final OrderService orderService;
 
-    @Operation(summary = "Get users", description = "Provides functionality for getting all users")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @Operation(summary = "Get users with filtering, pagination and sorting", description = "Fetches a paginated and sortable list of user accounts. Results can be filtered by their enabled status ('true' for active users, 'false' for disabled users).")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved users, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupTwoErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -80,8 +80,8 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get user by id", description = "Provides functionality for getting user by id")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @Operation(summary = "Get user by its id", description = "Fetches the details of a single user account using their unique identifier (UUID).")
+    @ApiResponse(responseCode = "200", description = "User successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -97,8 +97,8 @@ public class UserController {
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get user's wish list items", description = "Provides functionality for getting all user's wish list items")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
+    @Operation(summary = "Get user's wish list items", description = "Fetches a paginated and sortable list of wish list items for a specific user, identified by its unique Id.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved wish list items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -129,8 +129,8 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get user's cart items", description = "Provides functionality for getting all user's cart items")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
+    @Operation(summary = "Get user's cart items", description = "Fetches a paginated and sortable list of cart items for a specific user, identified by its unique Id.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved cart items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -166,8 +166,8 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get user's orders", description = "Provides functionality for getting all user's orders")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @Operation(summary = "Get user's orders", description = "Fetches a paginated and sortable list of orders for a specific user, identified by its unique Id.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved orders. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
@@ -203,9 +203,10 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Register user", description = "Provides functionality for registering a new user")
-    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
-    @ApiResponse(responseCode = "409", description = "CONFLICT", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @Operation(summary = "Register user", description = "Creates a new user account in the system. The user's registration details are provided in the request body." +
+            "    ")
+    @ApiResponse(responseCode = "201", description = "User successfully registered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @ApiResponse(responseCode = "409", description = "Conflict: A user with the provided email already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @PostMapping("/register")
@@ -219,29 +220,8 @@ public class UserController {
         return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Unregister user", description = "Provides functionality for unregistering an existing user")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("hasRole('CLIENT')")
-    @PatchMapping("/{userId}/unregister")
-    public ResponseEntity<MessageResponse> unregisterUser(
-
-            @PathVariable
-            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
-            @Parameter(description = "Unique user id (UUID)")
-            String userId,
-
-            @RequestBody
-            @Valid
-            UserUnregisterRequest userUnregisterRequest) {
-
-        MessageResponse messageResponse = userService.unregisterUser(userId, userUnregisterRequest);
-        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Update user", description = "Provides functionality for updating user")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @Operation(summary = "Update an existing user", description = "Modifies an existing user account identified by their unique Id. The details that need to be updated are provided in the request body.")
+    @ApiResponse(responseCode = "200", description = "User successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -261,8 +241,8 @@ public class UserController {
         return new ResponseEntity<>(userResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Set user's userRole", description = "Provides functionality for setting user's userRole'")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Assign a role to a user ('CLIENT' or 'ADMINISTRATOR')", description = "Updates the role of a specific user identified by their unique Id. A user can be set to 'CLIENT' or 'ADMINISTRATOR'.")
+    @ApiResponse(responseCode = "200", description = "User role successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -275,7 +255,7 @@ public class UserController {
             String userId,
 
             @RequestParam(value = "role")
-            @Pattern(regexp = "^(CLIENT|ADMINISTRATOR|client|administrator)$", message = "Invalid order orderStatus: Must be one of the: CLIENT or ADMINISTRATOR (client or administrator)")
+            @Pattern(regexp = "^(CLIENT|ADMINISTRATOR|client|administrator)$", message = "Invalid order orderStatus: Must be one of the: 'CLIENT' or 'ADMINISTRATOR' ('client' or 'administrator')")
             @Parameter(description = "UserRole of the user in the system", schema = @Schema(allowableValues = {"CLIENT", "ADMINISTRATOR", "client", "administrator"}))
             String role) {
 
@@ -283,8 +263,8 @@ public class UserController {
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Toggle the lock state", description = "Provides functionality for toggling the lock state of an existing user")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Toggle user account lock state", description = "Toggles the lock status of a specific user account identified by their unique Id. If the account is currently locked, it will be unlocked; if unlocked, it will be locked.")
+    @ApiResponse(responseCode = "200", description = "User account lock state successfully toggled.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -297,6 +277,27 @@ public class UserController {
             String userId) {
 
         MessageResponse messageResponse = userService.toggleLockState(userId);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
+    @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('CLIENT')")
+    @PatchMapping("/{userId}/unregister")
+    public ResponseEntity<MessageResponse> unregisterUser(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique user id (UUID)")
+            String userId,
+
+            @RequestBody
+            @Valid
+            UserUnregisterRequest userUnregisterRequest) {
+
+        MessageResponse messageResponse = userService.unregisterUser(userId, userUnregisterRequest);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 }

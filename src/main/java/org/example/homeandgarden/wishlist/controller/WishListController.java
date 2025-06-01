@@ -33,9 +33,9 @@ public class WishListController {
     private final WishListService wishListService;
 
 
-    @Operation(summary = "Add a new wishlist item", description = "Provides functionality for adding a new product into user's wishlist")
-    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
-    @ApiResponse(responseCode = "409", description = "CONFLICT", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @Operation(summary = "Add a product to a user's wish list", description = "Adds a specified product to a user's wish list. The details are provided in the request body.")
+    @ApiResponse(responseCode = "201", description = "Wish list item successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
+    @ApiResponse(responseCode = "409", description = "Conflict: The product is already in the user's wish list.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -50,8 +50,8 @@ public class WishListController {
         return new ResponseEntity<>(wishListItemResponse, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Delete a wishlist item", description = "Provides functionality for deleting a product from user's wish list")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Remove a product from a user's wish list", description = "Provides functionality for deleting a product from user's wish list")
+    @ApiResponse(responseCode = "200", description = "Wish list item successfully removed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")

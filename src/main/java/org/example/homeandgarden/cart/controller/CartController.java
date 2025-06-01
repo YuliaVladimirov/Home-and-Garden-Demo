@@ -31,8 +31,8 @@ public class CartController {
 
     private final CartService cartService;
 
-    @Operation(summary = "Add a new cart item", description = "Provides functionality for adding a new product into user's cart")
-    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
+    @Operation(summary = "Add an item to a user's shopping cart", description = "Adds a specified product with a given quantity to a user's shopping cart. The details are provided in the request body.")
+    @ApiResponse(responseCode = "201", description = "Cart item successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -47,8 +47,8 @@ public class CartController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Update a cart item", description = "Provides functionality for updating an item in user's cart")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
+    @Operation(summary = "Update a item in the shopping cart", description = "Modifies the details of an existing item in a user's shopping cart. The item is identified by its unique cart item Id.")
+    @ApiResponse(responseCode = "200", description = "Cart item successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")
@@ -68,8 +68,8 @@ public class CartController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @Operation(summary = "Delete a cart item", description = "Provides functionality for deleting a product from user's cart")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Remove an item from the shopping cart", description = "Deletes a specific item from a user's shopping cart. The item is identified by its unique cart item Id.")
+    @ApiResponse(responseCode = "200", description = "Cart item successfully removed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('CLIENT')")

@@ -39,8 +39,8 @@ public class CategoryController {
     private final CategoryService categoryService;
     private final ProductService productService;
 
-    @Operation(summary = "Get all categories", description = "Provides functionality for getting all categories")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
+    @Operation(summary = "Get all categories with pagination and sorting", description = "Retrieves a paginated and sortable list of categories . Allows specifying page size, page number, sort order, and sort field.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved categories", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @GetMapping
@@ -57,12 +57,12 @@ public class CategoryController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "createdAt")
-            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: categoryName, createdAt, updatedAt")
+            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
             String sortBy) {
 
@@ -70,8 +70,8 @@ public class CategoryController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get categories by status", description = "Provides functionality for getting categories by status")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
+    @Operation(summary = "Get categories by status with pagination and sorting", description = "Retrieves a paginated and sortable list of categories based on their status ('ACTIVE' or 'INACTIVE'). Allows specifying page size, page number, sort order, and sort field.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved categories, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @GroupTwoErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -79,7 +79,7 @@ public class CategoryController {
     public ResponseEntity<PagedModel<CategoryResponse>> getCategoriesByStatus(
 
             @RequestParam(value = "categoryStatus", defaultValue = "ACTIVE")
-            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: ACTIVE or INACTIVE(active or inactive)")
+            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' ('active' or 'inactive')")
             @Parameter(description = "Status of the category in the system")
             String categoryStatus,
 
@@ -94,12 +94,12 @@ public class CategoryController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "createdAt")
-            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: categoryName, createdAt, updatedAt")
+            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
             String sortBy) {
 
@@ -107,8 +107,8 @@ public class CategoryController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get category products", description = "Provides functionality for getting all products of certain category")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
+    @Operation(summary = "Get products by category with filtering, pagination and sorting", description = "Fetches a paginated and sortable list of products belonging to a specific category, with optional filtering by price range. Allows specifying page size, page number, sort order, and sort field.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved products for the category, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @GetMapping("/{categoryId}/products")
@@ -142,12 +142,12 @@ public class CategoryController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "addedAt")
-            @Pattern(regexp = "^(productName|listPrice|currentPrice|addedAt|updatedAt)$", message = "Invalid value: Must be one of the following: productName, listPrice, currentPrice, addedAt, updatedAt")
+            @Pattern(regexp = "^(productName|listPrice|currentPrice|addedAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'productName', 'listPrice', 'currentPrice', 'addedAt', 'updatedAt'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"productName", "listPrice", "currentPrice", "addedAt", "updatedAt"}))
             String sortBy) {
 
@@ -155,9 +155,9 @@ public class CategoryController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Create a category", description = "Provides functionality for creating a new product category")
-    @ApiResponse(responseCode = "201", description = "CREATED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
-    @ApiResponse(responseCode = "409", description = "CONFLICT", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @Operation(summary = "Add a new category", description = "Adds a new category to the system. The category details are provided in the request body.")
+    @ApiResponse(responseCode = "201", description = "Category successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
+    @ApiResponse(responseCode = "409", description = "Conflict: A category with the provided name already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @GroupTwoErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -172,8 +172,8 @@ public class CategoryController {
         return new ResponseEntity<>(addedCategory, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Update a category", description = "Provides functionality for updating certain product category")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
+    @Operation(summary = "Update an existing category", description = "Modifies an existing category identified by its unique Id. The details that need to be updated are provided in the request body.")
+    @ApiResponse(responseCode = "200", description = "Category successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -193,8 +193,8 @@ public class CategoryController {
         return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
     }
 
-    @Operation(summary = "Set category status", description = "Provides functionality for setting status for a category")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @Operation(summary = "Set category status ('ACTIVE' or 'INACTIVE')", description = "Updates the status of a specific category identified by its unique Id. A category can be set to 'ACTIVE' or 'INACTIVE'.")
+    @ApiResponse(responseCode = "200", description = "Category status successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -207,7 +207,7 @@ public class CategoryController {
             String categoryId,
 
             @RequestParam(value = "categoryStatus", defaultValue = "ACTIVE")
-            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: ACTIVE or INACTIVE(active or inactive)")
+            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' ('active' or 'inactive')")
             @Parameter(description = "Status of the category in the system", schema = @Schema(allowableValues = {"ACTIVE", "INACTIVE", "active", "inactive"}))
             String categoryStatus) {
 

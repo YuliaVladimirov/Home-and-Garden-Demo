@@ -30,8 +30,8 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "Log in a user", description = "Provides functionality for logging in a user")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponse.class)))
+    @Operation(summary = "User login", description = "Authenticates a user and provides an authentication token upon successful login. User's credentials (e.g., email and password) should be provided in the request body.")
+    @ApiResponse(responseCode = "200", description = "Login successful. Returns authentication access and refresh tokens.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponse.class)))
     @GroupThreeErrorResponses
     @PreAuthorize("permitAll()")
     @PostMapping("/login")
@@ -45,8 +45,8 @@ public class AuthController {
         return new ResponseEntity<>(loginResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get new JWT", description = "Provides functionality for getting a new access token")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshResponse.class)))
+    @Operation(summary = "Refresh access token", description = "Obtains a new access token using a valid refresh token.")
+    @ApiResponse(responseCode = "200", description = "Access token successfully refreshed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshResponse.class)))
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @PostMapping("/token")
