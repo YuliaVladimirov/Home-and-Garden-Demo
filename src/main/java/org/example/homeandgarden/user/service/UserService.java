@@ -9,8 +9,8 @@ public interface UserService {
     PagedModel<UserResponse> getAllUsers(Boolean isEnabled, Integer size, Integer page, String order, String sortBy);
     UserResponse getUserById(String userId);
     UserResponse registerUser(UserRegisterRequest userRegisterRequest);
-    MessageResponse unregisterUser(String userId, UserUnregisterRequest userUnregisterRequest);
     UserResponse updateUser(String id, UserUpdateRequest userUpdateRequest);
     MessageResponse setUserRole(String userId, String role);
     MessageResponse toggleLockState(String userId);
+    MessageResponse unregisterUser(String userId, UserUnregisterRequest userUnregisterRequest);
 }

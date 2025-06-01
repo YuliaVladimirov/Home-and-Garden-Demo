@@ -66,42 +66,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public MessageResponse unregisterUser(String userId, UserUnregisterRequest userUnregisterRequest) {
-
-        if (!userUnregisterRequest.getPassword().equals(userUnregisterRequest.getConfirmPassword())) {
-            throw new BadCredentialsException("Password doesn't match the CONFIRM PASSWORD field.");
-        }
-
-        UUID id = UUID.fromString(userId);
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", userId)));
-
-        if (!passwordEncoder.matches(userUnregisterRequest.getPassword(), existingUser.getPasswordHash())) {
-            throw new BadCredentialsException("Given password doesn't match the password saved in database.");
-        }
-        if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is locked and can not be unregistered.", userId));
-        }
-        if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is already unregistered.", userId));
-        }
-
-        existingUser.setEmail(String.format("%s@example.com", existingUser.getUserId()));
-        existingUser.setFirstName("Deleted User");
-        existingUser.setLastName("Deleted User");
-        existingUser.setIsEnabled(Boolean.FALSE);
-        User unregisteredUser = userRepository.saveAndFlush(existingUser);
-
-        if (unregisteredUser.getIsEnabled()){
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and user with id: %s, was not unregistered. Please, try again.", userId));
-        }
-
-        return MessageResponse.builder()
-                .message(String.format("User with id: %s, has been unregistered.", userId))
-                .build();
-    }
-
-    @Override
-    @Transactional
     public UserResponse updateUser(String userId, UserUpdateRequest userUpdateRequest) {
 
         UUID id = UUID.fromString(userId);
@@ -186,5 +150,41 @@ public class UserServiceImpl implements UserService {
                     .message(String.format("User with id: %s, has been unlocked.", userId))
                     .build();
         }
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse unregisterUser(String userId, UserUnregisterRequest userUnregisterRequest) {
+
+        if (!userUnregisterRequest.getPassword().equals(userUnregisterRequest.getConfirmPassword())) {
+            throw new BadCredentialsException("Password doesn't match the CONFIRM PASSWORD field.");
+        }
+
+        UUID id = UUID.fromString(userId);
+        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", userId)));
+
+        if (!passwordEncoder.matches(userUnregisterRequest.getPassword(), existingUser.getPasswordHash())) {
+            throw new BadCredentialsException("Given password doesn't match the password saved in database.");
+        }
+        if (!existingUser.getIsNonLocked()) {
+            throw new IllegalArgumentException(String.format("User with id: %s, is locked and can not be unregistered.", userId));
+        }
+        if (!existingUser.getIsEnabled()) {
+            throw new IllegalArgumentException(String.format("User with id: %s, is already unregistered.", userId));
+        }
+
+        existingUser.setEmail(String.format("%s@example.com", existingUser.getUserId()));
+        existingUser.setFirstName("Deleted User");
+        existingUser.setLastName("Deleted User");
+        existingUser.setIsEnabled(Boolean.FALSE);
+        User unregisteredUser = userRepository.saveAndFlush(existingUser);
+
+        if (unregisteredUser.getIsEnabled()){
+            throw new IllegalStateException(String.format("Unfortunately something went wrong and user with id: %s, was not unregistered. Please, try again.", userId));
+        }
+
+        return MessageResponse.builder()
+                .message(String.format("User with id: %s, has been unregistered.", userId))
+                .build();
     }
 }
