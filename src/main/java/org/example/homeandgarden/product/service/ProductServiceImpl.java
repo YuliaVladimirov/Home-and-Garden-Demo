@@ -76,20 +76,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductProfitResponse getProfitByPeriod(String timeUnit, Integer value) {
+    public ProductProfitResponse getProfitByPeriod(String timeUnit, Integer timePeriod) {
 
         Instant cutoff = switch (timeUnit.toUpperCase()) {
-            case "DAY" -> Instant.now().minus(value, ChronoUnit.DAYS);
-            case "WEEK" -> Instant.now().minus((value * 7L), ChronoUnit.DAYS);
-            case "MONTH" -> Instant.now().minus((value * 30L), ChronoUnit.DAYS);
-            case "YEAR" -> Instant.now().minus((value * 365L), ChronoUnit.DAYS);
+            case "DAY" -> Instant.now().minus(timePeriod, ChronoUnit.DAYS);
+            case "WEEK" -> Instant.now().minus((timePeriod * 7L), ChronoUnit.DAYS);
+            case "MONTH" -> Instant.now().minus((timePeriod * 30L), ChronoUnit.DAYS);
+            case "YEAR" -> Instant.now().minus((timePeriod * 365L), ChronoUnit.DAYS);
             default -> throw new IllegalArgumentException(String.format("Unexpected value: %s", timeUnit));
         };
 
         BigDecimal profit = productRepository.findProfitByPeriod(OrderStatus.DELIVERED, cutoff);
         return ProductProfitResponse.builder()
                 .timeUnit(timeUnit.toUpperCase())
-                .period(value)
+                .timePeriod(timePeriod)
                 .profit(profit)
                 .build();
     }
