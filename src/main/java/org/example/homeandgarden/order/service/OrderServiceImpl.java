@@ -143,7 +143,7 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     @Transactional
-    public MessageResponse setOrderStatus(String orderId) {
+    public MessageResponse advanceOrderStatus(String orderId) {
 
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
