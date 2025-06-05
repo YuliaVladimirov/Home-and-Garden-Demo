@@ -44,7 +44,7 @@ public class CategoryController {
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<PagedModel<CategoryResponse>> getAllCategories(
+    public ResponseEntity<PagedModel<CategoryResponse>> getAllActiveCategories(
 
             @RequestParam(value = "size", defaultValue = "10")
             @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
@@ -66,11 +66,11 @@ public class CategoryController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<CategoryResponse> pageResponse = categoryService.getAllCategories(size, page, order, sortBy);
+        PagedModel<CategoryResponse> pageResponse = categoryService.getAllActiveCategories(size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get categories by status with pagination and sorting", description = "Retrieves a paginated and sortable list of categories based on their status ('ACTIVE' or 'INACTIVE'). Allows specifying page size, page number, sort order, and sort field.")
+    @Operation(summary = "Get categories by status with pagination and sorting", description = "Retrieves a paginated and sortable list of categories based on their status ('ACTIVE', 'INACTIVE') or retrieves all categories if status. Allows specifying page size, page number, sort order, and sort field.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved categories, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @GroupTwoErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -78,8 +78,8 @@ public class CategoryController {
     @GetMapping("/status")
     public ResponseEntity<PagedModel<CategoryResponse>> getCategoriesByStatus(
 
-            @RequestParam(value = "categoryStatus", defaultValue = "ACTIVE")
-            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' ('active' or 'inactive')")
+            @RequestParam(value = "categoryStatus", required = false)
+            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
             @Parameter(description = "Status of the category in the system")
             String categoryStatus,
 
