@@ -28,16 +28,20 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryMapper categoryMapper;
 
     @Override
-    public PagedModel<CategoryResponse> getAllCategories(Integer size, Integer page, String order, String sortBy) {
+    public PagedModel<CategoryResponse> getAllActiveCategories(Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         return new PagedModel<>(categoryRepository.findAllByCategoryStatusIs(CategoryStatus.ACTIVE, pageRequest).map(categoryMapper::categoryToResponse));
     }
 
     @Override
     public PagedModel<CategoryResponse> getCategoriesByStatus(String categoryStatus, Integer size, Integer page, String order, String sortBy) {
-        CategoryStatus status = CategoryStatus.valueOf(categoryStatus.toUpperCase());
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(categoryRepository.findAllByCategoryStatusIs(status, pageRequest).map(categoryMapper::categoryToResponse));
+        if(categoryStatus == null) {
+            return new PagedModel<>(categoryRepository.findAll(pageRequest).map(categoryMapper::categoryToResponse));
+        } else {
+            CategoryStatus status = CategoryStatus.valueOf(categoryStatus.toUpperCase());
+            return new PagedModel<>(categoryRepository.findAllByCategoryStatusIs(status, pageRequest).map(categoryMapper::categoryToResponse));
+        }
     }
 
     @Override
@@ -88,7 +92,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new IllegalStateException(String.format("Unfortunately something went wrong and status '%s' was not set for category with id: %s. Please, try again.", categoryStatus.toUpperCase(), categoryId));
         }
         return MessageResponse.builder()
-                .message(String.format("Status '%s' was  set for category with id: %s.", categoryStatus.toUpperCase(), categoryId))
+                .message(String.format("Status '%s' was set for category with id: %s.", categoryStatus.toUpperCase(), categoryId))
                 .build();
     }
 }
