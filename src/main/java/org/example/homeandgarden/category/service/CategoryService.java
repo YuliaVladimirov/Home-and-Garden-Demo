@@ -7,7 +7,7 @@ import org.springframework.data.web.PagedModel;
 
 public interface CategoryService {
 
-    PagedModel<CategoryResponse> getAllCategories(Integer size, Integer page, String order, String sortBy);
+    PagedModel<CategoryResponse> getAllActiveCategories(Integer size, Integer page, String order, String sortBy);
     PagedModel<CategoryResponse> getCategoriesByStatus(String categoryStatus, Integer size, Integer page, String order, String sortBy);
     CategoryResponse addCategory(CategoryRequest categoryRequest);
     CategoryResponse updateCategory(String categoryId, CategoryRequest categoryRequest);
