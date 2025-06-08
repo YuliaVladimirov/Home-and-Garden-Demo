@@ -12,6 +12,6 @@ import java.util.UUID;
 public interface CategoryRepository extends JpaRepository<Category, UUID>, PagingAndSortingRepository<Category, UUID> {
 
     boolean existsByCategoryName(String name);
-    Page<Category> findAllByCategoryStatusIs (CategoryStatus status, Pageable pageable);
+    Page<Category> findAllByCategoryStatus(CategoryStatus status, Pageable pageable);
 
 }

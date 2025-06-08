@@ -30,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public PagedModel<CategoryResponse> getAllActiveCategories(Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(categoryRepository.findAllByCategoryStatusIs(CategoryStatus.ACTIVE, pageRequest).map(categoryMapper::categoryToResponse));
+        return new PagedModel<>(categoryRepository.findAllByCategoryStatus(CategoryStatus.ACTIVE, pageRequest).map(categoryMapper::categoryToResponse));
     }
 
     @Override
@@ -40,7 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
             return new PagedModel<>(categoryRepository.findAll(pageRequest).map(categoryMapper::categoryToResponse));
         } else {
             CategoryStatus status = CategoryStatus.valueOf(categoryStatus.toUpperCase());
-            return new PagedModel<>(categoryRepository.findAllByCategoryStatusIs(status, pageRequest).map(categoryMapper::categoryToResponse));
+            return new PagedModel<>(categoryRepository.findAllByCategoryStatus(status, pageRequest).map(categoryMapper::categoryToResponse));
         }
     }
 
