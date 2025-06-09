@@ -311,9 +311,7 @@ class CategoryServiceImplTest {
 
         Category existingCategory = createCategory(id, "Original Name", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
 
-        existingCategory.setCategoryName(categoryRequest.getCategoryName());
-
-        Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), Instant.now());
+        Category updatedCategory = createCategory(existingCategory.getCategoryId(), categoryRequest.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), Instant.now());
 
         CategoryResponse categoryResponse = createCategoryResponse(updatedCategory.getCategoryId(), updatedCategory.getCategoryName(), updatedCategory.getCategoryStatus(), updatedCategory.getCreatedAt(), updatedCategory.getUpdatedAt());
 
