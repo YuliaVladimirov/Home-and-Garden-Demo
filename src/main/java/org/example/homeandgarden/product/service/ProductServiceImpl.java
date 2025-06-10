@@ -30,10 +30,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
-
 
     @Override
     public PagedModel<ProductResponse> getCategoryProducts(String categoryId, BigDecimal minPrice, BigDecimal maxPrice, Integer size, Integer page, String order, String sortBy) {
@@ -51,14 +51,17 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PagedModel<ProductResponse> getProductsByStatus(String productStatus, Integer size, Integer page, String order, String sortBy) {
-        ProductStatus status = ProductStatus.valueOf(productStatus.toUpperCase());
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(productRepository.findAllByProductStatus(status, pageRequest).map(productMapper::productToResponse));
+        if(productStatus == null) {
+            return new PagedModel<>(productRepository.findAll(pageRequest).map(productMapper::productToResponse));
+        } else {
+            ProductStatus status = ProductStatus.valueOf(productStatus.toUpperCase());
+            return new PagedModel<>(productRepository.findAllByProductStatus(status, pageRequest).map(productMapper::productToResponse));
+        }
     }
 
     @Override
     public PagedModel<ProductProjectionResponse> getTopProducts(String status, Integer size, Integer page) {
-
         List<OrderStatus> statuses;
         if (status.equalsIgnoreCase("PAID")) {
             statuses = List.of(OrderStatus.PAID, OrderStatus.ON_THE_WAY, OrderStatus.DELIVERED);
@@ -69,7 +72,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public PagedModel<ProductProjectionResponse> getPendingProduct(String orderStatus, Integer days, Integer size, Integer page) {
+    public PagedModel<ProductProjectionResponse> getPendingProducts(String orderStatus, Integer days, Integer size, Integer page) {
         OrderStatus status = OrderStatus.valueOf(orderStatus.toUpperCase());
         Instant cutoff = Instant.now().minus(days, ChronoUnit.DAYS);
         return new PagedModel<>(productRepository.findPendingProducts(status, cutoff, PageRequest.of(page, size)).map(productMapper::productProjectionToResponse));
@@ -87,6 +90,7 @@ public class ProductServiceImpl implements ProductService {
         };
 
         BigDecimal profit = productRepository.findProfitByPeriod(OrderStatus.DELIVERED, cutoff);
+
         return ProductProfitResponse.builder()
                 .timeUnit(timeUnit.toUpperCase())
                 .timePeriod(timePeriod)
@@ -95,7 +99,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
     public ProductResponse getProductById(String productId) {
 
         UUID id = UUID.fromString(productId);
@@ -154,7 +157,7 @@ public class ProductServiceImpl implements ProductService {
         Product updatedProduct = productRepository.saveAndFlush(existingProduct);
 
         if (!updatedProduct.getProductStatus().equals(ProductStatus.valueOf(productStatus))) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and status of the product with id: %s, was not set. Please, try again.", productId));
+            throw new IllegalStateException(String.format("Unfortunately something went wrong and status '%s' was not set for product with id: %s. Please, try again.", productStatus, productId));
         }
 
         return MessageResponse.builder()
