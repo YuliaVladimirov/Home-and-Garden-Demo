@@ -33,10 +33,10 @@ public class ProductMapper {
                 .description(product.getDescription())
                 .listPrice(product.getListPrice())
                 .currentPrice(product.getCurrentPrice())
+                .productStatus(product.getProductStatus())
                 .imageUrl(product.getImageUrl())
                 .addedAt(product.getAddedAt())
                 .updatedAt(product.getUpdatedAt())
-                .productStatus(product.getProductStatus())
                 .build();
     }
 
