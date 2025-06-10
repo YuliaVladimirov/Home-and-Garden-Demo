@@ -233,6 +233,24 @@ class CategoryServiceImplTest {
     }
 
     @Test
+    void getCategoriesByStatus_shouldThrowIllegalArgumentExceptionWhenCategoryStatusIsInvalid (){
+
+        String invalidStatus = "INVALID_STATUS";
+
+        int page = 0;
+        int size = 5;
+        String order = "ASC";
+        String sortBy = "createdAt";
+
+        assertThrows(IllegalArgumentException.class, () ->
+                categoryService.getCategoriesByStatus(invalidStatus, size, page, order, sortBy));
+
+        verify(categoryRepository, never()).findAllByCategoryStatus(any(CategoryStatus.class), any(Pageable.class));
+        verify(categoryMapper, never()).categoryToResponse(any(Category.class));
+    }
+
+
+    @Test
     void addCategory_shouldAddCategorySuccessfullyWhenCategoryNameDoesNotExist() {
 
         CategoryRequest categoryRequest = CategoryRequest.builder()
@@ -281,7 +299,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.existsByCategoryName(categoryRequest.getCategoryName())).thenReturn(true);
 
         DataAlreadyExistsException thrownException = assertThrows(DataAlreadyExistsException.class, () ->
-            categoryService.addCategory(categoryRequest));
+                categoryService.addCategory(categoryRequest));
 
         verify(categoryRepository, times(1)).existsByCategoryName(categoryRequest.getCategoryName());
         verify(categoryMapper, never()).requestToCategory(any(CategoryRequest.class));
@@ -386,7 +404,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-            categoryService.updateCategory(nonExistingCategoryId, categoryRequest));
+                categoryService.updateCategory(nonExistingCategoryId, categoryRequest));
 
         verify(categoryRepository, times(1)).findById(nonExistingId);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -410,7 +428,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-            categoryService.updateCategory(categoryId, categoryRequest));
+                categoryService.updateCategory(categoryId, categoryRequest));
 
         verify(categoryRepository, times(1)).findById(id);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -422,14 +440,14 @@ class CategoryServiceImplTest {
     @Test
     void updateCategory_shouldThrowIllegalArgumentExceptionWhenCategoryIdIsInvalidUuidString() {
 
-        String invalidCategoryId = "not-a-valid-uuid";
+        String invalidCategoryId = "INVALID_UUID";
 
         CategoryRequest categoryRequest = CategoryRequest.builder()
                 .categoryName("Updated Name")
                 .build();
 
         assertThrows(IllegalArgumentException.class, () ->
-            categoryService.updateCategory(invalidCategoryId, categoryRequest));
+                categoryService.updateCategory(invalidCategoryId, categoryRequest));
 
         verify(categoryRepository, never()).findById(any(UUID.class));
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -443,13 +461,13 @@ class CategoryServiceImplTest {
         String categoryId = id.toString();
 
         CategoryStatus newStatus = CategoryStatus.INACTIVE;
-        String categoryNewStatus = newStatus.toString();
+        String categoryNewStatus = newStatus.name();
 
         Category existingCategory = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
         Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), newStatus, existingCategory.getCreatedAt(), Instant.now());
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Status '%s' was set for category with id: %s.", categoryNewStatus.toUpperCase(), categoryId))
+                .message(String.format("Status '%s' was set for category with id: %s.", categoryNewStatus, categoryId))
                 .build();
 
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
@@ -476,12 +494,12 @@ class CategoryServiceImplTest {
         UUID nonExistingId = UUID.randomUUID();
         String nonExistingCategoryId = nonExistingId.toString();
 
-        String categoryTargetStatus = CategoryStatus.INACTIVE.name();
+        String newStatus = CategoryStatus.INACTIVE.name();
 
         when(categoryRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-            categoryService.setCategoryStatus(nonExistingCategoryId, categoryTargetStatus));
+                categoryService.setCategoryStatus(nonExistingCategoryId, newStatus));
 
         verify(categoryRepository, times(1)).findById(nonExistingId);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -495,19 +513,32 @@ class CategoryServiceImplTest {
         UUID id = UUID.randomUUID();
         String categoryId = id.toString();
 
-        String categoryTargetStatus = CategoryStatus.ACTIVE.name();
+        String newStatus = CategoryStatus.ACTIVE.name();
 
         Category existingCategory = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
 
         when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-            categoryService.setCategoryStatus(categoryId, categoryTargetStatus));
+                categoryService.setCategoryStatus(categoryId, newStatus));
 
         verify(categoryRepository, times(1)).findById(id);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
 
-        assertEquals(String.format("Category with id: %s, already has status '%s'.", categoryId, categoryTargetStatus.toUpperCase()), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, already has status '%s'.", categoryId, newStatus.toUpperCase()), thrownException.getMessage());
+    }
+
+    @Test
+    void setCategoryStatus_shouldThrowIllegalArgumentExceptionWhenInvalidUuidStringIsProvided() {
+
+        String invalidCategoryId = "INVALID_UUID";
+        String newStatus = CategoryStatus.INACTIVE.name();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                categoryService.setCategoryStatus(invalidCategoryId, newStatus));
+
+        verify(categoryRepository, never()).findById(any(UUID.class));
+        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
     }
 
     @Test
@@ -516,14 +547,14 @@ class CategoryServiceImplTest {
         UUID id = UUID.randomUUID();
         String categoryId = id.toString();
 
-        String invalidStatusString = "INVALID_STATUS";
+        String invalidStatus = "INVALID_STATUS";
 
         Category existingCategory = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
 
         when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
 
         assertThrows(IllegalArgumentException.class, () ->
-            categoryService.setCategoryStatus(categoryId, invalidStatusString));
+                categoryService.setCategoryStatus(categoryId, invalidStatus));
 
         verify(categoryRepository, times(1)).findById(id);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -535,20 +566,29 @@ class CategoryServiceImplTest {
         UUID id = UUID.randomUUID();
         String categoryId = id.toString();
 
-        String categoryNewStatus = CategoryStatus.INACTIVE.name();
+        CategoryStatus newStatus = CategoryStatus.INACTIVE;
+        String categoryNewStatus = newStatus.name();
 
         Category existingCategory = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+
         Category categoryWithOriginalStatus = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(categoryWithOriginalStatus);
+        ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () ->
-            categoryService.setCategoryStatus(categoryId, categoryNewStatus));
+        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.saveAndFlush(categoryCaptor.capture())).thenReturn(categoryWithOriginalStatus);
+
+        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
+                categoryService.setCategoryStatus(categoryId, categoryNewStatus));
 
         verify(categoryRepository, times(1)).findById(id);
         verify(categoryRepository, times(1)).saveAndFlush(existingCategory);
+        Category capturedCategory = categoryCaptor.getValue();
+        assertNotNull(capturedCategory);
+        assertEquals(existingCategory.getCategoryId(), capturedCategory.getCategoryId());
+        assertEquals(existingCategory.getCategoryName(), capturedCategory.getCategoryName());
+        assertEquals(newStatus, capturedCategory.getCategoryStatus());
 
-        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for category with id: %s. Please, try again.", categoryNewStatus.toUpperCase(), categoryId), thrown.getMessage());
+        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for category with id: %s. Please, try again.", categoryNewStatus, categoryId), thrownException.getMessage());
     }
 }
