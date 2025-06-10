@@ -41,7 +41,7 @@ public class ProductController {
     @GetMapping("/status")
     public ResponseEntity<PagedModel<ProductResponse>> getProductsByStatus(
 
-            @RequestParam(value = "productStatus", defaultValue = "AVAILABLE")
+            @RequestParam(value = "productStatus", required = false)
             @Pattern(regexp = "^(AVAILABLE|OUT_OF_STOCK|SOLD_OUT|available|out_of_stock|sold_out)$", message = "Invalid order orderStatus: Must be one of the: 'AVAILABLE', 'OUT_OF_STOCK' or 'SOLD_OUT' ('available', 'out_of_stock' or 'sold_out')")
             @Parameter(description = "Status of the product in the system")
             String productStatus,
@@ -103,7 +103,7 @@ public class ProductController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping(value = "/pending")
-    public ResponseEntity<PagedModel<ProductProjectionResponse>> getPendingProduct(
+    public ResponseEntity<PagedModel<ProductProjectionResponse>> getPendingProducts(
 
             @RequestParam(value = "orderStatus", defaultValue = "CREATED")
             @Pattern(regexp = "^(CREATED|PAID|ON_THE_WAY|created|paid|on_the_way)$", message = "Invalid order orderStatus: Must be 'CREATED', 'PAID' or 'ON_THE_WAY' ('created', 'paid' or 'on_the_way')")
@@ -125,7 +125,7 @@ public class ProductController {
             @Parameter(description = "Page number to display")
             Integer page) {
 
-        PagedModel<ProductProjectionResponse> pageResponse = productService.getPendingProduct(orderStatus, days, size, page);
+        PagedModel<ProductProjectionResponse> pageResponse = productService.getPendingProducts(orderStatus, days, size, page);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
