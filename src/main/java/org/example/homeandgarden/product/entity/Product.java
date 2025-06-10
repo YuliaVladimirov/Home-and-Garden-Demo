@@ -42,6 +42,11 @@ public class Product {
     @Column(name = "current_price")
     private BigDecimal currentPrice;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_status")
+    @Builder.Default
+    private ProductStatus productStatus = ProductStatus.AVAILABLE;
+
     @Column(name = "image_url")
     private String imageUrl;
 
@@ -52,11 +57,6 @@ public class Product {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "product_status")
-    @Builder.Default
-    private ProductStatus productStatus = ProductStatus.AVAILABLE;
 
    @ManyToOne
    @JoinColumn(name = "category_id", nullable=false)
