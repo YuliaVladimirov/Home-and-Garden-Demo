@@ -41,6 +41,10 @@ public class ProductResponse {
     @Schema(description = "Current price of the product")
     private BigDecimal currentPrice;
 
+    @JsonProperty("productStatus")
+    @Schema(description = "Actual product status")
+    private ProductStatus productStatus;
+
     @JsonProperty("imageUrl")
     @Schema(description = "Url of the image related to this product")
     private String imageUrl;
@@ -52,9 +56,4 @@ public class ProductResponse {
     @JsonProperty("updatedAt")
     @Schema(description = "Date the product was last updated")
     private Instant updatedAt;
-
-    @JsonProperty("productStatus")
-    @Schema(description = "Actual product status")
-    private ProductStatus productStatus;
-
 }
