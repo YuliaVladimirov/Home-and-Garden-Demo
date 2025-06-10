@@ -61,14 +61,6 @@ class ProductServiceImplTest {
                 .build();
     }
 
-    private ProductUpdateRequest createProductUpdateRequest(String id, String productName, BigDecimal listPrice, BigDecimal currentPrice) {
-        return ProductUpdateRequest.builder()
-                .productName(productName)
-                .listPrice(listPrice)
-                .currentPrice(currentPrice)
-                .build();
-    }
-
     private Category createCategory(UUID id, String categoryName, CategoryStatus categoryStatus, Instant createdAt, Instant updatedAt) {
         return Category.builder()
                 .categoryId(id)
@@ -191,7 +183,7 @@ class ProductServiceImplTest {
     @Test
     void getCategoryProducts_shouldThrowIllegalArgumentExceptionWhenCategoryIdIsInvalidUuidString () {
 
-        String invalidCategoryId = "INVALID_UUID";;
+        String invalidCategoryId = "INVALID_UUID";
 
         BigDecimal minPrice = BigDecimal.valueOf(10.0);
         BigDecimal maxPrice = BigDecimal.valueOf(50.0);
