@@ -3,13 +3,17 @@ package org.example.homeandgarden.security.service;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.security.config.JwtService;
 import org.example.homeandgarden.security.dto.LoginRequest;
 import org.example.homeandgarden.security.dto.LoginResponse;
 import org.example.homeandgarden.security.dto.RefreshRequest;
 import org.example.homeandgarden.security.dto.RefreshResponse;
+import org.example.homeandgarden.user.dto.UserRegisterRequest;
+import org.example.homeandgarden.user.dto.UserResponse;
 import org.example.homeandgarden.user.entity.User;
+import org.example.homeandgarden.user.mapper.UserMapper;
 import org.example.homeandgarden.user.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -29,6 +33,30 @@ public class AuthServiceImpl implements AuthService {
         private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
         private final UserRepository userRepository;
+        private final UserMapper userMapper;
+
+    @Override
+    @Transactional
+    public UserResponse registerUser(UserRegisterRequest userRegisterRequest) {
+
+        if (!userRegisterRequest.getPassword().equals(userRegisterRequest.getConfirmPassword())) {
+            throw new BadCredentialsException("Password doesn't match the CONFIRM PASSWORD field.");
+        }
+        if (userRepository.existsByEmail(userRegisterRequest.getEmail())) {
+            if (userRepository.existsByEmailAndIsEnabledFalse(userRegisterRequest.getEmail())) {
+                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is disabled.", userRegisterRequest.getEmail()));
+            }
+            if (userRepository.existsByEmailAndIsNonLockedFalse(userRegisterRequest.getEmail())) {
+                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is locked.", userRegisterRequest.getEmail()));
+            }
+            throw new DataAlreadyExistsException(String.format("User with email: %s, already registered.", userRegisterRequest.getEmail()));
+        }
+
+        User userToRegister = userMapper.createRequestToUser(userRegisterRequest);
+        User registeredUser = userRepository.saveAndFlush(userToRegister);
+
+        return userMapper.userToResponse(registeredUser);
+    }
 
         @Override
         @Transactional
@@ -39,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
                         authentication = authenticationManager
                                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
                 } catch (AuthenticationException exception) {
-                        log.error(String.format("⚠️ Authentication failed for email: %s — reason: bad credentials", loginRequest.getEmail()));
+                        log.warn(String.format("⚠️ Authentication failed for email: %s — reason: bad credentials", loginRequest.getEmail()));
                         throw new BadCredentialsException("Invalid email or password.");
                 }
 
