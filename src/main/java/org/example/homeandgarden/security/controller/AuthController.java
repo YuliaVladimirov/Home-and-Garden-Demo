@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.homeandgarden.security.service.AuthService;
+import org.example.homeandgarden.shared.ErrorResponse;
 import org.example.homeandgarden.swagger.GroupFourErrorResponses;
 import org.example.homeandgarden.swagger.GroupThreeErrorResponses;
+import org.example.homeandgarden.user.dto.UserRegisterRequest;
+import org.example.homeandgarden.user.dto.UserResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +32,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+
+
+    @Operation(summary = "Register user", description = "Creates a new user account in the system. The user's registration details are provided in the request body." +
+            "    ")
+    @ApiResponse(responseCode = "201", description = "User successfully registered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @ApiResponse(responseCode = "409", description = "Conflict: A user with the provided email already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    @GroupFourErrorResponses
+    @PreAuthorize("permitAll()")
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> registerUser(
+
+            @RequestBody
+            @Valid
+            UserRegisterRequest userRegisterRequest) {
+
+        UserResponse registeredUser = authService.registerUser(userRegisterRequest);
+        return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
+    }
 
     @Operation(summary = "User login", description = "Authenticates a user and provides an authentication token upon successful login. User's credentials (e.g., email and password) should be provided in the request body.")
     @ApiResponse(responseCode = "200", description = "Login successful. Returns authentication access and refresh tokens.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponse.class)))
