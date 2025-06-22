@@ -29,39 +29,16 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
-    public PagedModel<UserResponse> getAllUsers(Boolean isEnabled, Integer size, Integer page, String order, String sortBy) {
+    public PagedModel<UserResponse> getUsersByStatus(Boolean isEnabled, Boolean isNonLocked, Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(userRepository.findAllByIsEnabled(isEnabled, pageRequest).map(userMapper::userToUserResponse));
+        return new PagedModel<>(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest).map(userMapper::userToResponseDetailed));
     }
 
     @Override
     public UserResponse getUserById(String userId) {
         UUID id = UUID.fromString(userId);
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("User with id: %s, was not found.", userId)));
-        return userMapper.userToUserResponse(existingUser);
-    }
-
-    @Override
-    @Transactional
-    public UserResponse registerUser(UserRegisterRequest userRegisterRequest) {
-
-        if (!userRegisterRequest.getPassword().equals(userRegisterRequest.getConfirmPassword())) {
-            throw new BadCredentialsException("Password doesn't match the CONFIRM PASSWORD field.");
-        }
-        if (userRepository.existsByEmail(userRegisterRequest.getEmail())) {
-            if (userRepository.existsByEmailAndIsEnabledFalse(userRegisterRequest.getEmail())) {
-                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is disabled.", userRegisterRequest.getEmail()));
-            }
-            if (userRepository.existsByEmailAndIsNonLockedFalse(userRegisterRequest.getEmail())) {
-                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is locked.", userRegisterRequest.getEmail()));
-            }
-            throw new DataAlreadyExistsException(String.format("User with email: %s, already registered.", userRegisterRequest.getEmail()));
-        }
-
-        User userToRegister = userMapper.createRequestToUser(userRegisterRequest);
-        User registeredUser = userRepository.saveAndFlush(userToRegister);
-
-        return userMapper.userToUserResponse(registeredUser);
+        return userMapper.userToResponse(existingUser);
     }
 
     @Override
@@ -83,7 +60,7 @@ public class UserServiceImpl implements UserService {
 
         User updatedUser = userRepository.saveAndFlush(existingUser);
 
-        return userMapper.userToUserResponse(updatedUser);
+        return userMapper.userToResponse(updatedUser);
     }
 
     @Override
@@ -127,29 +104,18 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", userId));
         }
 
-        if (existingUser.getIsNonLocked()) {
-            existingUser.setIsNonLocked(Boolean.FALSE);
-            User lockedUser = userRepository.saveAndFlush(existingUser);
+        Boolean lockState = existingUser.getIsNonLocked();
+        existingUser.setIsNonLocked(!lockState);
 
-            if (lockedUser.getIsNonLocked()) {
-                throw new IllegalStateException(String.format("Unfortunately something went wrong and user with id: %s, was not locked. Please, try again.", userId));
-            }
+        User lockedUser = userRepository.saveAndFlush(existingUser);
 
-            return MessageResponse.builder()
-                    .message(String.format("User with id: %s, has been locked.", userId))
-                    .build();
-
-        } else {
-            existingUser.setIsNonLocked(Boolean.TRUE);
-            User unlockedUser = userRepository.saveAndFlush(existingUser);
-
-            if (!unlockedUser.getIsNonLocked()) {
-                throw new IllegalStateException(String.format("Unfortunately something went wrong and user with id: %s, was not unlocked. Please, try again.", userId));
-            }
-            return MessageResponse.builder()
-                    .message(String.format("User with id: %s, has been unlocked.", userId))
-                    .build();
+        if (lockedUser.getIsNonLocked().equals(lockState)) {
+            throw new IllegalStateException(String.format("An error occurred while %s the user with id: %s. Please try again.", lockState ? "locking" : "unlocking", userId));
         }
+
+        return MessageResponse.builder()
+                .message(String.format("User with id: %s has been %s.", userId, lockState ? "locked" : "unlocked"))
+                .build();
     }
 
     @Override
@@ -176,6 +142,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setEmail(String.format("%s@example.com", existingUser.getUserId()));
         existingUser.setFirstName("Deleted User");
         existingUser.setLastName("Deleted User");
+        existingUser.setRefreshToken(null);
         existingUser.setIsEnabled(Boolean.FALSE);
         User unregisteredUser = userRepository.saveAndFlush(existingUser);
 

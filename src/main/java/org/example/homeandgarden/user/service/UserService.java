@@ -6,9 +6,8 @@ import org.springframework.data.web.PagedModel;
 
 public interface UserService {
 
-    PagedModel<UserResponse> getAllUsers(Boolean isEnabled, Integer size, Integer page, String order, String sortBy);
+    PagedModel<UserResponse> getUsersByStatus(Boolean isEnabled, Boolean isNonLocked, Integer size, Integer page, String order, String sortBy);
     UserResponse getUserById(String userId);
-    UserResponse registerUser(UserRegisterRequest userRegisterRequest);
     UserResponse updateUser(String id, UserUpdateRequest userUpdateRequest);
     MessageResponse setUserRole(String userId, String role);
     MessageResponse toggleLockState(String userId);
