@@ -28,7 +28,7 @@ public class OrderMapper {
                 .build();
     }
 
-    public OrderResponse orderToOrderResponse(Order order) {
+    public OrderResponse orderToResponse(Order order) {
 
          return OrderResponse.builder()
                  .orderId(order.getOrderId())

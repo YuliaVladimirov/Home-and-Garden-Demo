@@ -36,7 +36,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         Page<OrderItem> orderItemPage = orderItemRepository.findByOrderOrderId(id, pageRequest);
 
-        return new PagedModel<>(orderItemPage.map((item) -> orderItemMapper.orderItemToOrderItemResponse(item,
+        return new PagedModel<>(orderItemPage.map((item) -> orderItemMapper.orderItemToResponse(item,
                 productMapper.productToResponse(item.getProduct()))));
     }
 }

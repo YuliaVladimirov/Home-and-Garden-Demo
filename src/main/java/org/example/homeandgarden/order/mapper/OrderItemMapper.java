@@ -26,7 +26,7 @@ public class OrderItemMapper {
                 .build();
     }
 
-    public OrderItemResponse orderItemToOrderItemResponse(
+    public OrderItemResponse orderItemToResponse(
             OrderItem orderItem,
             ProductResponse product) {
 

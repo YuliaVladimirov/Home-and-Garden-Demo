@@ -50,7 +50,7 @@ public class OrderServiceImpl implements OrderService{
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         Page<Order> orderPage = orderRepository.findByUserUserId(id, pageRequest);
 
-        return new PagedModel<>(orderPage.map(orderMapper::orderToOrderResponse));
+        return new PagedModel<>(orderPage.map(orderMapper::orderToResponse));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService{
 
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
-        return orderMapper.orderToOrderResponse(existingOrder);
+        return orderMapper.orderToResponse(existingOrder);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class OrderServiceImpl implements OrderService{
         }
 
         cartRepository.deleteAll(cart);
-        return orderMapper.orderToOrderResponse(addedOrder);
+        return orderMapper.orderToResponse(addedOrder);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class OrderServiceImpl implements OrderService{
         Optional.of(DeliveryMethod.valueOf(orderUpdateRequest.getDeliveryMethod())).ifPresent(existingOrder::setDeliveryMethod);
 
         Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
-        return orderMapper.orderToOrderResponse(updatedOrder);
+        return orderMapper.orderToResponse(updatedOrder);
     }
 
     @Override
