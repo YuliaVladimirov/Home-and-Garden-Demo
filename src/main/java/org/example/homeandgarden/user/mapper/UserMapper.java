@@ -26,7 +26,7 @@ public class UserMapper {
                 .build();
     }
 
-    public UserResponse userToUserResponse(User user) {
+    public UserResponse userToResponse(User user) {
 
         return UserResponse.builder()
                 .userId(user.getUserId())
@@ -34,6 +34,21 @@ public class UserMapper {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .userRole(user.getUserRole())
+                .registeredAt(user.getRegisteredAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
+    public UserResponse userToResponseDetailed(User user) {
+
+        return UserResponse.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .userRole(user.getUserRole())
+                .isEnabled(user.getIsEnabled())
+                .isNonLocked(user.getIsNonLocked())
                 .registeredAt(user.getRegisteredAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
