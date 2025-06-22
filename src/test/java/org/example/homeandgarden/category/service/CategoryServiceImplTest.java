@@ -312,7 +312,7 @@ class CategoryServiceImplTest {
         CategoryRequest categoryRequest = createCategoryRequest ("Updated Name");
 
         Category existingCategory = createCategory(CATEGORY_ID, "Original Name", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
-        Category updatedCategory = createCategory(existingCategory.getCategoryId(), categoryRequest.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), Instant.now());
+        Category updatedCategory = createCategory(existingCategory.getCategoryId(), categoryRequest.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), UPDATED_AT_NOW);
 
         CategoryResponse categoryResponse = createCategoryResponse(updatedCategory.getCategoryId(), updatedCategory.getCategoryName(), updatedCategory.getCategoryStatus(), updatedCategory.getCreatedAt(), updatedCategory.getUpdatedAt());
 
@@ -347,7 +347,7 @@ class CategoryServiceImplTest {
         CategoryRequest categoryRequest = createCategoryRequest (null);
 
         Category existingCategory = createCategory(CATEGORY_ID, "Original Name", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
-        Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), Instant.now());
+        Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), existingCategory.getCategoryStatus(), existingCategory.getCreatedAt(), UPDATED_AT_NOW);
 
         CategoryResponse categoryResponse = createCategoryResponse(updatedCategory.getCategoryId(), updatedCategory.getCategoryName(), updatedCategory.getCategoryStatus(), updatedCategory.getCreatedAt(), updatedCategory.getUpdatedAt());
 
@@ -430,7 +430,7 @@ class CategoryServiceImplTest {
     void setCategoryStatus_shouldSetCategoryStatusSuccessfullyWhenCategoryExistsAndStatusIsDifferent() {
 
         Category existingCategory = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
-        Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), CATEGORY_STATUS_INACTIVE, existingCategory.getCreatedAt(), Instant.now());
+        Category updatedCategory = createCategory(existingCategory.getCategoryId(), existingCategory.getCategoryName(), CATEGORY_STATUS_INACTIVE, existingCategory.getCreatedAt(), UPDATED_AT_NOW);
 
         MessageResponse messageResponse = MessageResponse.builder()
                 .message(String.format("Status '%s' was set for category with id: %s.", CATEGORY_STATUS_INACTIVE_STRING, CATEGORY_ID_STRING))
@@ -449,6 +449,7 @@ class CategoryServiceImplTest {
         assertNotNull(capturedCategory);
         assertEquals(existingCategory.getCategoryName(), capturedCategory.getCategoryName());
         assertEquals(CATEGORY_STATUS_INACTIVE, capturedCategory.getCategoryStatus());
+        assertTrue(updatedCategory.getUpdatedAt().isAfter(existingCategory.getUpdatedAt()));
 
         assertNotNull(actualResponse);
         assertEquals(messageResponse.getMessage(), actualResponse.getMessage());
@@ -515,7 +516,7 @@ class CategoryServiceImplTest {
 
         Category existingCategory = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        Category categoryWithOriginalStatus = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
+        Category categoryWithOriginalStatus = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_NOW);
 
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
 
