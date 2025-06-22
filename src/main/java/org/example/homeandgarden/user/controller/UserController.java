@@ -12,9 +12,7 @@ import org.example.homeandgarden.cart.dto.CartItemResponse;
 import org.example.homeandgarden.cart.service.CartService;
 import org.example.homeandgarden.order.dto.OrderResponse;
 import org.example.homeandgarden.order.service.OrderService;
-import org.example.homeandgarden.shared.ErrorResponse;
 import org.example.homeandgarden.shared.MessageResponse;
-import org.example.homeandgarden.swagger.GroupFourErrorResponses;
 import org.example.homeandgarden.swagger.GroupOneErrorResponses;
 import org.example.homeandgarden.swagger.GroupTwoErrorResponses;
 import org.example.homeandgarden.user.dto.*;
@@ -50,11 +48,15 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
-    public ResponseEntity<PagedModel<UserResponse>> getAllUsers(
+    public ResponseEntity<PagedModel<UserResponse>> getUsersByStatus(
 
             @RequestParam(value = "isEnabled", defaultValue = "true")
             @Parameter(description = "Enabled status: 'true' or 'false'", schema = @Schema(allowableValues = {"true", "false"}))
             Boolean isEnabled,
+
+            @RequestParam(value = "isNonLocked", defaultValue = "true")
+            @Parameter(description = "Non-locked status: 'true' or 'false'", schema = @Schema(allowableValues = {"true", "false"}))
+            Boolean isNonLocked,
 
             @RequestParam(value = "size", defaultValue = "10")
             @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
@@ -76,7 +78,7 @@ public class UserController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"firstName", "lastName", "registeredAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<UserResponse> pageResponse = userService.getAllUsers(isEnabled, size, page, order, sortBy);
+        PagedModel<UserResponse> pageResponse = userService.getUsersByStatus(isEnabled, isNonLocked, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -201,23 +203,6 @@ public class UserController {
 
         PagedModel<OrderResponse> pageResponse = orderService.getUserOrders(userId, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Register user", description = "Creates a new user account in the system. The user's registration details are provided in the request body." +
-            "    ")
-    @ApiResponse(responseCode = "201", description = "User successfully registered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
-    @ApiResponse(responseCode = "409", description = "Conflict: A user with the provided email already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
-    @GroupFourErrorResponses
-    @PreAuthorize("permitAll()")
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerUser(
-
-            @RequestBody
-            @Valid
-            UserRegisterRequest userRegisterRequest) {
-
-        UserResponse registeredUser = userService.registerUser(userRegisterRequest);
-        return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update an existing user", description = "Modifies an existing user account identified by their unique Id. The details that need to be updated are provided in the request body.")
