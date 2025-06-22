@@ -40,6 +40,14 @@ public class UserResponse {
     @Schema(description = "User's role in the system")
     private UserRole userRole;
 
+    @JsonProperty("isEnabled")
+    @Schema(description = "User's 'enabled' status in the system")
+    private Boolean isEnabled = true;
+
+    @JsonProperty("isNonLocked")
+    @Schema(description = "User's 'non-locked' status in the system")
+    private Boolean isNonLocked = true;
+
     @JsonProperty("registeredAt")
     @Schema(description = "Date the user was registered")
     private Instant registeredAt;
