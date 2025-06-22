@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID>, PagingAndSortingRepository<User, UUID> {
 
-    Page<User> findAllByIsEnabled(Boolean isEnabled, Pageable pageable);
+    Page<User> findAllByIsEnabledAndIsNonLocked(Boolean isEnabled, Boolean isNonLocked, Pageable pageable);
     boolean existsByEmail(String email);
     boolean existsByEmailAndIsEnabledFalse(String email);
     boolean existsByEmailAndIsNonLockedFalse(String email);
