@@ -45,6 +45,44 @@ class ProductServiceImplTest {
     @InjectMocks
     private ProductServiceImpl productService;
 
+    private final Integer PAGE = 0;
+    private final Integer SIZE = 5;
+    private final String ORDER = "ASC";
+    private final String SORT_BY = "productName";
+
+    private final BigDecimal MIN_PRICE = BigDecimal.valueOf(10.0);
+    private final BigDecimal MAX_PRICE = BigDecimal.valueOf(50.0);
+
+    private final UUID PRODUCT_1_ID = UUID.randomUUID();
+    private final UUID PRODUCT_2_ID = UUID.randomUUID();
+
+    private final UUID CATEGORY_ID = UUID.randomUUID();
+    private final String CATEGORY_ID_STRING = CATEGORY_ID.toString();
+    private final UUID NON_EXISTING_CATEGORY_ID = UUID.randomUUID();
+    private final String NON_EXISTING_CATEGORY_ID_STRING = NON_EXISTING_CATEGORY_ID.toString();
+    private final String INVALID_CATEGORY_ID = "Invalid UUID";
+
+    private final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
+    private final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
+
+    private final UUID PRODUCT_ID = UUID.randomUUID();
+    private final String PRODUCT_ID_STRING = PRODUCT_ID.toString();
+    private final UUID NON_EXISTING_PRODUCT_ID = UUID.randomUUID();
+    private final String NON_EXISTING_PRODUCT_ID_STRING = NON_EXISTING_PRODUCT_ID.toString();
+    private final String INVALID_PRODUCT_ID = "Invalid UUID";
+
+    private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
+    private final String PRODUCT_STATUS_AVAILABLE_STRING = PRODUCT_STATUS_AVAILABLE.name();
+    private final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
+    private final String PRODUCT_STATUS_OUT_OF_STOCK_STRING = PRODUCT_STATUS_OUT_OF_STOCK.name();
+    private final String INVALID_PRODUCT_STATUS = "Invalid Status";
+
+    private final Instant ADDED_AT_NOW = Instant.now();
+    private final Instant UPDATED_AT_NOW = Instant.now();
+    private final Instant CREATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant ADDED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+
     private ProductCreateRequest createProductCreateRequest(String id, String productName, BigDecimal listPrice) {
         return ProductCreateRequest.builder()
                 .categoryId(id)
@@ -95,7 +133,7 @@ class ProductServiceImplTest {
                 .build();
     }
 
-    private ProductProjection createProductProjection(UUID id, String productName, BigDecimal listPrice, BigDecimal currentPrice, ProductStatus productStatus, Instant addedAt, Instant updatedAt,  Long totalAmount) {
+    private ProductProjection createProductProjection(UUID id, String productName, BigDecimal listPrice, BigDecimal currentPrice, ProductStatus productStatus, Instant addedAt, Instant updatedAt, Long totalAmount) {
         return ProductProjection.builder()
                 .productId(id)
                 .productName(productName)
@@ -108,7 +146,7 @@ class ProductServiceImplTest {
                 .build();
     }
 
-    private ProductProjectionResponse createProductProjectionResponse(UUID id, String productName, BigDecimal listPrice, BigDecimal currentPrice, ProductStatus productStatus, Instant addedAt, Instant updatedAt,  Long totalAmount) {
+    private ProductProjectionResponse createProductProjectionResponse(UUID id, String productName, BigDecimal listPrice, BigDecimal currentPrice, ProductStatus productStatus, Instant addedAt, Instant updatedAt, Long totalAmount) {
         return ProductProjectionResponse.builder()
                 .productId(id)
                 .productName(productName)
@@ -121,45 +159,35 @@ class ProductServiceImplTest {
                 .build();
     }
 
+
     @Test
     void getCategoryProducts_shouldReturnPagedProductsWhenCategoryExistsAndProductsMatchCriteria() {
 
-        UUID id = UUID.randomUUID();
-        String categoryId = id.toString();
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        BigDecimal minPrice = BigDecimal.valueOf(10.0);
-        BigDecimal maxPrice = BigDecimal.valueOf(50.0);
+        Category category = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
-
-        Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-
-        Category category = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        Product product1 = createProduct(UUID.randomUUID(), "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS));
-        Product product2 = createProduct(UUID.randomUUID(), "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(3, ChronoUnit.DAYS));
+        Product product1 = createProduct(PRODUCT_1_ID, "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
+        Product product2 = createProduct(PRODUCT_2_ID, "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
         List<Product> products = List.of(product1, product2);
         Page<Product> productPage = new PageImpl<>(products, pageRequest, products.size());
-        long expectedTotalPages = (long) Math.ceil((double) products.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) products.size() / SIZE);
 
         ProductResponse productResponse1 = createProductResponse(product1.getProductId(), product1.getProductName(), product1.getListPrice(), product1.getCurrentPrice(), product1.getProductStatus(), product1.getAddedAt(), product1.getUpdatedAt());
         ProductResponse productResponse2 = createProductResponse(product2.getProductId(), product2.getProductName(), product2.getListPrice(), product2.getCurrentPrice(), product2.getProductStatus(), product2.getAddedAt(), product2.getUpdatedAt());
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
         when(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
-                id, ProductStatus.AVAILABLE, minPrice, maxPrice, pageRequest)).thenReturn(productPage);
+                CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, MIN_PRICE, MAX_PRICE, pageRequest)).thenReturn(productPage);
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(categoryId, minPrice, maxPrice, size, page, order, sortBy);
+        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY);
 
-        verify(categoryRepository, times(1)).findById(id);
+        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
-                id, ProductStatus.AVAILABLE, minPrice, maxPrice, pageRequest);
+                CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, MIN_PRICE, MAX_PRICE, pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
         verify(productMapper, times(1)).productToResponse(product2);
 
@@ -167,8 +195,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(products.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
@@ -181,20 +209,10 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void getCategoryProducts_shouldThrowIllegalArgumentExceptionWhenCategoryIdIsInvalidUuidString () {
-
-        String invalidCategoryId = "INVALID_UUID";
-
-        BigDecimal minPrice = BigDecimal.valueOf(10.0);
-        BigDecimal maxPrice = BigDecimal.valueOf(50.0);
-
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
+    void getCategoryProducts_shouldThrowIllegalArgumentExceptionWhenCategoryIdIsInvalidUuidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                productService.getCategoryProducts(invalidCategoryId, minPrice, maxPrice, size, page, order, sortBy));
+                productService.getCategoryProducts(INVALID_CATEGORY_ID, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
 
         verify(categoryRepository, never()).findById(any(UUID.class));
         verify(productRepository, never()).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(any(UUID.class), any(ProductStatus.class), any(BigDecimal.class), any(BigDecimal.class), any(PageRequest.class));
@@ -204,94 +222,64 @@ class ProductServiceImplTest {
     @Test
     void getCategoryProducts_shouldThrowDataNotFoundExceptionWhenCategoryDoesNotExist() {
 
-        UUID nonExistingId = UUID.randomUUID();
-        String nonExistingCategoryId = nonExistingId.toString();
-
-        BigDecimal minPrice = BigDecimal.valueOf(10.0);
-        BigDecimal maxPrice = BigDecimal.valueOf(50.0);
-
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
-
-        when(categoryRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-            productService.getCategoryProducts(nonExistingCategoryId, minPrice, maxPrice, size, page, order, sortBy));
+                productService.getCategoryProducts(NON_EXISTING_CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
 
-        verify(categoryRepository, times(1)).findById(nonExistingId);
+        verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(productRepository, never()).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
                 any(UUID.class), any(ProductStatus.class), any(BigDecimal.class), any(BigDecimal.class), any(Pageable.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", nonExistingCategoryId), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void getCategoryProducts_shouldThrowIllegalArgumentExceptionWhenCategoryIsDisabled() {
 
-        UUID id = UUID.randomUUID();
-        String categoryId = id.toString();
+        Category disabledCategory = createCategory(CATEGORY_ID, "Disabled Category", CATEGORY_STATUS_INACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        BigDecimal minPrice = BigDecimal.valueOf(10.0);
-        BigDecimal maxPrice = BigDecimal.valueOf(50.0);
-
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
-
-        Category disabledCategory = createCategory(id, "Disabled Category", CategoryStatus.INACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(2L, ChronoUnit.DAYS));
-
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(disabledCategory));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(disabledCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-            productService.getCategoryProducts(categoryId, minPrice, maxPrice, size, page, order, sortBy));
+                productService.getCategoryProducts(CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
 
-        verify(categoryRepository, times(1)).findById(id);
+        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, never()).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
                 any(UUID.class), any(ProductStatus.class), any(BigDecimal.class), any(BigDecimal.class), any(Pageable.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, is disabled.", categoryId), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, is disabled.", CATEGORY_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void getCategoryProducts_shouldReturnEmptyPagedModelWhenNoProductsMatchCriteria() {
 
-        UUID id = UUID.randomUUID();
-        String categoryId = id.toString();
-
         BigDecimal minPrice = BigDecimal.valueOf(200.00); // Price range that won't match
         BigDecimal maxPrice = BigDecimal.valueOf(300.00);
 
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
+        Category category = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        Category category = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
         Page<Product> emptyProductPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
-        when(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(id, ProductStatus.AVAILABLE, minPrice, maxPrice, pageRequest)).thenReturn(emptyProductPage);
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
+        when(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, minPrice, maxPrice, pageRequest)).thenReturn(emptyProductPage);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(categoryId, minPrice, maxPrice, size, page, order, sortBy);
+        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID_STRING, minPrice, maxPrice, SIZE, PAGE, ORDER, SORT_BY);
 
-        verify(categoryRepository, times(1)).findById(id);
+        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
-                id, ProductStatus.AVAILABLE, minPrice,maxPrice, pageRequest);
+                CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, minPrice, maxPrice, pageRequest);
         verify(productMapper, never()).productToResponse(any(Product.class));
 
         assertNotNull(actualResponse);
         assertNotNull(actualResponse.getMetadata());
         assertEquals(0L, actualResponse.getMetadata().totalElements());
         assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());
@@ -301,33 +289,25 @@ class ProductServiceImplTest {
     @Test
     void getProductsByStatus_shouldRetrieveAndMapProductsByCertainStatusWithPagination() {
 
-        ProductStatus status = ProductStatus.OUT_OF_STOCK;
-        String categoryStatus = status.name();
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
-
-        Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-
-        Product product1 = createProduct(UUID.randomUUID(), "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.OUT_OF_STOCK, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS));
-        Product product2 = createProduct(UUID.randomUUID(), "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.OUT_OF_STOCK, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(3, ChronoUnit.DAYS));
+        Product product1 = createProduct(PRODUCT_1_ID, "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
+        Product product2 = createProduct(PRODUCT_2_ID, "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
         List<Product> products = List.of(product1, product2);
         Page<Product> productPage = new PageImpl<>(products, pageRequest, products.size());
-        long expectedTotalPages = (long) Math.ceil((double) products.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) products.size() / SIZE);
 
         ProductResponse productResponse1 = createProductResponse(product1.getProductId(), product1.getProductName(), product1.getListPrice(), product1.getCurrentPrice(), product1.getProductStatus(), product1.getAddedAt(), product1.getUpdatedAt());
         ProductResponse productResponse2 = createProductResponse(product2.getProductId(), product2.getProductName(), product2.getListPrice(), product2.getCurrentPrice(), product2.getProductStatus(), product2.getAddedAt(), product2.getUpdatedAt());
 
-        when(productRepository.findAllByProductStatus(status, pageRequest)).thenReturn(productPage);
+        when(productRepository.findAllByProductStatus(PRODUCT_STATUS_AVAILABLE, pageRequest)).thenReturn(productPage);
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(categoryStatus, size, page, order, sortBy);
+        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(PRODUCT_STATUS_AVAILABLE_STRING, SIZE, PAGE, ORDER, SORT_BY);
 
-        verify(productRepository, times(1)).findAllByProductStatus(status, pageRequest);
+        verify(productRepository, times(1)).findAllByProductStatus(PRODUCT_STATUS_AVAILABLE, pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
         verify(productMapper, times(1)).productToResponse(product2);
 
@@ -335,8 +315,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(products.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(products.size(), actualResponse.getContent().size());
@@ -351,19 +331,14 @@ class ProductServiceImplTest {
     @Test
     void getProductsByStatus_shouldRetrieveAndMapAllProductsWithPaginationIfNoStatusIsProvided() {
 
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-
-        Product product1 = createProduct(UUID.randomUUID(), "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS));
-        Product product2 = createProduct(UUID.randomUUID(), "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.OUT_OF_STOCK, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(3, ChronoUnit.DAYS));
+        Product product1 = createProduct(UUID.randomUUID(), "Product One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
+        Product product2 = createProduct(UUID.randomUUID(), "Product Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
         List<Product> products = List.of(product1, product2);
         Page<Product> productPage = new PageImpl<>(products, pageRequest, products.size());
-        long expectedTotalPages = (long) Math.ceil((double) products.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) products.size() / SIZE);
 
         ProductResponse productResponse1 = createProductResponse(product1.getProductId(), product1.getProductName(), product1.getListPrice(), product1.getCurrentPrice(), product1.getProductStatus(), product1.getAddedAt(), product1.getUpdatedAt());
         ProductResponse productResponse2 = createProductResponse(product2.getProductId(), product2.getProductName(), product2.getListPrice(), product2.getCurrentPrice(), product2.getProductStatus(), product2.getAddedAt(), product2.getUpdatedAt());
@@ -372,7 +347,7 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(null, size, page, order, sortBy);
+        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(null, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(productRepository, times(1)).findAll(pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
@@ -382,8 +357,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(products.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(products.size(), actualResponse.getContent().size());
@@ -396,17 +371,10 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void getProductsByStatus_shouldThrowIllegalArgumentExceptionWhenProductStatusIsInvalid (){
-
-        String invalidStatus = "INVALID_STATUS";
-
-        int page = 0;
-        int size = 5;
-        String order = "ASC";
-        String sortBy = "productName";
+    void getProductsByStatus_shouldThrowIllegalArgumentExceptionWhenProductStatusIsInvalidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                productService.getProductsByStatus(invalidStatus, size, page, order, sortBy));
+                productService.getProductsByStatus(INVALID_PRODUCT_STATUS, SIZE, PAGE, ORDER, SORT_BY));
 
         verify(productRepository, never()).findAllByProductStatus(any(ProductStatus.class), any(Pageable.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -415,19 +383,15 @@ class ProductServiceImplTest {
     @Test
     void getTopProducts_shouldRetrieveAndMapTopProductsForPaidStatusWithPagination() {
 
-        String status = "PAID";
-        int page = 0;
-        int size = 5;
-
-        PageRequest pageRequest = PageRequest.of(page, size);
+        PageRequest pageRequest = PageRequest.of(PAGE, SIZE);
         List<OrderStatus> expectedStatuses = List.of(OrderStatus.PAID, OrderStatus.ON_THE_WAY, OrderStatus.DELIVERED);
 
-        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS),  56L);
-        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(2, ChronoUnit.DAYS),  39L);
+        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 56L);
+        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 39L);
 
         List<ProductProjection> projections = List.of(productProjection1, productProjection2);
         Page<ProductProjection> productProjectionPage = new PageImpl<>(projections, pageRequest, projections.size());
-        long expectedTotalPages = (long) Math.ceil((double) projections.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) projections.size() / SIZE);
 
         ProductProjectionResponse productProjectionResponse1 = createProductProjectionResponse(productProjection1.getProductId(), productProjection1.getProductName(), productProjection1.getListPrice(), productProjection1.getCurrentPrice(), productProjection1.getProductStatus(), productProjection1.getAddedAt(), productProjection1.getUpdatedAt(), productProjection1.getTotalAmount());
         ProductProjectionResponse productProjectionResponse2 = createProductProjectionResponse(productProjection2.getProductId(), productProjection2.getProductName(), productProjection2.getListPrice(), productProjection2.getCurrentPrice(), productProjection2.getProductStatus(), productProjection2.getAddedAt(), productProjection2.getUpdatedAt(), productProjection2.getTotalAmount());
@@ -436,7 +400,7 @@ class ProductServiceImplTest {
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts(status, size, page);
+        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("PAID", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(eq(expectedStatuses), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
@@ -446,8 +410,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -458,19 +422,15 @@ class ProductServiceImplTest {
     @Test
     void getTopProducts_shouldRetrieveAndMapTopProductsForCanceledStatusWithPagination() {
 
-        String status = "CANCELED";
-        int page = 0;
-        int size = 5;
-
-        PageRequest pageRequest = PageRequest.of(page, size);
+        PageRequest pageRequest = PageRequest.of(PAGE, SIZE);
         List<OrderStatus> expectedStatuses = List.of(OrderStatus.CANCELED, OrderStatus.RETURNED);
 
-        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS),  56L);
-        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(2, ChronoUnit.DAYS),  39L);
+        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 56L);
+        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 39L);
 
         List<ProductProjection> projections = List.of(productProjection1, productProjection2);
         Page<ProductProjection> productProjectionPage = new PageImpl<>(projections, pageRequest, projections.size());
-        long expectedTotalPages = (long) Math.ceil((double) projections.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) projections.size() / SIZE);
 
 
         ProductProjectionResponse productProjectionResponse1 = createProductProjectionResponse(productProjection1.getProductId(), productProjection1.getProductName(), productProjection1.getListPrice(), productProjection1.getCurrentPrice(), productProjection1.getProductStatus(), productProjection1.getAddedAt(), productProjection1.getUpdatedAt(), productProjection1.getTotalAmount());
@@ -480,7 +440,7 @@ class ProductServiceImplTest {
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts(status, size, page);
+        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(eq(expectedStatuses), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
@@ -490,8 +450,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -502,17 +462,13 @@ class ProductServiceImplTest {
     @Test
     void getTopProducts_shouldReturnEmptyPagedModelIfNoTopProductsFound() {
 
-        String status = "PAID";
-        int size = 10;
-        int page = 0;
-
-        PageRequest pageRequest = PageRequest.of(page, size);
-        List<OrderStatus> expectedStatuses = List.of(OrderStatus.PAID, OrderStatus.ON_THE_WAY, OrderStatus.DELIVERED);
+        PageRequest pageRequest = PageRequest.of(PAGE, SIZE);
+        List<OrderStatus> expectedStatuses = List.of(OrderStatus.CANCELED, OrderStatus.RETURNED);
         Page<ProductProjection> emptyPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
 
         when(productRepository.findTopProducts(expectedStatuses, pageRequest)).thenReturn(emptyPage);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts(status, size, page);
+        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(expectedStatuses, pageRequest);
         verify(productMapper, never()).productProjectionToResponse(any(ProductProjection.class));
@@ -527,32 +483,29 @@ class ProductServiceImplTest {
     @Test
     void getPendingProducts_shouldRetrieveAndMapAllPendingProductsWithPaginationIfProductsExistForGivenStatusAndDays() {
 
-        OrderStatus status = OrderStatus.PAID;
-        String orderStatus = status.name();
+        OrderStatus orderStatus = OrderStatus.PAID;
+        String orderStatusString = orderStatus.name();
+        Integer days = 7;
 
-        int days = 7;
-        int size = 2;
-        int page = 0;
+        PageRequest pageRequest = PageRequest.of(PAGE, SIZE);
 
-        PageRequest pageRequest = PageRequest.of(page, size);
-
-        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS),  56L);
-        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(2, ChronoUnit.DAYS),  39L);
+        ProductProjection productProjection1 = createProductProjection(UUID.randomUUID(), "Projection One", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 56L);
+        ProductProjection productProjection2 = createProductProjection(UUID.randomUUID(), "Projection Two", BigDecimal.valueOf(30.00), BigDecimal.valueOf(20.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST, 39L);
 
         List<ProductProjection> projections = List.of(productProjection1, productProjection2);
         Page<ProductProjection> productProjectionPage = new PageImpl<>(projections, pageRequest, projections.size());
-        long expectedTotalPages = (long) Math.ceil((double) projections.size() / size);
+        long expectedTotalPages = (long) Math.ceil((double) projections.size() / SIZE);
 
         ProductProjectionResponse productProjectionResponse1 = createProductProjectionResponse(productProjection1.getProductId(), productProjection1.getProductName(), productProjection1.getListPrice(), productProjection1.getCurrentPrice(), productProjection1.getProductStatus(), productProjection1.getAddedAt(), productProjection1.getUpdatedAt(), productProjection1.getTotalAmount());
         ProductProjectionResponse productProjectionResponse2 = createProductProjectionResponse(productProjection2.getProductId(), productProjection2.getProductName(), productProjection2.getListPrice(), productProjection2.getCurrentPrice(), productProjection2.getProductStatus(), productProjection2.getAddedAt(), productProjection2.getUpdatedAt(), productProjection2.getTotalAmount());
 
-        when(productRepository.findPendingProducts(eq(status), any(Instant.class), eq(pageRequest))).thenReturn(productProjectionPage);
+        when(productRepository.findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest))).thenReturn(productProjectionPage);
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatus, days, size, page);
+        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
 
-        verify(productRepository, times(1)).findPendingProducts(eq(status), any(Instant.class), eq(pageRequest));
+        verify(productRepository, times(1)).findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
         verify(productMapper, times(1)).productProjectionToResponse(productProjection2);
 
@@ -560,8 +513,8 @@ class ProductServiceImplTest {
         assertNotNull(actualResponse.getMetadata());
         assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
         assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals(size, actualResponse.getMetadata().size());
-        assertEquals(page, actualResponse.getMetadata().number());
+        assertEquals((long) SIZE, actualResponse.getMetadata().size());
+        assertEquals((long) PAGE, actualResponse.getMetadata().number());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -572,21 +525,18 @@ class ProductServiceImplTest {
     @Test
     void getPendingProducts_shouldReturnEmptyPagedModelIfNoPendingProductsMatch() {
 
-        OrderStatus status = OrderStatus.PAID;
-        String orderStatus = status.name();
+        OrderStatus orderStatus = OrderStatus.PAID;
+        String orderStatusString = orderStatus.name();
+        Integer days = 7;
 
-        int days = 7;
-        int size = 2;
-        int page = 0;
-
-        PageRequest pageRequest = PageRequest.of(page, size);
+        PageRequest pageRequest = PageRequest.of(PAGE, SIZE);
         Page<ProductProjection> emptyPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
 
-        when(productRepository.findPendingProducts(eq(status), any(Instant.class), eq(pageRequest))).thenReturn(emptyPage);
+        when(productRepository.findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest))).thenReturn(emptyPage);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatus, days, size, page);
+        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
 
-        verify(productRepository, times(1)).findPendingProducts(eq(status), any(Instant.class), eq(pageRequest));
+        verify(productRepository, times(1)).findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest));
         verify(productMapper, never()).productProjectionToResponse(any(ProductProjection.class));
 
         assertNotNull(actualResponse);
@@ -600,12 +550,9 @@ class ProductServiceImplTest {
     void getPendingProducts_shouldThrowIllegalArgumentExceptionWhenOrderStatusStringIsInvalid() {
 
         String invalidOrderStatus = "INVALID_STATUS";
-
         Integer days = 5;
-        Integer size = 5;
-        Integer page = 0;
 
-        assertThrows(IllegalArgumentException.class, () -> productService.getPendingProducts(invalidOrderStatus, days, size, page));
+        assertThrows(IllegalArgumentException.class, () -> productService.getPendingProducts(invalidOrderStatus, days, SIZE, PAGE));
 
         verify(productRepository, never()).findPendingProducts(any(OrderStatus.class), any(Instant.class), any(PageRequest.class));
         verify(productMapper, never()).productProjectionToResponse(any(ProductProjection.class));
@@ -713,7 +660,7 @@ class ProductServiceImplTest {
         Integer timePeriod = 1;
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-            productService.getProfitByPeriod(invalidTimeUnit, timePeriod));
+                productService.getProfitByPeriod(invalidTimeUnit, timePeriod));
 
         verify(productRepository, never()).findProfitByPeriod(any(OrderStatus.class), any(Instant.class));
 
@@ -723,19 +670,16 @@ class ProductServiceImplTest {
     @Test
     void getProductById_shouldReturnProductResponseWhenProductExists() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
-
-        Product product = createProduct(id, "Existing Product", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), ProductStatus.AVAILABLE, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(5, ChronoUnit.DAYS));
+        Product product = createProduct(PRODUCT_ID, "Existing Product", BigDecimal.valueOf(40.00), BigDecimal.valueOf(40.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
         ProductResponse productResponse = createProductResponse(product.getProductId(), product.getProductName(), product.getListPrice(), product.getCurrentPrice(), product.getProductStatus(), product.getAddedAt(), product.getUpdatedAt());
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
         when(productMapper.productToResponse(product)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.getProductById(productId);
+        ProductResponse actualResponse = productService.getProductById(PRODUCT_ID_STRING);
 
-        verify(productRepository, times(1)).findById(id);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productMapper, times(1)).productToResponse(product);
 
         assertEquals(productResponse.getProductId(), actualResponse.getProductId());
@@ -746,26 +690,21 @@ class ProductServiceImplTest {
     @Test
     void getProductById_shouldThrowDataNotFoundExceptionWhenProductDoesNotExist() {
 
-        UUID nonExistingId = UUID.randomUUID();
-        String nonExistingProductId = nonExistingId.toString();
-
-        when(productRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-            productService.getProductById(nonExistingProductId));
+                productService.getProductById(NON_EXISTING_PRODUCT_ID_STRING));
 
-        assertEquals(String.format("Product with id: %s, was not found.", nonExistingProductId), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
 
-        verify(productRepository, times(1)).findById(nonExistingId);
+        verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productMapper, never()).productToResponse(any(Product.class));
     }
 
     @Test
     void getProductById_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
-        String invalidProductId = "NOT_A_VALID_UUID";
-
-        assertThrows(IllegalArgumentException.class, () -> productService.getProductById(invalidProductId));
+        assertThrows(IllegalArgumentException.class, () -> productService.getProductById(INVALID_PRODUCT_ID));
 
         verify(productRepository, never()).findById(any(UUID.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -774,37 +713,34 @@ class ProductServiceImplTest {
     @Test
     void addProduct_shouldAddProductSuccessfully() {
 
-        UUID id = UUID.randomUUID();
-        String categoryId = id.toString();
+        ProductCreateRequest productCreateRequest = createProductCreateRequest(CATEGORY_ID_STRING, "New Product", BigDecimal.valueOf(10.00));
 
-        ProductCreateRequest productCreateRequest = createProductCreateRequest(categoryId, "New Product", BigDecimal.valueOf(10.00));
+        Category category = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        Category category = createCategory(id, "Existing Category", CategoryStatus.ACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+        Product productToSave = createProduct(null, productCreateRequest.getProductName(), productCreateRequest.getListPrice(), productCreateRequest.getListPrice(), PRODUCT_STATUS_AVAILABLE, null, null);
 
-        Product productToSave = createProduct(null, productCreateRequest.getProductName(), productCreateRequest.getListPrice(), productCreateRequest.getListPrice(), ProductStatus.AVAILABLE, Instant.now(), Instant.now());
-
-        Product savedProduct = createProduct(UUID.randomUUID(), productToSave.getProductName(), productToSave.getListPrice(), productToSave.getCurrentPrice(), productToSave.getProductStatus(), productToSave.getAddedAt(), productToSave.getUpdatedAt());
+        Product savedProduct = createProduct(PRODUCT_ID, productToSave.getProductName(), productToSave.getListPrice(), productToSave.getCurrentPrice(), productToSave.getProductStatus(), ADDED_AT_NOW, UPDATED_AT_NOW);
 
         ProductResponse productResponse = createProductResponse(savedProduct.getProductId(), savedProduct.getProductName(), savedProduct.getListPrice(), savedProduct.getCurrentPrice(), savedProduct.getProductStatus(), savedProduct.getAddedAt(), savedProduct.getUpdatedAt());
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
         when(productMapper.requestToProduct(productCreateRequest, category)).thenReturn(productToSave);
-        when(productRepository.saveAndFlush(productCaptor.capture())).thenReturn(savedProduct);
+        when(productRepository.saveAndFlush(productToSave)).thenReturn(savedProduct);
         when(productMapper.productToResponse(savedProduct)).thenReturn(productResponse);
 
         ProductResponse actualResponse = productService.addProduct(productCreateRequest);
 
-        verify(categoryRepository, times(1)).findById(id);
+        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productMapper, times(1)).requestToProduct(productCreateRequest, category);
 
-        verify(productRepository, times(1)).saveAndFlush(productToSave);
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertNotNull(capturedProduct);
         assertEquals(productCreateRequest.getProductName(), capturedProduct.getProductName());
         assertEquals(productCreateRequest.getListPrice(), capturedProduct.getListPrice());
-        assertEquals(ProductStatus.AVAILABLE, capturedProduct.getProductStatus());
+        assertEquals(PRODUCT_STATUS_AVAILABLE, capturedProduct.getProductStatus());
 
         verify(productMapper, times(1)).productToResponse(savedProduct);
 
@@ -819,9 +755,7 @@ class ProductServiceImplTest {
     @Test
     void addProduct_shouldThrowIllegalArgumentExceptionWhenCategoryIdIsInvalidUuidString() {
 
-        String invalidCategoryId = "INVALID_UUID";
-
-        ProductCreateRequest productCreateRequest = createProductCreateRequest(invalidCategoryId, "New Product", BigDecimal.valueOf(10.00));
+        ProductCreateRequest productCreateRequest = createProductCreateRequest(INVALID_CATEGORY_ID, "New Product", BigDecimal.valueOf(10.00));
 
         assertThrows(IllegalArgumentException.class, () -> productService.addProduct(productCreateRequest));
 
@@ -834,39 +768,33 @@ class ProductServiceImplTest {
     @Test
     void addProduct_shouldThrowDataNotFoundExceptionWhenCategoryDoesNotExist() {
 
-        UUID nonExistingId = UUID.randomUUID();
-        String nonExistingCategoryId = nonExistingId.toString();
+        ProductCreateRequest productCreateRequest = createProductCreateRequest(NON_EXISTING_CATEGORY_ID_STRING, "New Product", BigDecimal.valueOf(10.00));
 
-        ProductCreateRequest productCreateRequest = createProductCreateRequest(nonExistingCategoryId, "New Product", BigDecimal.valueOf(10.00));
-
-        when(categoryRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
                 productService.addProduct(productCreateRequest));
 
-        verify(categoryRepository, times(1)).findById(nonExistingId);
+        verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(productMapper, never()).requestToProduct(any(ProductCreateRequest.class), any(Category.class));
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", nonExistingCategoryId), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void addProduct_shouldThrowIllegalArgumentExceptionWhenCategoryStatusIsInactive() {
 
-        UUID id = UUID.randomUUID();
-        String categoryId = id.toString();
+        ProductCreateRequest productCreateRequest = createProductCreateRequest(CATEGORY_ID_STRING, "New Product", BigDecimal.valueOf(10.00));
 
-        ProductCreateRequest productCreateRequest = createProductCreateRequest(categoryId, "New Product", BigDecimal.valueOf(10.00));
+        Category category = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_INACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
 
-        Category category = createCategory(id, "Existing Category", CategoryStatus.INACTIVE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(category));
 
         assertThrows(IllegalArgumentException.class, () -> productService.addProduct(productCreateRequest));
 
-        verify(categoryRepository, times(1)).findById(id);
+        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productMapper, never()).requestToProduct(any(ProductCreateRequest.class), any(Category.class));
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -875,28 +803,25 @@ class ProductServiceImplTest {
     @Test
     void updateProduct_shouldUpdateProductSuccessfullyWhenProductExistsAndIsNotSoldOut() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
-
         ProductUpdateRequest updateRequest = createProductUpdateRequest("Updated Name", BigDecimal.valueOf(15.00), BigDecimal.valueOf(10.00));
 
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        Product updatedProduct = createProduct(existingProduct.getProductId(), updateRequest.getProductName(), updateRequest.getListPrice(), updateRequest.getCurrentPrice(), existingProduct.getProductStatus(), existingProduct.getAddedAt(), Instant.now());
+        Product updatedProduct = createProduct(existingProduct.getProductId(), updateRequest.getProductName(), updateRequest.getListPrice(), updateRequest.getCurrentPrice(), existingProduct.getProductStatus(), existingProduct.getAddedAt(), UPDATED_AT_NOW);
 
-        ProductResponse productResponse = createProductResponse(updatedProduct.getProductId(), updatedProduct.getProductName(), updatedProduct.getListPrice(), updatedProduct.getCurrentPrice(),updatedProduct.getProductStatus(), updatedProduct.getAddedAt(), updatedProduct.getUpdatedAt());
+        ProductResponse productResponse = createProductResponse(updatedProduct.getProductId(), updatedProduct.getProductName(), updatedProduct.getListPrice(), updatedProduct.getCurrentPrice(), updatedProduct.getProductStatus(), updatedProduct.getAddedAt(), updatedProduct.getUpdatedAt());
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.saveAndFlush(productCaptor.capture())).thenReturn(updatedProduct);
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.updateProduct(productId, updateRequest);
+        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID_STRING, updateRequest);
 
-        verify(productRepository, times(1)).findById(id);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
 
-        verify(productRepository, times(1)).saveAndFlush(existingProduct);
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertNotNull(capturedProduct);
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
@@ -920,27 +845,24 @@ class ProductServiceImplTest {
     @Test
     void updateProduct_shouldUpdateOnlyProvidedFieldsAndReturnUpdatedProductResponse() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
-
         ProductUpdateRequest updateRequest = createProductUpdateRequest("Updated Name", null, null);
 
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        Product updatedProduct = createProduct(existingProduct.getProductId(), updateRequest.getProductName(), existingProduct.getListPrice(), existingProduct.getCurrentPrice(), existingProduct.getProductStatus(), existingProduct.getAddedAt(), Instant.now());
+        Product updatedProduct = createProduct(existingProduct.getProductId(), updateRequest.getProductName(), existingProduct.getListPrice(), existingProduct.getCurrentPrice(), existingProduct.getProductStatus(), existingProduct.getAddedAt(), UPDATED_AT_NOW);
 
-        ProductResponse productResponse = createProductResponse(updatedProduct.getProductId(), updatedProduct.getProductName(), updatedProduct.getListPrice(), updatedProduct.getCurrentPrice(),updatedProduct.getProductStatus(), updatedProduct.getAddedAt(), updatedProduct.getUpdatedAt());
+        ProductResponse productResponse = createProductResponse(updatedProduct.getProductId(), updatedProduct.getProductName(), updatedProduct.getListPrice(), updatedProduct.getCurrentPrice(), updatedProduct.getProductStatus(), updatedProduct.getAddedAt(), updatedProduct.getUpdatedAt());
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.saveAndFlush(productCaptor.capture())).thenReturn(updatedProduct);
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.updateProduct(productId, updateRequest);
+        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID_STRING, updateRequest);
 
-        verify(productRepository, times(1)).findById(id);
-        verify(productRepository, times(1)).saveAndFlush(existingProduct);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
         assertEquals(updateRequest.getProductName(), capturedProduct.getProductName());
@@ -963,54 +885,45 @@ class ProductServiceImplTest {
     @Test
     void updateProduct_shouldThrowDataNotFoundExceptionWhenProductDoesNotExist() {
 
-        UUID nonExistingId = UUID.randomUUID();
-        String nonExistingProductId = nonExistingId.toString();
-
         ProductUpdateRequest updateRequest = createProductUpdateRequest("Updated Name", BigDecimal.valueOf(15.00), BigDecimal.valueOf(10.00));
 
-        when(productRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-            productService.updateProduct(nonExistingProductId, updateRequest));
+                productService.updateProduct(NON_EXISTING_PRODUCT_ID_STRING, updateRequest));
 
-        verify(productRepository, times(1)).findById(nonExistingId);
+        verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, was not found.", nonExistingProductId), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void updateProduct_shouldThrowIllegalArgumentExceptionWhenProductIsSoldOut() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
-
         ProductUpdateRequest updateRequest = createProductUpdateRequest("Updated Name", BigDecimal.valueOf(15.00), BigDecimal.valueOf(10.00));
 
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.SOLD_OUT, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.SOLD_OUT, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-            productService.updateProduct(productId, updateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> productService.updateProduct(PRODUCT_ID_STRING, updateRequest));
 
-        verify(productRepository, times(1)).findById(id);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, is sold out and can not be updated.", productId), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, is sold out and can not be updated.", PRODUCT_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void updateProduct_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
-        String invalidProductId = "INVALID_UUID";
-
         ProductUpdateRequest updateRequest = createProductUpdateRequest("Updated Name", BigDecimal.valueOf(15.00), BigDecimal.valueOf(10.00));
 
         assertThrows(IllegalArgumentException.class, () ->
-            productService.updateProduct(invalidProductId, updateRequest));
+                productService.updateProduct(INVALID_PRODUCT_ID, updateRequest));
 
         verify(productRepository, never()).findById(any(UUID.class));
         verify(productRepository, never()).saveAndFlush(any(Product.class));
@@ -1020,33 +933,29 @@ class ProductServiceImplTest {
     @Test
     void setProductStatus_shouldSetProductStatusSuccessfullyWhenProductExistsAndStatusIsDifferent() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        ProductStatus newStatus = ProductStatus.OUT_OF_STOCK;
-        String productNewStatus = newStatus.toString();
-
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        Product updatedProduct = createProduct(existingProduct.getProductId(), existingProduct.getProductName(), existingProduct.getListPrice(), existingProduct.getCurrentPrice(), newStatus, existingProduct.getAddedAt(), Instant.now());
+        Product updatedProduct = createProduct(existingProduct.getProductId(), existingProduct.getProductName(), existingProduct.getListPrice(), existingProduct.getCurrentPrice(), PRODUCT_STATUS_OUT_OF_STOCK, existingProduct.getAddedAt(), UPDATED_AT_NOW);
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Status '%s' was set for the product with id: %s.", productNewStatus, productId))
+                .message(String.format("Status '%s' was set for the product with id: %s.", PRODUCT_STATUS_OUT_OF_STOCK_STRING, PRODUCT_ID_STRING))
                 .build();
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.saveAndFlush(productCaptor.capture())).thenReturn(updatedProduct);
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
 
-        MessageResponse actualResponse = productService.setProductStatus(productId, productNewStatus);
+        MessageResponse actualResponse = productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING);
 
-        verify(productRepository, times(1)).findById(id);
-        verify(productRepository, times(1)).saveAndFlush(existingProduct);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
+
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
         assertEquals(existingProduct.getProductName(), capturedProduct.getProductName());
-        assertEquals(newStatus, capturedProduct.getProductStatus());
+        assertEquals(PRODUCT_STATUS_OUT_OF_STOCK, capturedProduct.getProductStatus());
+        assertTrue(updatedProduct.getUpdatedAt().isAfter(existingProduct.getUpdatedAt()));
 
         assertNotNull(actualResponse);
         assertEquals(messageResponse.getMessage(), actualResponse.getMessage());
@@ -1055,13 +964,8 @@ class ProductServiceImplTest {
     @Test
     void setProductStatus_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
-        String invalidProductId = "INVALID_UUID";
-
-        ProductStatus newStatus = ProductStatus.OUT_OF_STOCK;
-        String productNewStatus = newStatus.toString();
-
         assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(invalidProductId, productNewStatus));
+                productService.setProductStatus(INVALID_PRODUCT_ID, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
 
         verify(productRepository, never()).findById(any(UUID.class));
         verify(productRepository, never()).saveAndFlush(any(Product.class));
@@ -1070,91 +974,70 @@ class ProductServiceImplTest {
     @Test
     void setProductStatus_shouldThrowDataNotFoundExceptionWhenProductDoesNotExist() {
 
-        UUID nonExistingId = UUID.randomUUID();
-        String nonExistingProductId = nonExistingId.toString();
-
-        String newStatus = ProductStatus.OUT_OF_STOCK.name();
-
-        when(productRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                productService.setProductStatus(nonExistingProductId, newStatus));
+                productService.setProductStatus(NON_EXISTING_PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
 
-        verify(productRepository, times(1)).findById(nonExistingId);
+        verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, was not found.", nonExistingProductId), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
     }
 
     @Test
     void setProductStatus_shouldThrowIllegalArgumentExceptionWhenProductStatusIsInvalid() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        String invalidStatus = "INVALID_STATUS";
-
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
         assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(productId, invalidStatus));
+                productService.setProductStatus(PRODUCT_ID_STRING, INVALID_PRODUCT_STATUS));
 
-        verify(productRepository, times(1)).findById(id);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
     }
 
     @Test
     void setProductStatus_shouldThrowIllegalArgumentExceptionWhenProductAlreadyHasTargetStatus() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_OUT_OF_STOCK, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        String newStatus = ProductStatus.OUT_OF_STOCK.name();
-
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.OUT_OF_STOCK, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(productId, newStatus));
+                productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
 
-        verify(productRepository, times(1)).findById(id);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, already has status '%s'.", productId, newStatus.toUpperCase()), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, already has status '%s'.", PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING.toUpperCase()), thrownException.getMessage());
     }
 
     @Test
     void setProductStatus_shouldThrowIllegalStateExceptionWhenStatusUpdateFailsOnSave() {
 
-        UUID id = UUID.randomUUID();
-        String productId = id.toString();
+        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
 
-        ProductStatus newStatus = ProductStatus.OUT_OF_STOCK;
-        String productNewStatus = newStatus.name();
-
-        Product existingProduct = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
-
-        Product productWithOriginalStatus = createProduct(id, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), ProductStatus.AVAILABLE, Instant.now().minus(10L, ChronoUnit.DAYS), Instant.now().minus(10L, ChronoUnit.DAYS));
+        Product productWithOriginalStatus = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_NOW);
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.saveAndFlush(productCaptor.capture())).thenReturn(productWithOriginalStatus);
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(productWithOriginalStatus);
 
         IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
-                productService.setProductStatus(productId, productNewStatus));
+                productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
 
-        verify(productRepository, times(1)).findById(id);
-        verify(productRepository, times(1)).saveAndFlush(existingProduct);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertNotNull(capturedProduct);
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
         assertEquals(existingProduct.getProductName(), capturedProduct.getProductName());
-        assertEquals(newStatus, capturedProduct.getProductStatus());
+        assertEquals(PRODUCT_STATUS_OUT_OF_STOCK, capturedProduct.getProductStatus());
 
-        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for product with id: %s. Please, try again.", productNewStatus, productId), thrownException.getMessage());
+        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for product with id: %s. Please, try again.", PRODUCT_STATUS_OUT_OF_STOCK_STRING, PRODUCT_ID_STRING), thrownException.getMessage());
     }
 }
