@@ -14,6 +14,6 @@ public interface OrderService {
     OrderResponse addOrder(OrderCreateRequest orderCreateRequest);
     OrderResponse updateOrder(String orderId, OrderUpdateRequest orderUpdateRequest);
     MessageResponse cancelOrder(String orderId);
-    MessageResponse advanceOrderStatus(String orderId);
+    MessageResponse toggleOrderStatus(String orderId);
 
 }

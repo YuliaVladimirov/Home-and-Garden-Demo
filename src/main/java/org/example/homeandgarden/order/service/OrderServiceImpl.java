@@ -132,18 +132,14 @@ public class OrderServiceImpl implements OrderService{
         existingOrder.setOrderStatus(OrderStatus.CANCELED);
         Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
 
-        if (!updatedOrder.getOrderStatus().equals(OrderStatus.CANCELED)) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and order with id: %s, was not canceled. Please, try again.", orderId));
-        }
-
         return MessageResponse.builder()
-                .message(String.format("Order with id: %s was canceled.", orderId))
+                .message(String.format("Order with id: %s was canceled.", updatedOrder.getOrderId().toString()))
                 .build();
     }
 
     @Override
     @Transactional
-    public MessageResponse advanceOrderStatus(String orderId) {
+    public MessageResponse toggleOrderStatus(String orderId) {
 
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));

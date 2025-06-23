@@ -169,14 +169,14 @@ public class OrderController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping(value = "/{orderId}/status")
-    public ResponseEntity<MessageResponse> advanceOrderStatus(
+    public ResponseEntity<MessageResponse> toggleOrderStatus(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
             @Parameter(description = "Unique order id (UUID)")
             String orderId) {
 
-        MessageResponse messageResponse = orderService.advanceOrderStatus(orderId);
+        MessageResponse messageResponse = orderService.toggleOrderStatus(orderId);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 }
