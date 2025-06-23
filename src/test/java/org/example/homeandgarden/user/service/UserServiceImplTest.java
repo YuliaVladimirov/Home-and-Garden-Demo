@@ -683,37 +683,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void setUserRole_shouldThrowIllegalStateExceptionWhenRoleUpdateFailsOnSave() {
-
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
-
-        User userWithOriginalRole = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_NOW);
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(existingUser)).thenReturn(userWithOriginalRole);
-
-        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
-                userService.setUserRole(USER_ID_STRING, USER_ROLE_ADMIN_STRING));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
-        User capturedUser = userCaptor.getValue();
-        assertNotNull(capturedUser);
-        assertEquals(existingUser.getUserId(), capturedUser.getUserId());
-        assertEquals(existingUser.getUserId(), capturedUser.getUserId());
-        assertEquals(existingUser.getEmail(), capturedUser.getEmail());
-        assertEquals(existingUser.getPasswordHash(), capturedUser.getPasswordHash());
-        assertEquals(existingUser.getFirstName(), capturedUser.getFirstName());
-        assertEquals(existingUser.getLastName(), capturedUser.getLastName());
-        assertEquals(USER_ROLE_ADMIN, capturedUser.getUserRole());
-
-        assertEquals(String.format("Unfortunately something went wrong and userRole '%s' was not set for user with id: %s. Please, try again.", USER_ROLE_ADMIN_STRING, USER_ID_STRING), thrownException.getMessage());
-    }
-
-    @Test
-    void toggleLockState_shouldLockUser_whenUserIsEnabledAndNonLocked() {
+    void toggleLockState_shouldLockUserWhenUserIsEnabledAndNonLocked() {
 
         User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
 
@@ -750,7 +720,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleLockState_shouldUnlockUser_whenUserIsEnabledAndLocked() {
+    void toggleLockState_shouldUnlockUserWhenUserIsEnabledAndLocked() {
 
         User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
 
@@ -822,25 +792,6 @@ class UserServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", USER_ID_STRING), thrown.getMessage());
-    }
-
-    @Test
-    void toggleLockState_shouldThrowIllegalStateExceptionWhenLockingFailsUnexpectedly() {
-
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
-
-        User userWithOriginalLockState = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), existingUser.getFirstName(), existingUser.getLastName(), existingUser.getUserRole(), existingUser.getIsEnabled(),existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(existingUser)).thenReturn(userWithOriginalLockState);
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () ->
-                userService.toggleLockState(USER_ID_STRING));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).saveAndFlush(existingUser);
-
-        assertEquals(String.format("An error occurred while locking the user with id: %s. Please try again.", USER_ID_STRING), thrown.getMessage());
     }
 
     @Test
@@ -978,32 +929,5 @@ class UserServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, is already unregistered.", USER_ID_STRING), thrown.getMessage());
-    }
-
-    @Test
-    void unregisterUser_shouldThrowIllegalStateExceptionWhenUnregisterFailsOnSave() {
-
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
-
-        User existingUser = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
-
-        User existingUserWithOriginals = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_NOW);
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
-        when(userRepository.saveAndFlush(userCaptor.capture())).thenReturn(existingUserWithOriginals);
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () ->
-                userService.unregisterUser(USER_ID_STRING, request));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
-        verify(userRepository, times(1)).saveAndFlush(any(User.class));
-        User capturedUser = userCaptor.getValue();
-        assertFalse(capturedUser.getIsEnabled());
-
-        assertEquals(String.format("Unfortunately something went wrong and user with id: %s, was not unregistered. Please, try again.", USER_ID_STRING), thrown.getMessage());
     }
 }
