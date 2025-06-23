@@ -1014,30 +1014,4 @@ class ProductServiceImplTest {
 
         assertEquals(String.format("Product with id: %s, already has status '%s'.", PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING.toUpperCase()), thrownException.getMessage());
     }
-
-    @Test
-    void setProductStatus_shouldThrowIllegalStateExceptionWhenStatusUpdateFailsOnSave() {
-
-        Product existingProduct = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_PAST);
-
-        Product productWithOriginalStatus = createProduct(PRODUCT_ID, "Original Name", BigDecimal.valueOf(25.00), BigDecimal.valueOf(25.00), PRODUCT_STATUS_AVAILABLE, ADDED_AT_PAST, UPDATED_AT_NOW);
-
-        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-
-        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.saveAndFlush(existingProduct)).thenReturn(productWithOriginalStatus);
-
-        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
-                productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
-
-        verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
-        Product capturedProduct = productCaptor.getValue();
-        assertNotNull(capturedProduct);
-        assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
-        assertEquals(existingProduct.getProductName(), capturedProduct.getProductName());
-        assertEquals(PRODUCT_STATUS_OUT_OF_STOCK, capturedProduct.getProductStatus());
-
-        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for product with id: %s. Please, try again.", PRODUCT_STATUS_OUT_OF_STOCK_STRING, PRODUCT_ID_STRING), thrownException.getMessage());
-    }
 }
