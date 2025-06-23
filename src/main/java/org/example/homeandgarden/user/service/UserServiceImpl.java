@@ -84,12 +84,8 @@ public class UserServiceImpl implements UserService {
         existingUser.setUserRole(role);
         User promotedUser = userRepository.saveAndFlush(existingUser);
 
-        if (!promotedUser.getUserRole().equals(role)) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and userRole '%s' was not set for user with id: %s. Please, try again.", userRole, userId));
-        }
-
         return MessageResponse.builder()
-                .message(String.format("UserRole %s was set for user with id: %s.", userRole, userId))
+                .message(String.format("UserRole %s was set for user with id: %s.", promotedUser.getUserRole().name(), promotedUser.getUserId().toString()))
                 .build();
     }
 
