@@ -88,11 +88,8 @@ public class CategoryServiceImpl implements CategoryService {
         existingCategory.setCategoryStatus(status);
         Category updatedCategory = categoryRepository.saveAndFlush(existingCategory);
 
-        if (!updatedCategory.getCategoryStatus().equals(status)) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and status '%s' was not set for category with id: %s. Please, try again.", categoryStatus.toUpperCase(), categoryId));
-        }
         return MessageResponse.builder()
-                .message(String.format("Status '%s' was set for category with id: %s.", categoryStatus.toUpperCase(), categoryId))
+                .message(String.format("Status '%s' was set for category with id: %s.", updatedCategory.getCategoryStatus().name(), updatedCategory.getCategoryId().toString()))
                 .build();
     }
 }
