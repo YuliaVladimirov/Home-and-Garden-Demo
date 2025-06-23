@@ -138,12 +138,8 @@ public class UserServiceImpl implements UserService {
         existingUser.setIsEnabled(Boolean.FALSE);
         User unregisteredUser = userRepository.saveAndFlush(existingUser);
 
-        if (unregisteredUser.getIsEnabled()){
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and user with id: %s, was not unregistered. Please, try again.", userId));
-        }
-
         return MessageResponse.builder()
-                .message(String.format("User with id: %s, has been unregistered.", userId))
+                .message(String.format("User with id: %s, has been unregistered.", unregisteredUser.getUserId().toString()))
                 .build();
     }
 }
