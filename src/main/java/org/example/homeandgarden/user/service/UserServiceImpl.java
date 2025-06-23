@@ -105,12 +105,8 @@ public class UserServiceImpl implements UserService {
 
         User lockedUser = userRepository.saveAndFlush(existingUser);
 
-        if (lockedUser.getIsNonLocked().equals(lockState)) {
-            throw new IllegalStateException(String.format("An error occurred while %s the user with id: %s. Please try again.", lockState ? "locking" : "unlocking", userId));
-        }
-
         return MessageResponse.builder()
-                .message(String.format("User with id: %s has been %s.", userId, lockState ? "locked" : "unlocked"))
+                .message(String.format("User with id: %s has been %s.", lockedUser.getUserId().toString(), lockState ? "locked" : "unlocked"))
                 .build();
     }
 
