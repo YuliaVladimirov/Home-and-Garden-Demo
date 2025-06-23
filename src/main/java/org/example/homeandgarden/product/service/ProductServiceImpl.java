@@ -156,12 +156,8 @@ public class ProductServiceImpl implements ProductService {
         existingProduct.setProductStatus(status);
         Product updatedProduct = productRepository.saveAndFlush(existingProduct);
 
-        if (!updatedProduct.getProductStatus().equals(ProductStatus.valueOf(productStatus))) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and status '%s' was not set for product with id: %s. Please, try again.", productStatus, productId));
-        }
-
         return MessageResponse.builder()
-                .message(String.format("Status '%s' was set for the product with id: %s.", productStatus, productId))
+                .message(String.format("Status '%s' was set for the product with id: %s.", updatedProduct.getProductStatus().name(), updatedProduct.getProductId().toString()))
                 .build();
     }
 }
