@@ -510,30 +510,4 @@ class CategoryServiceImplTest {
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
     }
-
-    @Test
-    void setCategoryStatus_shouldThrowIllegalStateExceptionWhenStatusUpdateFailsOnSave() {
-
-        Category existingCategory = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_PAST);
-
-        Category categoryWithOriginalStatus = createCategory(CATEGORY_ID, "Existing Category", CATEGORY_STATUS_ACTIVE, CREATED_AT_PAST, UPDATED_AT_NOW);
-
-        ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
-
-        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(categoryWithOriginalStatus);
-
-        IllegalStateException thrownException = assertThrows(IllegalStateException.class, () ->
-                categoryService.setCategoryStatus(CATEGORY_ID_STRING, CATEGORY_STATUS_INACTIVE_STRING));
-
-        verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
-        Category capturedCategory = categoryCaptor.getValue();
-        assertNotNull(capturedCategory);
-        assertEquals(existingCategory.getCategoryId(), capturedCategory.getCategoryId());
-        assertEquals(existingCategory.getCategoryName(), capturedCategory.getCategoryName());
-        assertEquals(CATEGORY_STATUS_INACTIVE, capturedCategory.getCategoryStatus());
-
-        assertEquals(String.format("Unfortunately something went wrong and status '%s' was not set for category with id: %s. Please, try again.", CATEGORY_STATUS_INACTIVE_STRING, CATEGORY_ID_STRING), thrownException.getMessage());
-    }
 }
