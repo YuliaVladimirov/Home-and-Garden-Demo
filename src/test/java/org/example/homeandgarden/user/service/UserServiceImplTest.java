@@ -57,7 +57,7 @@ class UserServiceImplTest {
     private final String USER_ID_STRING = USER_ID.toString();
     private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
     private final String NON_EXISTING_USER_ID_STRING = NON_EXISTING_USER_ID.toString();
-    private final String INVALID_USER_ID = "Invalid UUID";
+    private final String INVALID_ID = "Invalid UUID";
 
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
     private final UserRole USER_ROLE_ADMIN = UserRole.ADMINISTRATOR;
@@ -66,59 +66,9 @@ class UserServiceImplTest {
     private final String PASSWORD = "Raw Password";
     private final String PASSWORD_HASH = "Hashed Password";
 
+    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
     private final Instant UPDATED_AT_NOW = Instant.now();
     private final Instant REGISTERED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-
-    UserUpdateRequest createUserUpdateRequest(String firstName, String lastName) {
-        return UserUpdateRequest.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .build();
-    }
-
-    private User createUser(UUID id, String email, String passwordHash, String firstName, String lastName, UserRole userRole, Boolean isEnabled,Boolean isNonLocked, Instant registeredAt, Instant updatedAt) {
-        return User.builder()
-                .userId(id)
-                .email(email)
-                .passwordHash(passwordHash)
-                .firstName(firstName)
-                .lastName(lastName)
-                .userRole(userRole)
-                .isEnabled(isEnabled)
-                .isNonLocked(isNonLocked)
-                .registeredAt(registeredAt)
-                .updatedAt(updatedAt)
-                .build();
-    }
-
-    private UserResponse createUserResponse(UUID id, String email, String firstName, String lastName, UserRole userRole, Instant registeredAt, Instant updatedAt) {
-        return UserResponse.builder()
-                .userId(id)
-                .email(email)
-                .firstName(firstName)
-                .lastName(lastName)
-                .userRole(userRole)
-                .registeredAt(registeredAt)
-                .updatedAt(updatedAt)
-                .build();
-    }
-
-    private UserResponse createUserResponseDetailed(UUID id, String email, String firstName, String lastName, UserRole userRole, Boolean isEnabled, Boolean isNonLocked, Instant registeredAt, Instant updatedAt) {
-        return UserResponse.builder()
-                .userId(id)
-                .email(email)
-                .firstName(firstName)
-                .lastName(lastName)
-                .userRole(userRole)
-                .isEnabled(isEnabled)
-                .isNonLocked(isNonLocked)
-                .registeredAt(registeredAt)
-                .updatedAt(updatedAt)
-                .build();
-    }
-
-
 
     @Test
     void getUsersByStatus_shouldReturnPagedModelOfEnabledAndNonLockedUsers() {
@@ -128,16 +78,59 @@ class UserServiceImplTest {
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        User user1 = createUser(USER_1_ID, "Email One ", "Password One", "First Name One", "Last Name One", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user1 = User.builder()
+                .userId(USER_1_ID)
+                .email("Email One")
+                .passwordHash("Hashed Password One")
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User user2 = createUser(USER_2_ID, "Email Two", "Password Two", "First Name Two", "Last Name Two", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user2 = User.builder()
+                .userId(USER_2_ID)
+                .email("Email Two")
+                .passwordHash("Hashed Password Two")
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         List<User> allUsers = List.of(user1, user2);
         Page<User> userPage = new PageImpl<>(allUsers, pageRequest, allUsers.size());
         long expectedTotalPages = (long) Math.ceil((double) allUsers.size() / SIZE);
 
-        UserResponse userResponseDetailed1 = createUserResponseDetailed(user1.getUserId(), user1.getEmail(), user1.getFirstName(), user1.getLastName(), user1.getUserRole(),  user1.getIsEnabled(), user1.getIsNonLocked(), user1.getRegisteredAt(), user1.getUpdatedAt());
-        UserResponse userResponseDetailed2 = createUserResponseDetailed(user2.getUserId(), user2.getEmail(), user2.getFirstName(), user2.getLastName(), user2.getUserRole(), user2.getIsEnabled(), user2.getIsNonLocked(), user2.getRegisteredAt(), user2.getUpdatedAt());
+        UserResponse userResponseDetailed1 = UserResponse.builder()
+                .userId(user1.getUserId())
+                .email(user1.getEmail())
+                .firstName(user1.getFirstName())
+                .lastName(user1.getLastName())
+                .userRole(user1.getUserRole())
+                .isEnabled(user1.getIsEnabled())
+                .isNonLocked(user1.getIsNonLocked())
+                .registeredAt(user1.getRegisteredAt())
+                .updatedAt(user1.getUpdatedAt())
+                .build();
+
+        UserResponse userResponseDetailed2 = UserResponse.builder()
+                .userId(user2.getUserId())
+                .email(user2.getEmail())
+                .firstName(user2.getFirstName())
+                .lastName(user2.getLastName())
+                .userRole(user2.getUserRole())
+                .isEnabled(user2.getIsEnabled())
+                .isNonLocked(user2.getIsNonLocked())
+                .registeredAt(user2.getRegisteredAt())
+                .updatedAt(user2.getUpdatedAt())
+                .build();
 
         when(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest)).thenReturn(userPage);
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
@@ -184,16 +177,59 @@ class UserServiceImplTest {
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        User user1 = createUser(USER_1_ID, "Email One ", "Password One", "First Name One", "Last Name One", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user1 = User.builder()
+                .userId(USER_1_ID)
+                .email("Email One")
+                .passwordHash("Hashed Password One")
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User user2 = createUser(USER_2_ID, "Email Two", "Password Two", "First Name Two", "Last Name Two", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user2 = User.builder()
+                .userId(USER_2_ID)
+                .email("Email Two")
+                .passwordHash("Hashed Password Two")
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         List<User> allUsers = List.of(user1, user2);
         Page<User> userPage = new PageImpl<>(allUsers, pageRequest, allUsers.size());
         long expectedTotalPages = (long) Math.ceil((double) allUsers.size() / SIZE);
 
-        UserResponse userResponseDetailed1 = createUserResponseDetailed(user1.getUserId(), user1.getEmail(), user1.getFirstName(), user1.getLastName(), user1.getUserRole(),  user1.getIsEnabled(), user1.getIsNonLocked(), user1.getRegisteredAt(), user1.getUpdatedAt());
-        UserResponse userResponseDetailed2 = createUserResponseDetailed(user2.getUserId(), user2.getEmail(), user2.getFirstName(), user2.getLastName(), user2.getUserRole(), user2.getIsEnabled(), user2.getIsNonLocked(), user2.getRegisteredAt(), user2.getUpdatedAt());
+        UserResponse userResponseDetailed1 = UserResponse.builder()
+                .userId(user1.getUserId())
+                .email(user1.getEmail())
+                .firstName(user1.getFirstName())
+                .lastName(user1.getLastName())
+                .userRole(user1.getUserRole())
+                .isEnabled(user1.getIsEnabled())
+                .isNonLocked(user1.getIsNonLocked())
+                .registeredAt(user1.getRegisteredAt())
+                .updatedAt(user1.getUpdatedAt())
+                .build();
+
+        UserResponse userResponseDetailed2 = UserResponse.builder()
+                .userId(user2.getUserId())
+                .email(user2.getEmail())
+                .firstName(user2.getFirstName())
+                .lastName(user2.getLastName())
+                .userRole(user2.getUserRole())
+                .isEnabled(user2.getIsEnabled())
+                .isNonLocked(user2.getIsNonLocked())
+                .registeredAt(user2.getRegisteredAt())
+                .updatedAt(user2.getUpdatedAt())
+                .build();
 
         when(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest)).thenReturn(userPage);
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
@@ -240,16 +276,59 @@ class UserServiceImplTest {
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        User user1 = createUser(USER_1_ID, "Email One ", "Password One", "First Name One", "Last Name One", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user1 = User.builder()
+                .userId(USER_1_ID)
+                .email("Email One")
+                .passwordHash("Hashed Password One")
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User user2 = createUser(USER_2_ID, "Email Two", "Password Two", "First Name Two", "Last Name Two", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user2 = User.builder()
+                .userId(USER_2_ID)
+                .email("Email Two")
+                .passwordHash("Hashed Password Two")
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         List<User> allUsers = List.of(user1, user2);
         Page<User> userPage = new PageImpl<>(allUsers, pageRequest, allUsers.size());
         long expectedTotalPages = (long) Math.ceil((double) allUsers.size() / SIZE);
 
-        UserResponse userResponseDetailed1 = createUserResponseDetailed(user1.getUserId(), user1.getEmail(), user1.getFirstName(), user1.getLastName(), user1.getUserRole(),  user1.getIsEnabled(), user1.getIsNonLocked(), user1.getRegisteredAt(), user1.getUpdatedAt());
-        UserResponse userResponseDetailed2 = createUserResponseDetailed(user2.getUserId(), user2.getEmail(), user2.getFirstName(), user2.getLastName(), user2.getUserRole(), user2.getIsEnabled(), user2.getIsNonLocked(), user2.getRegisteredAt(), user2.getUpdatedAt());
+        UserResponse userResponseDetailed1 = UserResponse.builder()
+                .userId(user1.getUserId())
+                .email(user1.getEmail())
+                .firstName(user1.getFirstName())
+                .lastName(user1.getLastName())
+                .userRole(user1.getUserRole())
+                .isEnabled(user1.getIsEnabled())
+                .isNonLocked(user1.getIsNonLocked())
+                .registeredAt(user1.getRegisteredAt())
+                .updatedAt(user1.getUpdatedAt())
+                .build();
+
+        UserResponse userResponseDetailed2 = UserResponse.builder()
+                .userId(user2.getUserId())
+                .email(user2.getEmail())
+                .firstName(user2.getFirstName())
+                .lastName(user2.getLastName())
+                .userRole(user2.getUserRole())
+                .isEnabled(user2.getIsEnabled())
+                .isNonLocked(user2.getIsNonLocked())
+                .registeredAt(user2.getRegisteredAt())
+                .updatedAt(user2.getUpdatedAt())
+                .build();
 
         when(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest)).thenReturn(userPage);
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
@@ -296,16 +375,59 @@ class UserServiceImplTest {
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
-        User user1 = createUser(USER_1_ID, "Email One ", "Password One", "First Name One", "Last Name One", USER_ROLE_CLIENT, false,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user1 = User.builder()
+                .userId(USER_1_ID)
+                .email("Email One")
+                .passwordHash("Hashed Password One")
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User user2 = createUser(USER_2_ID, "Email Two", "Password Two", "First Name Two", "Last Name Two", USER_ROLE_CLIENT, false,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User user2 = User.builder()
+                .userId(USER_2_ID)
+                .email("Email Two")
+                .passwordHash("Hashed Password Two")
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         List<User> allUsers = List.of(user1, user2);
         Page<User> userPage = new PageImpl<>(allUsers, pageRequest, allUsers.size());
         long expectedTotalPages = (long) Math.ceil((double) allUsers.size() / SIZE);
 
-        UserResponse userResponseDetailed1 = createUserResponseDetailed(user1.getUserId(), user1.getEmail(), user1.getFirstName(), user1.getLastName(), user1.getUserRole(),  user1.getIsEnabled(), user1.getIsNonLocked(), user1.getRegisteredAt(), user1.getUpdatedAt());
-        UserResponse userResponseDetailed2 = createUserResponseDetailed(user2.getUserId(), user2.getEmail(), user2.getFirstName(), user2.getLastName(), user2.getUserRole(), user2.getIsEnabled(), user2.getIsNonLocked(), user2.getRegisteredAt(), user2.getUpdatedAt());
+        UserResponse userResponseDetailed1 = UserResponse.builder()
+                .userId(user1.getUserId())
+                .email(user1.getEmail())
+                .firstName(user1.getFirstName())
+                .lastName(user1.getLastName())
+                .userRole(user1.getUserRole())
+                .isEnabled(user1.getIsEnabled())
+                .isNonLocked(user1.getIsNonLocked())
+                .registeredAt(user1.getRegisteredAt())
+                .updatedAt(user1.getUpdatedAt())
+                .build();
+
+        UserResponse userResponseDetailed2 = UserResponse.builder()
+                .userId(user2.getUserId())
+                .email(user2.getEmail())
+                .firstName(user2.getFirstName())
+                .lastName(user2.getLastName())
+                .userRole(user2.getUserRole())
+                .isEnabled(user2.getIsEnabled())
+                .isNonLocked(user2.getIsNonLocked())
+                .registeredAt(user2.getRegisteredAt())
+                .updatedAt(user2.getUpdatedAt())
+                .build();
 
         when(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest)).thenReturn(userPage);
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
@@ -376,17 +498,36 @@ class UserServiceImplTest {
     @Test
     void getUserById_shouldReturnUserResponseWhenUserExists() {
 
-        User user = createUser(USER_ID, "Email", "Password", "First Name", "Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        UserResponse userResponse = createUserResponse(user.getUserId(), user.getEmail(), user.getFirstName(), user.getLastName(), user.getUserRole(),  user.getRegisteredAt(), user.getUpdatedAt());
+        UserResponse userResponse = UserResponse.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .firstName(existingUser.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(existingUser.getUserRole())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(existingUser.getUpdatedAt())
+                .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userMapper.userToResponse(user)).thenReturn(userResponse);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userMapper.userToResponse(existingUser)).thenReturn(userResponse);
 
         UserResponse actualResponse = userService.getUserById(USER_ID_STRING);
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userMapper, times(1)).userToResponse(user);
+        verify(userMapper, times(1)).userToResponse(existingUser);
 
         assertEquals(userResponse.getUserId(), actualResponse.getUserId());
         assertEquals(userResponse.getEmail(), actualResponse.getEmail());
@@ -412,7 +553,7 @@ class UserServiceImplTest {
     @Test
     void getUserById_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> userService.getUserById(INVALID_USER_ID));
+        assertThrows(IllegalArgumentException.class, () -> userService.getUserById(INVALID_ID));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userMapper, never()).userToResponse(any(User.class));
@@ -422,13 +563,46 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldUpdateUserSuccessfullyWhenUserExistsAndIsEnabledAndNonLocked() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  "Updated Last Name");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Original Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User updatedUser = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), updateRequest.getFirstName(), updateRequest.getLastName(), existingUser.getUserRole(), existingUser.getIsEnabled(),existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User updatedUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName(updateRequest.getFirstName())
+                .lastName(updateRequest.getLastName())
+                .userRole(existingUser.getUserRole())
+                .isEnabled(existingUser.getIsEnabled())
+                .isNonLocked(existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
-        UserResponse userResponse = createUserResponse(updatedUser.getUserId(), updatedUser.getEmail(), updatedUser.getFirstName(), updatedUser.getLastName(), updatedUser.getUserRole(),  updatedUser.getRegisteredAt(), updatedUser.getUpdatedAt());
+        UserResponse userResponse = UserResponse.builder()
+                .userId(updatedUser.getUserId())
+                .email(updatedUser.getEmail())
+                .firstName(updatedUser.getFirstName())
+                .lastName(updatedUser.getLastName())
+                .userRole(updatedUser.getUserRole())
+                .registeredAt(updatedUser.getRegisteredAt())
+                .updatedAt(updatedUser.getUpdatedAt())
+                .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -468,13 +642,46 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldUpdateOnlyProvidedFieldsAndReturnUpdatedUserResponse() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  null);
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName(null)
+                .build();
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Original Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User updatedUser = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), updateRequest.getFirstName(), existingUser.getLastName(), existingUser.getUserRole(), existingUser.getIsEnabled(),existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User updatedUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName(updateRequest.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(existingUser.getUserRole())
+                .isEnabled(existingUser.getIsEnabled())
+                .isNonLocked(existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
-        UserResponse userResponse = createUserResponse(updatedUser.getUserId(), updatedUser.getEmail(), updatedUser.getFirstName(), updatedUser.getLastName(), updatedUser.getUserRole(),  updatedUser.getRegisteredAt(), updatedUser.getUpdatedAt());
+        UserResponse userResponse = UserResponse.builder()
+                .userId(updatedUser.getUserId())
+                .email(updatedUser.getEmail())
+                .firstName(updatedUser.getFirstName())
+                .lastName(updatedUser.getLastName())
+                .userRole(updatedUser.getUserRole())
+                .registeredAt(updatedUser.getRegisteredAt())
+                .updatedAt(updatedUser.getUpdatedAt())
+                .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -514,7 +721,10 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  "Updated Last Name");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
 
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
@@ -530,9 +740,12 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  "Updated Last Name");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
 
-        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(INVALID_USER_ID, updateRequest));
+        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(INVALID_ID, updateRequest));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -542,9 +755,23 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  "Updated Last Name");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Original Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -560,9 +787,23 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
 
-        UserUpdateRequest updateRequest = createUserUpdateRequest("Updated First Name",  "Updated Last Name");
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Original Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -578,9 +819,31 @@ class UserServiceImplTest {
     @Test
     void setUserRole_shouldSetUserRoleSuccessfullyWhenUserExistsAndIsEnabledAndNonLocked() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User updatedUser = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), existingUser.getFirstName(), existingUser.getLastName(), USER_ROLE_ADMIN, existingUser.getIsEnabled(),existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User updatedUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName(existingUser.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(USER_ROLE_ADMIN)
+                .isEnabled(existingUser.getIsEnabled())
+                .isNonLocked(existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
         MessageResponse messageResponse = MessageResponse.builder()
                 .message(String.format("UserRole %s was set for user with id: %s.", USER_ROLE_ADMIN_STRING, USER_ID_STRING))
@@ -615,7 +878,7 @@ class UserServiceImplTest {
     @Test
     void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(INVALID_USER_ID, USER_ROLE_ADMIN_STRING));
+        assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(INVALID_ID, USER_ROLE_ADMIN_STRING));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -638,7 +901,18 @@ class UserServiceImplTest {
     @Test
     void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -653,7 +927,18 @@ class UserServiceImplTest {
     @Test
     void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -670,7 +955,18 @@ class UserServiceImplTest {
 
         String sameRole = UserRole.CLIENT.toString();
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -685,9 +981,31 @@ class UserServiceImplTest {
     @Test
     void toggleLockState_shouldLockUserWhenUserIsEnabledAndNonLocked() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User updatedUser = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), existingUser.getFirstName(), existingUser.getLastName(), existingUser.getUserRole(), existingUser.getIsEnabled(),!existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User updatedUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName(existingUser.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(existingUser.getUserRole())
+                .isEnabled(existingUser.getIsEnabled())
+                .isNonLocked(!existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -722,9 +1040,31 @@ class UserServiceImplTest {
     @Test
     void toggleLockState_shouldUnlockUserWhenUserIsEnabledAndLocked() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User updatedUser = createUser(existingUser.getUserId(), existingUser.getEmail(), existingUser.getPasswordHash(), existingUser.getFirstName(), existingUser.getLastName(), existingUser.getUserRole(), existingUser.getIsEnabled(),!existingUser.getIsNonLocked(), existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User updatedUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName(existingUser.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(existingUser.getUserRole())
+                .isEnabled(existingUser.getIsEnabled())
+                .isNonLocked(!existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -759,7 +1099,7 @@ class UserServiceImplTest {
     @Test
     void toggleLockState_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(INVALID_USER_ID));
+        assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(INVALID_ID));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userMapper, never()).userToResponse(any(User.class));
@@ -782,7 +1122,18 @@ class UserServiceImplTest {
     @Test
     void toggleLockState_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
 
-        User existingUser = createUser(USER_ID, "Original Email", "Original Password", "Original First Name", "Original Last Name", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
@@ -797,11 +1148,36 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldSucceedWhenUserIsValidAndNotLockedAndPasswordsMatch() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword(PASSWORD)
+                .build();
 
-        User existingUser = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
-        User unregisteredUser = createUser(existingUser.getUserId(), String.format("%s@example.com", existingUser.getUserId()), PASSWORD_HASH, "Deleted User", "Deleted User", USER_ROLE_CLIENT, false,true, existingUser.getRegisteredAt(), UPDATED_AT_NOW);
+        User unregisteredUser = User.builder()
+                .userId(existingUser.getUserId())
+                .email(String.format("%s@example.com", existingUser.getUserId()))
+                .passwordHash(existingUser.getPasswordHash())
+                .firstName("Deleted User")
+                .lastName("Deleted User")
+                .userRole(existingUser.getUserRole())
+                .isEnabled(false)
+                .isNonLocked(existingUser.getIsNonLocked())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(UPDATED_AT_NOW)
+                .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
@@ -829,7 +1205,10 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, "wrongConfirmPassword");
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword("wrongPassword")
+                .build();
 
         BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.unregisterUser(USER_ID_STRING, request));
 
@@ -843,9 +1222,12 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword(PASSWORD)
+                .build();
 
-        assertThrows(IllegalArgumentException.class, () -> userService.unregisterUser(INVALID_USER_ID, request));
+        assertThrows(IllegalArgumentException.class, () -> userService.unregisterUser(INVALID_ID, request));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(passwordEncoder, never()).matches(anyString(), anyString());
@@ -855,7 +1237,10 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword(PASSWORD)
+                .build();
 
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
@@ -872,10 +1257,25 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowBadCredentialsExceptionWhenPasswordIncorrect() {
 
-        String invalidPassword = "INVALID_PASSWORD";
-        UserUnregisterRequest request = new UserUnregisterRequest(invalidPassword, invalidPassword);
+        String invalidPassword = "Invalid Password";
 
-        User existingUser = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(invalidPassword)
+                .confirmPassword(invalidPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
@@ -894,9 +1294,23 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword(PASSWORD)
+                .build();
 
-        User lockedUser = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, true,false, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User lockedUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(lockedUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
@@ -914,9 +1328,23 @@ class UserServiceImplTest {
     @Test
     void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIsAlreadyUnregistered() {
 
-        UserUnregisterRequest request = new UserUnregisterRequest(PASSWORD, PASSWORD);
+        UserUnregisterRequest request = UserUnregisterRequest.builder()
+                .password(PASSWORD)
+                .confirmPassword(PASSWORD)
+                .build();
 
-        User unregisteredUser = createUser(USER_ID, "Original Email", PASSWORD_HASH, "Original First Name", "Original Last Name", USER_ROLE_CLIENT, false,true, REGISTERED_AT_PAST, UPDATED_AT_PAST);
+        User unregisteredUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(REGISTERED_AT_PAST)
+                .updatedAt(UPDATED_AT_PAST)
+                .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(unregisteredUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
