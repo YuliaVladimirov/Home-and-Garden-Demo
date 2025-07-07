@@ -45,15 +45,13 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
         http.sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
 
-        http.authorizeHttpRequests(authorizeRequests -> {
-            authorizeRequests
-                    .requestMatchers(HttpMethod.GET, "/products/status", "/products/top", "/products/pending", "/products/profit").authenticated()
-                    .requestMatchers(HttpMethod.GET, "/categories", "/categories/*/products", "/products/*").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/auth/register","/auth/login", "/auth/token" ).permitAll()
-                    .requestMatchers("/manage/**", "/swagger-ui.html", "/swagger-ui/**", "/api/v1/auth/**", "/v3/api-docs/**").permitAll()
-                    .anyRequest()
-                    .authenticated();
-        });
+        http.authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                .requestMatchers(HttpMethod.GET, "/products/status", "/products/top", "/products/pending", "/products/profit").authenticated()
+                .requestMatchers(HttpMethod.GET, "/categories", "/categories/*/products", "/products/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/register","/auth/login", "/auth/token" ).permitAll()
+                .requestMatchers("/manage/**", "/swagger-ui.html", "/swagger-ui/**", "/api/v1/auth/**", "/v3/api-docs/**").permitAll()
+                .anyRequest()
+                .authenticated());
 
 //        http.anonymous(AbstractHttpConfigurer::disable);//To disable anonymous authentication in Spring Security
 
@@ -71,7 +69,7 @@ public class SecurityConfig {
                         .addLogoutHandler(customLogoutHandler)
                         .logoutSuccessHandler((request, response, authentication) -> {
                             MessageResponse messageResponse = new MessageResponse(
-                                    "Logout successful");
+                                    "Logout successful.");
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.getWriter().write(objectMapper.writeValueAsString(messageResponse));
                             SecurityContextHolder.clearContext();
@@ -82,8 +80,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-    //later add cors
 
     @Bean
     public PasswordEncoder passwordEncoder() {
