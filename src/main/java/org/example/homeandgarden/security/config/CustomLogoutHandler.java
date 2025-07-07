@@ -26,21 +26,27 @@ public class CustomLogoutHandler implements LogoutHandler {
 
         String accessToken = jwtService.getTokenFromRequestHeader(request);
 
-        if (accessToken == null) {
-            throw new BadCredentialsException("Access token is null.");
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new BadCredentialsException("Access token is missing or empty.");
         }
 
-        if(jwtService.isAccessTokenValid(accessToken)) {
-            String email = jwtService.getUserEmailFromAccessToken(accessToken);
-
-            User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException((String.format("User with email: %s, was not found.", email))));
-            existingUser.setRefreshToken(null);
-            User updatedUser = userRepository.saveAndFlush(existingUser);
-
-            if (updatedUser.getRefreshToken() != null) {
-                throw new IllegalStateException("Something went wrong, refresh token is not deleted from database.");
-            }
+        if (!jwtService.isAccessTokenValid(accessToken)) {
+            throw new BadCredentialsException("Invalid or expired access token.");
         }
+
+        String email = jwtService.getUserEmailFromAccessToken(accessToken);
+        if (email == null) {
+            throw new BadCredentialsException("Token does not contain a user identifier.");
+        }
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException((String.format("User with email: %s, was not found.", email))));
+
+        if (existingUser.getRefreshToken() == null) {
+            throw new BadCredentialsException("User is already logged out. No action needed.");
+        }
+
+        existingUser.setRefreshToken(null);
+        userRepository.saveAndFlush(existingUser);
     }
 }
 
