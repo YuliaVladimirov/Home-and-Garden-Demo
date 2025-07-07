@@ -3,6 +3,7 @@ package org.example.homeandgarden.wishlist.service;
 import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.product.entity.Product;
+import org.example.homeandgarden.product.entity.enums.ProductStatus;
 import org.example.homeandgarden.product.mapper.ProductMapper;
 import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.user.entity.User;
@@ -47,7 +48,6 @@ public class WishListServiceImpl implements WishListService {
 
         return new PagedModel<>(wishListPage.map((item) -> wishListMapper.wishListItemToResponse(item,
                 productMapper.productToResponse(item.getProduct()))));
-
     }
 
 
@@ -55,16 +55,20 @@ public class WishListServiceImpl implements WishListService {
     @Transactional
     public WishListItemResponse addWishListItem(WishListItemRequest wishListItemRequest) {
         UUID id = UUID.fromString(wishListItemRequest.getUserId());
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("User with id: %s, was not found.", wishListItemRequest.getUserId())));
+        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", wishListItemRequest.getUserId())));
         UUID productId = UUID.fromString(wishListItemRequest.getProductId());
-        Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException (String.format("Product with id: %s, was not found.", wishListItemRequest.getProductId())));
+        Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException(String.format("Product with id: %s, was not found.", wishListItemRequest.getProductId())));
+
+        if (!existingProduct.getProductStatus().equals(ProductStatus.AVAILABLE)) {
+            throw new IllegalArgumentException(String.format("Product with id: %s has status '%s' and can not be added to the wish list.", existingProduct.getProductId(), existingProduct.getProductStatus().name()));
+        }
 
         Set<WishListItem> wishList = existingUser.getWishList();
-                for (WishListItem item : wishList) {
-                    if (item.getProduct().getProductId().equals(productId)) {
-                        throw new DataAlreadyExistsException(String.format("This product with id: %s is already in wish list.", wishListItemRequest.getProductId()));
-                    }
-                }
+        for (WishListItem item : wishList) {
+            if (item.getProduct().getProductId().equals(productId)) {
+                throw new DataAlreadyExistsException(String.format("Product with id: %s is already in wish list.", wishListItemRequest.getProductId()));
+            }
+        }
         WishListItem wishListItemToAdd = wishListMapper.requestToWishListItem(existingUser, existingProduct);
         WishListItem addedWishListItem = wishListRepository.saveAndFlush(wishListItemToAdd);
 
@@ -76,12 +80,9 @@ public class WishListServiceImpl implements WishListService {
     public MessageResponse removeWishListItem(String wishListItemId) {
 
         UUID id = UUID.fromString(wishListItemId);
-        WishListItem existingWishListItem = wishListRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("Wishlist item with id: %s, was not found.", wishListItemId)));
-        wishListRepository.delete(existingWishListItem);
+        WishListItem existingWishListItem = wishListRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Wishlist item with id: %s, was not found.", wishListItemId)));
 
-        if (wishListRepository.existsById(id)) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and wishlist item with id: %s, was not removed. Please, try again.", wishListItemId));
-        }
+        wishListRepository.delete(existingWishListItem);
 
         return MessageResponse.builder()
                 .message(String.format("Wishlist item with id: %s, has been removed from wishlist.", wishListItemId))
