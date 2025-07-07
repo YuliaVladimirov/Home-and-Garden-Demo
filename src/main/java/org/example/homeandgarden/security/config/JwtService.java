@@ -1,9 +1,6 @@
 package org.example.homeandgarden.security.config;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,16 +39,26 @@ public class JwtService {
         final String token = request.getHeader("Authorization");
 
         if (token != null && token.startsWith("Bearer ")) {
-            return token.substring(7);
+            return token.substring(7).trim();
         }
         return null;
     }
 
     public String getUserEmailFromToken(String token, String secretKey) {
-        return Jwts.parser()
-                .verifyWith((SecretKey) getSignigKey(secretKey))
-                .build().parseSignedClaims(token)
-                .getPayload().getSubject();
+        try {
+            return Jwts.parser()
+                    .verifyWith((SecretKey) getSignigKey(secretKey))
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload().getSubject();
+
+        } catch (JwtException | IllegalArgumentException exception) {
+            log.warn("⚠️ Error: {} | Message: {}", exception.getClass().getSimpleName(), exception.getMessage());
+            throw new BadCredentialsException(String.format("%s (origin: %s)", exception.getMessage(), exception.getClass().getSimpleName()));
+        } catch (Exception exception) {
+            log.error("⚠️ Error: {} | Message: {}", exception.getClass().getSimpleName(), exception.getMessage());
+            throw new BadCredentialsException(String.format("%s (origin: %s)", exception.getMessage(), exception.getClass().getSimpleName()));
+        }
     }
 
     public String getUserEmailFromAccessToken(String token) {
@@ -87,35 +94,32 @@ public class JwtService {
                 .compact();
     }
 
-
-
     public boolean isTokenValid(String token, String secretKey) {
         try {
             Jwts.parser()
                     .verifyWith((SecretKey) getSignigKey(secretKey))
                     .build().parseSignedClaims(token);
             return true;
-        } catch (MalformedJwtException exception) {
-            log.error("Invalid JWT token: {}", exception.getMessage());
-            throw exception ;
-        } catch (ExpiredJwtException exception) {
-            log.error("JWT token is expired: {}", exception.getMessage());
-            throw exception ;
-        } catch (UnsupportedJwtException exception) {
-            log.error("JWT token is unsupported: {}", exception.getMessage());
-            throw exception;
-        } catch (IllegalArgumentException exception) {
-            log.error("JWT claims string is empty: {}", exception.getMessage());
-            throw exception;
+        } catch (JwtException | IllegalArgumentException exception) {
+            log.warn("⚠️ Error: {} | Message: {}", exception.getClass().getSimpleName(), exception.getMessage());
+            return false;
+        } catch (Exception exception) {
+            log.error("⚠️ Error: {} | Message: {}", exception.getClass().getSimpleName(), exception.getMessage());
+            return false;
         }
     }
 
     public boolean isAccessTokenValid(String accessToken) {
 
         if (isTokenValid(accessToken, accessTokenSecretKey)) {
+
             String email = getUserEmailFromAccessToken(accessToken);
-            if(!userRepository.existsByEmail(email)){
-                throw new BadCredentialsException("User email does not match the one in the database.");
+            if (email == null) {
+                throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
+            }
+
+            if (!userRepository.existsByEmail(email)) {
+                throw new BadCredentialsException("User email does not match the one in the database. Please log in again.");
             }
             return true;
         }
@@ -125,9 +129,14 @@ public class JwtService {
     public boolean isRefreshTokenValid(String refreshToken) {
 
         if (isTokenValid(refreshToken, refreshTokenSecretKey)) {
+
             String email = getUserEmailFromRefreshToken(refreshToken);
-            if(!userRepository.existsByEmailAndRefreshToken(email, refreshToken)){
-                throw new BadCredentialsException("Email or refresh token do not match those in the database.");
+            if (email == null) {
+                throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
+            }
+
+            if (!userRepository.existsByEmailAndRefreshToken(email, refreshToken)) {
+                throw new BadCredentialsException("Email or refresh token do not match those in the database. Please log in again.");
             }
             return true;
         }
