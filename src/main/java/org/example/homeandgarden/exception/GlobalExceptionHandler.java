@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .toList();
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), errors, request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), errors, request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
                 .map(ConstraintViolation::getMessage)
                 .toList();
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), errors, request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), errors, request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleDataNotFoundException(DataNotFoundException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleDataAlreadyExistsException(DataAlreadyExistsException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -112,7 +112,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -125,10 +125,10 @@ public class GlobalExceptionHandler {
     /**
      * Handles errors when the application reaches an unexpected or invalid state.
      */
-    @ExceptionHandler(IllegalStateException .class)
+    @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(IllegalStateException  exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.error("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -144,7 +144,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MalformedJwtException.class)
     public ResponseEntity<ErrorResponse> handleMalformedJwtException(MalformedJwtException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -160,8 +160,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ErrorResponse> handleExpiredJwtException(ExpiredJwtException exception, HttpServletRequest request) {
 
-
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -177,7 +176,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnsupportedJwtException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedJwtException(UnsupportedJwtException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -193,7 +192,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -209,7 +208,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageConversionException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageConversion(HttpMessageConversionException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -232,7 +231,7 @@ public class GlobalExceptionHandler {
         } else if (cause instanceof MismatchedInputException) {
             handleMismatchedInputException((MismatchedInputException) cause, request);
         }
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -253,7 +252,7 @@ public class GlobalExceptionHandler {
                 exception.getOriginalMessage(),
                 exception.getTargetType().getSimpleName());
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), fullMessage, request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), fullMessage, request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -274,7 +273,7 @@ public class GlobalExceptionHandler {
                 exception.getOriginalMessage(),
                 exception.getTargetType().getSimpleName());
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), fullMessage, request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), fullMessage, request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -294,7 +293,7 @@ public class GlobalExceptionHandler {
                 exception.getName(),
                 exception.getRequiredType() != null ? exception.getRequiredType().getSimpleName() : "unknown");
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), message, request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), message, request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -310,7 +309,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(JsonMappingException.class)
     public ResponseEntity<ErrorResponse> handleException(JsonMappingException exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
@@ -325,9 +324,9 @@ public class GlobalExceptionHandler {
      * Re-throws errors to allow Spring Security's ExceptionTranslationFilter handle these and delegate to AuthenticationEntryPoint and AccessDeniedHandler.
      */
     @ExceptionHandler({ AuthenticationException.class, AccessDeniedException.class })
-    public void handleSecurityExceptions(Exception exception, HttpServletRequest request) throws Exception {
+    public void handleSecurityExceptions(Exception exception) throws Exception {
 
-        log.error(String.format("⚠️ GlobalExceptionHandler caught a security exception, re-throwing: %s", exception.getClass().getSimpleName()));
+        log.warn("⚠️ GlobalExceptionHandler caught a security exception, re-throwing: {}", exception.getClass().getSimpleName());
         throw exception;
     }
 
@@ -337,7 +336,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception exception, HttpServletRequest request) {
 
-        log.error(String.format("⚠️ Error: %s | Message: %s | Endpoint: %s", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI()));
+        log.error("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
 
         ErrorResponse errorResponse = new ErrorResponse(
                 exception.getClass().getSimpleName(),
