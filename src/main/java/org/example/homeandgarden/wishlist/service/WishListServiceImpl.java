@@ -56,6 +56,7 @@ public class WishListServiceImpl implements WishListService {
     public WishListItemResponse addWishListItem(WishListItemRequest wishListItemRequest) {
         UUID id = UUID.fromString(wishListItemRequest.getUserId());
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", wishListItemRequest.getUserId())));
+
         UUID productId = UUID.fromString(wishListItemRequest.getProductId());
         Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException(String.format("Product with id: %s, was not found.", wishListItemRequest.getProductId())));
 

@@ -8,6 +8,7 @@ import org.example.homeandgarden.cart.mapper.CartMapper;
 import org.example.homeandgarden.cart.repository.CartRepository;
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.product.entity.Product;
+import org.example.homeandgarden.product.entity.enums.ProductStatus;
 import org.example.homeandgarden.product.mapper.ProductMapper;
 import org.example.homeandgarden.product.repository.ProductRepository;
 import org.example.homeandgarden.shared.MessageResponse;
@@ -54,8 +55,13 @@ public class CartServiceImpl implements CartService {
 
         UUID id = UUID.fromString(cartItemCreateRequest.getUserId());
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", cartItemCreateRequest.getUserId())));
+
         UUID productId = UUID.fromString(cartItemCreateRequest.getProductId());
         Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException (String.format("Product with id: %s, was not found.", cartItemCreateRequest.getProductId())));
+
+        if (!existingProduct.getProductStatus().equals(ProductStatus.AVAILABLE)) {
+            throw new IllegalArgumentException(String.format("Product with id: %s has status '%s' and can not be added to the cart.", existingProduct.getProductId(), existingProduct.getProductStatus().name()));
+        }
 
         Set<CartItem> cart = existingUser.getCart();
         for (CartItem item : cart) {
@@ -65,8 +71,10 @@ public class CartServiceImpl implements CartService {
                 return cartMapper.cartItemToResponse(addedCartItem, productMapper.productToResponse(addedCartItem.getProduct()));
             }
         }
-        CartItem cartItemToAdd = cartMapper.createRequestToCartItem(cartItemCreateRequest, existingUser, existingProduct);
+
+        CartItem cartItemToAdd = cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, existingProduct);
         CartItem addedCartItem = cartRepository.saveAndFlush(cartItemToAdd);
+
         return cartMapper.cartItemToResponse(addedCartItem, productMapper.productToResponse(addedCartItem.getProduct()));
     }
 
@@ -88,11 +96,8 @@ public class CartServiceImpl implements CartService {
 
         UUID id = UUID.fromString(cartItemId);
         CartItem existingCartItem = cartRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Cart item with id: %s, was not found.", cartItemId)));
-        cartRepository.delete(existingCartItem);
 
-        if (cartRepository.existsById(id)) {
-            throw new IllegalStateException(String.format("Unfortunately something went wrong and cart item with id: %s, was not removed. Please, try again.", cartItemId));
-        }
+        cartRepository.delete(existingCartItem);
 
         return MessageResponse.builder()
                 .message(String.format("Cart item with id: %s, has been removed from cart.", cartItemId))

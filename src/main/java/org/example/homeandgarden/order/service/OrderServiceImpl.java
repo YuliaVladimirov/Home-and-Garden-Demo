@@ -33,13 +33,12 @@ import java.util.UUID;
 public class OrderServiceImpl implements OrderService{
 
     private final UserRepository userRepository;
+    private final CartRepository cartRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
-
-    private final CartRepository cartRepository;
 
     @Override
     public PagedModel<OrderResponse> getUserOrders(String userId, Integer size, Integer page, String order, String sortBy) {
@@ -79,10 +78,15 @@ public class OrderServiceImpl implements OrderService{
         UUID id = UUID.fromString(orderCreateRequest.getUserId());
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", orderCreateRequest.getUserId())));
 
+        Set<CartItem> cart = existingUser.getCart();
+
+        if(cart.isEmpty()){
+            throw new DataNotFoundException(String.format("Cannot place order: user with id %s has an empty cart.", orderCreateRequest.getUserId()));
+        }
+
         Order orderToAdd = orderMapper.orderRequestToOrder(orderCreateRequest, existingUser);
         Order addedOrder = orderRepository.saveAndFlush(orderToAdd);
 
-        Set<CartItem> cart = existingUser.getCart();
         for (CartItem cartItem : cart) {
             OrderItem orderItemToAdd = orderItemMapper.cartItemToOrderItem(cartItem,addedOrder,cartItem.getProduct());
 
@@ -109,6 +113,9 @@ public class OrderServiceImpl implements OrderService{
         if (finalStatuses.contains(existingOrder.getOrderStatus())) {
             throw new IllegalArgumentException(String.format("Order with id: %s is already in status '%s' and can not be updated.", orderId, existingOrder.getOrderStatus().name()));
         }
+
+        Optional.ofNullable(orderUpdateRequest.getFirstName()).ifPresent(existingOrder::setFirstName);
+        Optional.ofNullable(orderUpdateRequest.getLastName()).ifPresent(existingOrder::setLastName);
         Optional.ofNullable(orderUpdateRequest.getAddress()).ifPresent(existingOrder::setAddress);
         Optional.ofNullable(orderUpdateRequest.getZipCode()).ifPresent(existingOrder::setZipCode);
         Optional.ofNullable(orderUpdateRequest.getCity()).ifPresent(existingOrder::setCity);
@@ -157,8 +164,8 @@ public class OrderServiceImpl implements OrderService{
         switch (existingOrder.getOrderStatus()) {
             case OrderStatus.CREATED -> existingOrder.setOrderStatus(OrderStatus.PAID);
             case OrderStatus.PAID -> existingOrder.setOrderStatus(OrderStatus.ON_THE_WAY);
-            case ON_THE_WAY -> existingOrder.setOrderStatus(OrderStatus.DELIVERED);
-            case DELIVERED -> existingOrder.setOrderStatus(OrderStatus.RETURNED);
+            case OrderStatus.ON_THE_WAY -> existingOrder.setOrderStatus(OrderStatus.DELIVERED);
+            case OrderStatus.DELIVERED -> existingOrder.setOrderStatus(OrderStatus.RETURNED);
         }
 
         Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
