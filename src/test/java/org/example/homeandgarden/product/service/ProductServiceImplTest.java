@@ -51,17 +51,13 @@ class ProductServiceImplTest {
     private final String SORT_BY = "productName";
 
     private final UUID CATEGORY_ID = UUID.randomUUID();
-    private final String CATEGORY_ID_STRING = CATEGORY_ID.toString();
     private final UUID NON_EXISTING_CATEGORY_ID = UUID.randomUUID();
-    private final String NON_EXISTING_CATEGORY_ID_STRING = NON_EXISTING_CATEGORY_ID.toString();
 
     private final UUID PRODUCT_1_ID = UUID.randomUUID();
     private final UUID PRODUCT_2_ID = UUID.randomUUID();
 
     private final UUID PRODUCT_ID = UUID.randomUUID();
-    private final String PRODUCT_ID_STRING = PRODUCT_ID.toString();
     private final UUID NON_EXISTING_PRODUCT_ID = UUID.randomUUID();
-    private final String NON_EXISTING_PRODUCT_ID_STRING = NON_EXISTING_PRODUCT_ID.toString();
 
     private final String INVALID_ID = "Invalid UUID";
 
@@ -69,16 +65,12 @@ class ProductServiceImplTest {
     private final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
 
     private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
-    private final String PRODUCT_STATUS_AVAILABLE_STRING = PRODUCT_STATUS_AVAILABLE.name();
     private final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
-    private final String PRODUCT_STATUS_OUT_OF_STOCK_STRING = PRODUCT_STATUS_OUT_OF_STOCK.name();
+
     private final String INVALID_STATUS = "Invalid Status";
 
-    private final Instant CREATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant ADDED_AT_NOW = Instant.now();
-    private final Instant ADDED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant UPDATED_AT_NOW = Instant.now();
-    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant TIMESTAMP_NOW = Instant.now();
+    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
 
     private final BigDecimal MIN_PRICE = BigDecimal.valueOf(10.0);
     private final BigDecimal MAX_PRICE = BigDecimal.valueOf(50.0);
@@ -92,8 +84,8 @@ class ProductServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Product product1 = Product.builder()
@@ -102,8 +94,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(existingCategory)
                 .build();
 
         Product product2 = Product.builder()
@@ -112,8 +105,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(existingCategory)
                 .build();
 
         List<Product> products = List.of(product1, product2);
@@ -146,7 +140,7 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY);
+        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
@@ -188,14 +182,14 @@ class ProductServiceImplTest {
         when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                productService.getCategoryProducts(NON_EXISTING_CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
+                productService.getCategoryProducts(NON_EXISTING_CATEGORY_ID.toString(), MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(productRepository, never()).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
                 any(UUID.class), any(ProductStatus.class), any(BigDecimal.class), any(BigDecimal.class), any(Pageable.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
@@ -205,21 +199,21 @@ class ProductServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Disabled Category")
                 .categoryStatus(CATEGORY_STATUS_INACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(disabledCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-                productService.getCategoryProducts(CATEGORY_ID_STRING, MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
+                productService.getCategoryProducts(CATEGORY_ID.toString(), MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, never()).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
                 any(UUID.class), any(ProductStatus.class), any(BigDecimal.class), any(BigDecimal.class), any(Pageable.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, is disabled.", CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, is disabled.", CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
@@ -232,8 +226,8 @@ class ProductServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
@@ -242,7 +236,7 @@ class ProductServiceImplTest {
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
         when(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, minPrice, maxPrice, pageRequest)).thenReturn(emptyProductPage);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID_STRING, minPrice, maxPrice, SIZE, PAGE, ORDER, SORT_BY);
+        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), minPrice, maxPrice, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
@@ -272,8 +266,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         Product product2 = Product.builder()
@@ -282,8 +277,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         List<Product> products = List.of(product1, product2);
@@ -314,7 +310,7 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(PRODUCT_STATUS_AVAILABLE_STRING, SIZE, PAGE, ORDER, SORT_BY);
+        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(PRODUCT_STATUS_AVAILABLE.name(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(productRepository, times(1)).findAllByProductStatus(PRODUCT_STATUS_AVAILABLE, pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
@@ -348,8 +344,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         Product product2 = Product.builder()
@@ -358,8 +355,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_OUT_OF_STOCK)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         List<Product> products = List.of(product1, product2);
@@ -435,8 +433,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(56L)
                 .build();
 
@@ -446,8 +444,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(39L)
                 .build();
 
@@ -512,8 +510,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(56L)
                 .build();
 
@@ -523,8 +521,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(39L)
                 .build();
 
@@ -613,8 +611,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(56L)
                 .build();
 
@@ -624,8 +622,8 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .totalAmount(39L)
                 .build();
 
@@ -832,8 +830,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         ProductResponse productResponse = ProductResponse.builder()
@@ -849,7 +848,7 @@ class ProductServiceImplTest {
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
         when(productMapper.productToResponse(existingProduct)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.getProductById(PRODUCT_ID_STRING);
+        ProductResponse actualResponse = productService.getProductById(PRODUCT_ID.toString());
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productMapper, times(1)).productToResponse(existingProduct);
@@ -865,12 +864,12 @@ class ProductServiceImplTest {
         when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                productService.getProductById(NON_EXISTING_PRODUCT_ID_STRING));
-
-        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
+                productService.getProductById(NON_EXISTING_PRODUCT_ID.toString()));
 
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productMapper, never()).productToResponse(any(Product.class));
+
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID), thrownException.getMessage());
     }
 
     @Test
@@ -886,7 +885,7 @@ class ProductServiceImplTest {
     void addProduct_shouldAddProductSuccessfully() {
 
         ProductCreateRequest productCreateRequest = ProductCreateRequest.builder()
-                .categoryId(CATEGORY_ID_STRING)
+                .categoryId(CATEGORY_ID.toString())
                 .productName("New Product")
                 .listPrice(BigDecimal.valueOf(10.00))
                 .build();
@@ -895,8 +894,8 @@ class ProductServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Product productToSave = Product.builder()
@@ -909,32 +908,33 @@ class ProductServiceImplTest {
                 .updatedAt(null)
                 .build();
 
-        Product savedProduct = Product.builder()
+        Product addedProduct = Product.builder()
                 .productId(PRODUCT_ID)
                 .productName(productToSave.getProductName())
                 .listPrice(productToSave.getListPrice())
                 .currentPrice(productToSave.getCurrentPrice())
                 .productStatus(productToSave.getProductStatus())
-                .addedAt(ADDED_AT_NOW)
-                .updatedAt(UPDATED_AT_NOW)
+                .addedAt(TIMESTAMP_NOW)
+                .updatedAt(TIMESTAMP_NOW)
+                .category(productToSave.getCategory())
                 .build();
 
         ProductResponse productResponse = ProductResponse.builder()
-                .productId(savedProduct.getProductId())
-                .productName(savedProduct.getProductName())
-                .listPrice(savedProduct.getListPrice())
-                .currentPrice(savedProduct.getCurrentPrice())
-                .productStatus(savedProduct.getProductStatus())
-                .addedAt(savedProduct.getAddedAt())
-                .updatedAt(savedProduct.getUpdatedAt())
+                .productId(addedProduct.getProductId())
+                .productName(addedProduct.getProductName())
+                .listPrice(addedProduct.getListPrice())
+                .currentPrice(addedProduct.getCurrentPrice())
+                .productStatus(addedProduct.getProductStatus())
+                .addedAt(addedProduct.getAddedAt())
+                .updatedAt(addedProduct.getUpdatedAt())
                 .build();
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
         when(productMapper.requestToProduct(productCreateRequest, existingCategory)).thenReturn(productToSave);
-        when(productRepository.saveAndFlush(productToSave)).thenReturn(savedProduct);
-        when(productMapper.productToResponse(savedProduct)).thenReturn(productResponse);
+        when(productRepository.saveAndFlush(productToSave)).thenReturn(addedProduct);
+        when(productMapper.productToResponse(addedProduct)).thenReturn(productResponse);
 
         ProductResponse actualResponse = productService.addProduct(productCreateRequest);
 
@@ -948,7 +948,7 @@ class ProductServiceImplTest {
         assertEquals(productCreateRequest.getListPrice(), capturedProduct.getListPrice());
         assertEquals(PRODUCT_STATUS_AVAILABLE, capturedProduct.getProductStatus());
 
-        verify(productMapper, times(1)).productToResponse(savedProduct);
+        verify(productMapper, times(1)).productToResponse(addedProduct);
 
         assertNotNull(actualResponse);
         assertEquals(productResponse.getProductId(), actualResponse.getProductId());
@@ -979,7 +979,7 @@ class ProductServiceImplTest {
     void addProduct_shouldThrowDataNotFoundExceptionWhenCategoryDoesNotExist() {
 
         ProductCreateRequest productCreateRequest = ProductCreateRequest.builder()
-                .categoryId(NON_EXISTING_CATEGORY_ID_STRING)
+                .categoryId(NON_EXISTING_CATEGORY_ID.toString())
                 .productName("New Product")
                 .listPrice(BigDecimal.valueOf(10.00))
                 .build();
@@ -994,14 +994,14 @@ class ProductServiceImplTest {
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
     void addProduct_shouldThrowIllegalArgumentExceptionWhenCategoryStatusIsInactive() {
 
         ProductCreateRequest productCreateRequest = ProductCreateRequest.builder()
-                .categoryId(CATEGORY_ID_STRING)
+                .categoryId(CATEGORY_ID.toString())
                 .productName("New Product")
                 .listPrice(BigDecimal.valueOf(10.00))
                 .build();
@@ -1010,8 +1010,8 @@ class ProductServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_INACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
@@ -1039,8 +1039,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         Product updatedProduct = Product.builder()
@@ -1050,7 +1051,8 @@ class ProductServiceImplTest {
                 .currentPrice(updateRequest.getCurrentPrice())
                 .productStatus(existingProduct.getProductStatus())
                 .addedAt(existingProduct.getAddedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
+                .category(existingProduct.getCategory())
                 .build();
 
         ProductResponse productResponse = ProductResponse.builder()
@@ -1069,7 +1071,7 @@ class ProductServiceImplTest {
         when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID_STRING, updateRequest);
+        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID.toString(), updateRequest);
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
 
@@ -1109,8 +1111,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         Product updatedProduct = Product.builder()
@@ -1120,7 +1123,8 @@ class ProductServiceImplTest {
                 .currentPrice(existingProduct.getCurrentPrice())
                 .productStatus(existingProduct.getProductStatus())
                 .addedAt(existingProduct.getAddedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
+                .category(existingProduct.getCategory())
                 .build();
 
         ProductResponse productResponse = ProductResponse.builder()
@@ -1139,7 +1143,7 @@ class ProductServiceImplTest {
         when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
-        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID_STRING, updateRequest);
+        ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID.toString(), updateRequest);
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
@@ -1174,13 +1178,13 @@ class ProductServiceImplTest {
         when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                productService.updateProduct(NON_EXISTING_PRODUCT_ID_STRING, updateRequest));
+                productService.updateProduct(NON_EXISTING_PRODUCT_ID.toString(), updateRequest));
 
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID), thrownException.getMessage());
     }
 
     @Test
@@ -1198,19 +1202,20 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(ProductStatus.SOLD_OUT)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> productService.updateProduct(PRODUCT_ID_STRING, updateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> productService.updateProduct(PRODUCT_ID.toString(), updateRequest));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, is sold out and can not be updated.", PRODUCT_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, is sold out and can not be updated.", PRODUCT_ID), thrownException.getMessage());
     }
 
     @Test
@@ -1239,8 +1244,9 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         Product updatedProduct = Product.builder()
@@ -1250,11 +1256,12 @@ class ProductServiceImplTest {
                 .currentPrice(existingProduct.getCurrentPrice())
                 .productStatus(PRODUCT_STATUS_OUT_OF_STOCK)
                 .addedAt(existingProduct.getAddedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
+                .category(existingProduct.getCategory())
                 .build();
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Status '%s' was set for the product with id: %s.", PRODUCT_STATUS_OUT_OF_STOCK_STRING, PRODUCT_ID_STRING))
+                .message(String.format("Status '%s' was set for the product with id: %s.", PRODUCT_STATUS_OUT_OF_STOCK.name(), PRODUCT_ID))
                 .build();
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
@@ -1262,7 +1269,7 @@ class ProductServiceImplTest {
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
         when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
 
-        MessageResponse actualResponse = productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING);
+        MessageResponse actualResponse = productService.setProductStatus(PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name());
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
@@ -1281,7 +1288,7 @@ class ProductServiceImplTest {
     void setProductStatus_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(INVALID_ID, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
+                productService.setProductStatus(INVALID_ID, PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, never()).findById(any(UUID.class));
         verify(productRepository, never()).saveAndFlush(any(Product.class));
@@ -1293,12 +1300,12 @@ class ProductServiceImplTest {
         when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                productService.setProductStatus(NON_EXISTING_PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
+                productService.setProductStatus(NON_EXISTING_PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID), thrownException.getMessage());
     }
 
     @Test
@@ -1310,14 +1317,15 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
         assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(PRODUCT_ID_STRING, INVALID_STATUS));
+                productService.setProductStatus(PRODUCT_ID.toString(), INVALID_STATUS));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
@@ -1332,18 +1340,19 @@ class ProductServiceImplTest {
                 .listPrice(BigDecimal.valueOf(25.00))
                 .currentPrice(BigDecimal.valueOf(25.00))
                 .productStatus(PRODUCT_STATUS_OUT_OF_STOCK)
-                .addedAt(ADDED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .category(Category.builder().build())
                 .build();
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-                productService.setProductStatus(PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING));
+                productService.setProductStatus(PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(productRepository, never()).saveAndFlush(any(Product.class));
 
-        assertEquals(String.format("Product with id: %s, already has status '%s'.", PRODUCT_ID_STRING, PRODUCT_STATUS_OUT_OF_STOCK_STRING.toUpperCase()), thrownException.getMessage());
+        assertEquals(String.format("Product with id: %s, already has status '%s'.", PRODUCT_ID, PRODUCT_STATUS_OUT_OF_STOCK.name()), thrownException.getMessage());
     }
 }

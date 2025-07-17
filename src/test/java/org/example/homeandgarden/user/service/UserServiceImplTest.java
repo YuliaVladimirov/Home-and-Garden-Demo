@@ -54,21 +54,18 @@ class UserServiceImplTest {
     private final UUID USER_2_ID = UUID.randomUUID();
 
     private final UUID USER_ID = UUID.randomUUID();
-    private final String USER_ID_STRING = USER_ID.toString();
     private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
-    private final String NON_EXISTING_USER_ID_STRING = NON_EXISTING_USER_ID.toString();
+
     private final String INVALID_ID = "Invalid UUID";
 
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
     private final UserRole USER_ROLE_ADMIN = UserRole.ADMINISTRATOR;
-    private final String USER_ROLE_ADMIN_STRING = USER_ROLE_ADMIN.toString();
 
     private final String PASSWORD = "Raw Password";
     private final String PASSWORD_HASH = "Hashed Password";
 
-    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant UPDATED_AT_NOW = Instant.now();
-    private final Instant REGISTERED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant TIMESTAMP_NOW = Instant.now();
+    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
 
     @Test
     void getUsersByStatus_shouldReturnPagedModelOfEnabledAndNonLockedUsers() {
@@ -87,8 +84,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User user2 = User.builder()
@@ -100,8 +97,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<User> allUsers = List.of(user1, user2);
@@ -186,8 +183,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User user2 = User.builder()
@@ -199,8 +196,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<User> allUsers = List.of(user1, user2);
@@ -285,8 +282,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User user2 = User.builder()
@@ -298,8 +295,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<User> allUsers = List.of(user1, user2);
@@ -384,8 +381,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User user2 = User.builder()
@@ -397,8 +394,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<User> allUsers = List.of(user1, user2);
@@ -507,8 +504,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         UserResponse userResponse = UserResponse.builder()
@@ -524,7 +521,7 @@ class UserServiceImplTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userMapper.userToResponse(existingUser)).thenReturn(userResponse);
 
-        UserResponse actualResponse = userService.getUserById(USER_ID_STRING);
+        UserResponse actualResponse = userService.getUserById(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userMapper, times(1)).userToResponse(existingUser);
@@ -542,12 +539,12 @@ class UserServiceImplTest {
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                userService.getUserById(NON_EXISTING_USER_ID_STRING));
+                userService.getUserById(NON_EXISTING_USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -563,7 +560,7 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldUpdateUserSuccessfullyWhenUserExistsAndIsEnabledAndNonLocked() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
@@ -577,21 +574,21 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User updatedUser = User.builder()
                 .userId(existingUser.getUserId())
                 .email(existingUser.getEmail())
                 .passwordHash(existingUser.getPasswordHash())
-                .firstName(updateRequest.getFirstName())
-                .lastName(updateRequest.getLastName())
+                .firstName(userUpdateRequest.getFirstName())
+                .lastName(userUpdateRequest.getLastName())
                 .userRole(existingUser.getUserRole())
                 .isEnabled(existingUser.getIsEnabled())
                 .isNonLocked(existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         UserResponse userResponse = UserResponse.builder()
@@ -610,7 +607,7 @@ class UserServiceImplTest {
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
-        UserResponse actualResponse = userService.updateUser(USER_ID_STRING, updateRequest);
+        UserResponse actualResponse = userService.updateUser(USER_ID.toString(), userUpdateRequest);
 
         verify(userRepository, times(1)).findById(USER_ID);
 
@@ -620,8 +617,8 @@ class UserServiceImplTest {
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
         assertEquals(existingUser.getEmail(), capturedUser.getEmail());
         assertEquals(existingUser.getPasswordHash(), capturedUser.getPasswordHash());
-        assertEquals(updateRequest.getFirstName(), capturedUser.getFirstName());
-        assertEquals(updateRequest.getLastName(), capturedUser.getLastName());
+        assertEquals(userUpdateRequest.getFirstName(), capturedUser.getFirstName());
+        assertEquals(userUpdateRequest.getLastName(), capturedUser.getLastName());
         assertEquals(existingUser.getUserRole(), capturedUser.getUserRole());
         assertEquals(existingUser.getIsEnabled(), capturedUser.getIsEnabled());
         assertEquals(existingUser.getIsNonLocked(), capturedUser.getIsNonLocked());
@@ -642,7 +639,7 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldUpdateOnlyProvidedFieldsAndReturnUpdatedUserResponse() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName(null)
                 .build();
@@ -656,21 +653,21 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User updatedUser = User.builder()
                 .userId(existingUser.getUserId())
                 .email(existingUser.getEmail())
                 .passwordHash(existingUser.getPasswordHash())
-                .firstName(updateRequest.getFirstName())
+                .firstName(userUpdateRequest.getFirstName())
                 .lastName(existingUser.getLastName())
                 .userRole(existingUser.getUserRole())
                 .isEnabled(existingUser.getIsEnabled())
                 .isNonLocked(existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         UserResponse userResponse = UserResponse.builder()
@@ -689,7 +686,7 @@ class UserServiceImplTest {
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
-        UserResponse actualResponse = userService.updateUser(USER_ID_STRING, updateRequest);
+        UserResponse actualResponse = userService.updateUser(USER_ID.toString(), userUpdateRequest);
 
         verify(userRepository, times(1)).findById(USER_ID);
 
@@ -699,7 +696,7 @@ class UserServiceImplTest {
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
         assertEquals(existingUser.getEmail(), capturedUser.getEmail());
         assertEquals(existingUser.getPasswordHash(), capturedUser.getPasswordHash());
-        assertEquals(updateRequest.getFirstName(), capturedUser.getFirstName());
+        assertEquals(userUpdateRequest.getFirstName(), capturedUser.getFirstName());
         assertEquals(existingUser.getLastName(), capturedUser.getLastName());
         assertEquals(existingUser.getUserRole(), capturedUser.getUserRole());
         assertEquals(existingUser.getIsEnabled(), capturedUser.getIsEnabled());
@@ -721,31 +718,31 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
 
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.updateUser(NON_EXISTING_USER_ID_STRING, updateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.updateUser(NON_EXISTING_USER_ID.toString(), userUpdateRequest));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
     }
 
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(INVALID_ID, updateRequest));
+        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(INVALID_ID, userUpdateRequest));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -755,7 +752,7 @@ class UserServiceImplTest {
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
@@ -769,25 +766,25 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID_STRING, updateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID.toString(), userUpdateRequest));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is unregistered and can not be updated.", USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, is unregistered and can not be updated.", USER_ID), thrownException.getMessage());
     }
 
     @Test
     void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
@@ -801,19 +798,19 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID_STRING, updateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID.toString(), userUpdateRequest));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is locked and can not be updated.", USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, is locked and can not be updated.", USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -828,8 +825,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User updatedUser = User.builder()
@@ -842,11 +839,11 @@ class UserServiceImplTest {
                 .isEnabled(existingUser.getIsEnabled())
                 .isNonLocked(existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("UserRole %s was set for user with id: %s.", USER_ROLE_ADMIN_STRING, USER_ID_STRING))
+                .message(String.format("UserRole %s was set for user with id: %s.", USER_ROLE_ADMIN.name(), USER_ID))
                 .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -854,7 +851,7 @@ class UserServiceImplTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        MessageResponse actualResponse = userService.setUserRole(USER_ID_STRING, USER_ROLE_ADMIN_STRING);
+        MessageResponse actualResponse = userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
@@ -878,7 +875,7 @@ class UserServiceImplTest {
     @Test
     void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(INVALID_ID, USER_ROLE_ADMIN_STRING));
+        assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(INVALID_ID, USER_ROLE_ADMIN.name()));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -890,12 +887,12 @@ class UserServiceImplTest {
 
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.setUserRole(NON_EXISTING_USER_ID_STRING, USER_ROLE_ADMIN_STRING));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.setUserRole(NON_EXISTING_USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -910,18 +907,18 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID_STRING, USER_ROLE_ADMIN_STRING));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is locked and his userRole can not be changed.", USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, is locked and his userRole can not be changed.", USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -936,18 +933,18 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID_STRING, USER_ROLE_ADMIN_STRING));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is unregistered and his userRole can not be changed.", USER_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, is unregistered and his userRole can not be changed.", USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -964,18 +961,18 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID_STRING, sameRole));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), sameRole));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, already has userRole '%s'.", USER_ID_STRING, sameRole), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, already has userRole '%s'.", USER_ID, sameRole), thrownException.getMessage());
     }
 
     @Test
@@ -990,8 +987,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User updatedUser = User.builder()
@@ -1004,19 +1001,19 @@ class UserServiceImplTest {
                 .isEnabled(existingUser.getIsEnabled())
                 .isNonLocked(!existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("User with id: %s has been %s.", USER_ID_STRING, existingUser.getIsNonLocked() ? "locked" : "unlocked"))
+                .message(String.format("User with id: %s has been %s.", USER_ID, existingUser.getIsNonLocked() ? "locked" : "unlocked"))
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        MessageResponse actualResponse = userService.toggleLockState(USER_ID_STRING);
+        MessageResponse actualResponse = userService.toggleLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
@@ -1049,8 +1046,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User updatedUser = User.builder()
@@ -1063,19 +1060,19 @@ class UserServiceImplTest {
                 .isEnabled(existingUser.getIsEnabled())
                 .isNonLocked(!existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("User with id: %s has been %s.", USER_ID_STRING, existingUser.getIsNonLocked() ? "locked" : "unlocked"))
+                .message(String.format("User with id: %s has been %s.", USER_ID, existingUser.getIsNonLocked() ? "locked" : "unlocked"))
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        MessageResponse actualResponse = userService.toggleLockState(USER_ID_STRING);
+        MessageResponse actualResponse = userService.toggleLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
@@ -1111,12 +1108,12 @@ class UserServiceImplTest {
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
-                userService.toggleLockState(NON_EXISTING_USER_ID_STRING));
+                userService.toggleLockState(NON_EXISTING_USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID_STRING), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrown.getMessage());
     }
 
     @Test
@@ -1131,18 +1128,18 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(USER_ID_STRING));
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", USER_ID_STRING), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", USER_ID), thrown.getMessage());
     }
 
     @Test
@@ -1162,8 +1159,8 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         User unregisteredUser = User.builder()
@@ -1176,7 +1173,7 @@ class UserServiceImplTest {
                 .isEnabled(false)
                 .isNonLocked(existingUser.getIsNonLocked())
                 .registeredAt(existingUser.getRegisteredAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -1185,7 +1182,7 @@ class UserServiceImplTest {
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
         when(userRepository.saveAndFlush(existingUser)).thenReturn(unregisteredUser);
 
-        MessageResponse messageResponse = userService.unregisterUser(USER_ID_STRING, request);
+        MessageResponse messageResponse = userService.unregisterUser(USER_ID.toString(), request);
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
@@ -1199,7 +1196,7 @@ class UserServiceImplTest {
         assertFalse(capturedUser.getIsEnabled());
 
         assertNotNull(messageResponse);
-        assertEquals(String.format("User with id: %s, has been unregistered.", USER_ID_STRING), messageResponse.getMessage());
+        assertEquals(String.format("User with id: %s, has been unregistered.", USER_ID), messageResponse.getMessage());
     }
 
     @Test
@@ -1210,7 +1207,7 @@ class UserServiceImplTest {
                 .confirmPassword("wrongPassword")
                 .build();
 
-        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.unregisterUser(USER_ID_STRING, request));
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.unregisterUser(USER_ID.toString(), request));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(passwordEncoder, never()).matches(anyString(), anyString());
@@ -1245,13 +1242,13 @@ class UserServiceImplTest {
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
-                userService.unregisterUser(NON_EXISTING_USER_ID_STRING, request));
+                userService.unregisterUser(NON_EXISTING_USER_ID.toString(), request));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID_STRING), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrown.getMessage());
     }
 
     @Test
@@ -1273,15 +1270,15 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
 
         BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () ->
-                userService.unregisterUser(USER_ID_STRING, request)
+                userService.unregisterUser(USER_ID.toString(), request)
         );
 
         verify(userRepository, times(1)).findById(USER_ID);
@@ -1308,21 +1305,21 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(false)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(lockedUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                userService.unregisterUser(USER_ID_STRING, request));
+                userService.unregisterUser(USER_ID.toString(), request));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is locked and can not be unregistered.", USER_ID_STRING), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, is locked and can not be unregistered.", USER_ID), thrown.getMessage());
     }
 
     @Test
@@ -1342,20 +1339,20 @@ class UserServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(false)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(unregisteredUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                userService.unregisterUser(USER_ID_STRING, request));
+                userService.unregisterUser(USER_ID.toString(), request));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is already unregistered.", USER_ID_STRING), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, is already unregistered.", USER_ID), thrown.getMessage());
     }
 }

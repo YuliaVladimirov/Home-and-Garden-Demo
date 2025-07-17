@@ -47,21 +47,17 @@ class CategoryServiceImplTest {
     private final UUID CATEGORY_2_ID = UUID.randomUUID();
 
     private final UUID CATEGORY_ID = UUID.randomUUID();
-    private final String CATEGORY_ID_STRING = CATEGORY_ID.toString();
     private final UUID NON_EXISTING_CATEGORY_ID = UUID.randomUUID();
-    private final String NON_EXISTING_CATEGORY_ID_STRING = NON_EXISTING_CATEGORY_ID.toString();
+
     private final String INVALID_ID = "Invalid UUID";
 
     private final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
-    private final String CATEGORY_STATUS_ACTIVE_STRING = CATEGORY_STATUS_ACTIVE.name();
     private final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
-    private final String CATEGORY_STATUS_INACTIVE_STRING = CATEGORY_STATUS_INACTIVE.name();
+
     private final String INVALID_STATUS = "Invalid Status";
 
-    private final Instant CREATED_AT_NOW = Instant.now();
-    private final Instant CREATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant UPDATED_AT_NOW = Instant.now();
-    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant TIMESTAMP_NOW = Instant.now();
+    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
 
     @Test
     void getAllActiveCategories_shouldReturnPagedActiveCategoriesWhenCategoriesExist() {
@@ -72,16 +68,16 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_1_ID)
                 .categoryName("Category One")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category category2 = Category.builder()
                 .categoryId(CATEGORY_2_ID)
                 .categoryName("Category Two")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<Category> allCategories = List.of(category1, category2);
@@ -165,16 +161,16 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_1_ID)
                 .categoryName("Category One")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category category2 = Category.builder()
                 .categoryId(CATEGORY_2_ID)
                 .categoryName("Category Two")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<Category> allCategories = List.of(category1, category2);
@@ -201,7 +197,7 @@ class CategoryServiceImplTest {
         when(categoryMapper.categoryToResponse(category1)).thenReturn(categoryResponse1);
         when(categoryMapper.categoryToResponse(category2)).thenReturn(categoryResponse2);
 
-        PagedModel<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(CATEGORY_STATUS_ACTIVE_STRING, SIZE, PAGE, ORDER, SORT_BY);
+        PagedModel<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(CATEGORY_STATUS_ACTIVE.name(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findAllByCategoryStatus(CATEGORY_STATUS_ACTIVE, pageRequest);
         verify(categoryMapper, times(1)).categoryToResponse(category1);
@@ -233,16 +229,16 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_1_ID)
                 .categoryName("Category One")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category category2 = Category.builder()
                 .categoryId(CATEGORY_2_ID)
                 .categoryName("Category Two")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         List<Category> allCategories = List.of(category1, category2);
@@ -321,8 +317,8 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName(categoryToSave.getCategoryName())
                 .categoryStatus(categoryToSave.getCategoryStatus())
-                .createdAt(CREATED_AT_NOW)
-                .updatedAt(UPDATED_AT_NOW)
+                .createdAt(TIMESTAMP_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         CategoryResponse categoryResponse = CategoryResponse.builder()
@@ -392,8 +388,8 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Original Name")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category updatedCategory = Category.builder()
@@ -401,7 +397,7 @@ class CategoryServiceImplTest {
                 .categoryName(categoryRequest.getCategoryName())
                 .categoryStatus(existingCategory.getCategoryStatus())
                 .createdAt(existingCategory.getCreatedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         CategoryResponse categoryResponse = CategoryResponse.builder()
@@ -418,7 +414,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
         when(categoryMapper.categoryToResponse(updatedCategory)).thenReturn(categoryResponse);
 
-        CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID_STRING, categoryRequest);
+        CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
@@ -448,8 +444,8 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Original Name")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category updatedCategory = Category.builder()
@@ -457,7 +453,7 @@ class CategoryServiceImplTest {
                 .categoryName(existingCategory.getCategoryName())
                 .categoryStatus(existingCategory.getCategoryStatus())
                 .createdAt(existingCategory.getCreatedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         CategoryResponse categoryResponse = CategoryResponse.builder()
@@ -474,7 +470,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
         when(categoryMapper.categoryToResponse(updatedCategory)).thenReturn(categoryResponse);
 
-        CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID_STRING, categoryRequest);
+        CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
 
@@ -504,13 +500,13 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                categoryService.updateCategory(NON_EXISTING_CATEGORY_ID_STRING, categoryRequest));
+                categoryService.updateCategory(NON_EXISTING_CATEGORY_ID.toString(), categoryRequest));
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
@@ -524,20 +520,20 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Original Name")
                 .categoryStatus(CATEGORY_STATUS_INACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-                categoryService.updateCategory(CATEGORY_ID_STRING, categoryRequest));
+                categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
-        assertEquals(String.format("Category with id: %s, is inactive and can not be updated.", CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, is inactive and can not be updated.", CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
@@ -562,8 +558,8 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         Category updatedCategory = Category.builder()
@@ -571,11 +567,11 @@ class CategoryServiceImplTest {
                 .categoryName(existingCategory.getCategoryName())
                 .categoryStatus(CATEGORY_STATUS_INACTIVE)
                 .createdAt(existingCategory.getCreatedAt())
-                .updatedAt(UPDATED_AT_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .build();
 
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Status '%s' was set for category with id: %s.", CATEGORY_STATUS_INACTIVE_STRING, CATEGORY_ID_STRING))
+                .message(String.format("Status '%s' was set for category with id: %s.", CATEGORY_STATUS_INACTIVE.name(), CATEGORY_ID))
                 .build();
 
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
@@ -583,7 +579,7 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
         when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
 
-        MessageResponse actualResponse = categoryService.setCategoryStatus(CATEGORY_ID_STRING, CATEGORY_STATUS_INACTIVE_STRING);
+        MessageResponse actualResponse = categoryService.setCategoryStatus(CATEGORY_ID.toString(), CATEGORY_STATUS_INACTIVE.name());
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
@@ -603,12 +599,12 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                categoryService.setCategoryStatus(NON_EXISTING_CATEGORY_ID_STRING, CATEGORY_STATUS_INACTIVE_STRING));
+                categoryService.setCategoryStatus(NON_EXISTING_CATEGORY_ID.toString(), CATEGORY_STATUS_INACTIVE.name()));
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
 
-        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID_STRING), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
     }
 
     @Test
@@ -620,26 +616,26 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
 
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () ->
-                categoryService.setCategoryStatus(CATEGORY_ID_STRING, sameStatus));
+                categoryService.setCategoryStatus(CATEGORY_ID.toString(), sameStatus));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
 
-        assertEquals(String.format("Category with id: %s, already has status '%s'.", CATEGORY_ID_STRING, sameStatus), thrownException.getMessage());
+        assertEquals(String.format("Category with id: %s, already has status '%s'.", CATEGORY_ID, sameStatus), thrownException.getMessage());
     }
 
     @Test
     void setCategoryStatus_shouldThrowIllegalArgumentExceptionWhenInvalidUuidStringIsProvided() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                categoryService.setCategoryStatus(INVALID_ID, CATEGORY_STATUS_INACTIVE_STRING));
+                categoryService.setCategoryStatus(INVALID_ID, CATEGORY_STATUS_INACTIVE.name()));
 
         verify(categoryRepository, never()).findById(any(UUID.class));
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));
@@ -652,14 +648,14 @@ class CategoryServiceImplTest {
                 .categoryId(CATEGORY_ID)
                 .categoryName("Existing Category")
                 .categoryStatus(CATEGORY_STATUS_ACTIVE)
-                .createdAt(CREATED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .build();
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
 
         assertThrows(IllegalArgumentException.class, () ->
-                categoryService.setCategoryStatus(CATEGORY_ID_STRING, INVALID_STATUS));
+                categoryService.setCategoryStatus(CATEGORY_ID.toString(), INVALID_STATUS));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(categoryRepository, never()).saveAndFlush(any(Category.class));

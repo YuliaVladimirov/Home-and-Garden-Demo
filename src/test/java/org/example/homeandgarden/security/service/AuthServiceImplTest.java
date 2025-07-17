@@ -55,7 +55,6 @@ class AuthServiceImplTest {
 
     private final UUID USER_ID = UUID.randomUUID();
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
-
     private final String EMAIL = "test@example.com";
 
     private final String PASSWORD = "Raw Password";
@@ -63,12 +62,11 @@ class AuthServiceImplTest {
 
     private final String ACCESS_TOKEN = "Access Token";
     private final String REFRESH_TOKEN = "Refresh Token";
+
     private final String INVALID_REFRESH_TOKEN = "Invalid Refresh Token";
 
-    private final Instant UPDATED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant UPDATED_AT_NOW = Instant.now();
-    private final Instant REGISTERED_AT_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
-    private final Instant REGISTERED_NOW = Instant.now();
+    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private final Instant TIMESTAMP_NOW = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -109,8 +107,8 @@ class AuthServiceImplTest {
                 .userRole(userToRegister.getUserRole())
                 .isEnabled(userToRegister.getIsEnabled())
                 .isNonLocked(userToRegister.getIsNonLocked())
-                .registeredAt(REGISTERED_NOW)
-                .updatedAt(UPDATED_AT_NOW)
+                .registeredAt(TIMESTAMP_NOW)
+                .updatedAt(TIMESTAMP_NOW)
                 .refreshToken(userToRegister.getRefreshToken())
                 .build();
 
@@ -283,8 +281,8 @@ class AuthServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .refreshToken(null)
                 .build();
 
@@ -390,8 +388,8 @@ class AuthServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .refreshToken(REFRESH_TOKEN)
                 .build();
 
@@ -533,8 +531,8 @@ class AuthServiceImplTest {
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(REGISTERED_AT_PAST)
-                .updatedAt(UPDATED_AT_PAST)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
                 .refreshToken(REFRESH_TOKEN)
                 .build();
 
