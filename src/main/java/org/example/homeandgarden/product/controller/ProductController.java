@@ -16,7 +16,7 @@ import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.swagger.GroupThreeErrorResponses;
 import org.example.homeandgarden.swagger.GroupOneErrorResponses;
 import org.example.homeandgarden.swagger.GroupTwoErrorResponses;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,7 +39,7 @@ public class ProductController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping("/status")
-    public ResponseEntity<PagedModel<ProductResponse>> getProductsByStatus(
+    public ResponseEntity<Page<ProductResponse>> getProductsByStatus(
 
             @RequestParam(value = "productStatus", required = false)
             @Pattern(regexp = "^(AVAILABLE|OUT_OF_STOCK|SOLD_OUT|available|out_of_stock|sold_out)$", message = "Invalid order orderStatus: Must be one of the: 'AVAILABLE', 'OUT_OF_STOCK' or 'SOLD_OUT' ('available', 'out_of_stock' or 'sold_out')")
@@ -66,7 +66,7 @@ public class ProductController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"productName", "listPrice", "currentPrice", "addedAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<ProductResponse> pageResponse = productService.getProductsByStatus(productStatus, size, page, order, sortBy);
+        Page<ProductResponse> pageResponse = productService.getProductsByStatus(productStatus, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -76,7 +76,7 @@ public class ProductController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping(value = "/top")
-    public ResponseEntity<PagedModel<ProductProjectionResponse>> getTopProducts(
+    public ResponseEntity<Page<ProductProjectionResponse>> getTopProducts(
 
             @RequestParam(value = "status", defaultValue = "PAID")
             @Pattern(regexp = "^(PAID|CANCELED|paid|canceled)$", message = "Invalid status: Must be 'PAID' or 'CANCELED' ('paid' or 'canceled')")
@@ -93,7 +93,7 @@ public class ProductController {
             @Parameter(description = "Page number to display")
             Integer page) {
 
-        PagedModel<ProductProjectionResponse> pageResponse = productService.getTopProducts(status, size, page);
+        Page<ProductProjectionResponse> pageResponse = productService.getTopProducts(status, size, page);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -103,7 +103,7 @@ public class ProductController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping(value = "/pending")
-    public ResponseEntity<PagedModel<ProductProjectionResponse>> getPendingProducts(
+    public ResponseEntity<Page<ProductProjectionResponse>> getPendingProducts(
 
             @RequestParam(value = "orderStatus", defaultValue = "CREATED")
             @Pattern(regexp = "^(CREATED|PAID|ON_THE_WAY|created|paid|on_the_way)$", message = "Invalid order orderStatus: Must be 'CREATED', 'PAID' or 'ON_THE_WAY' ('created', 'paid' or 'on_the_way')")
@@ -125,7 +125,7 @@ public class ProductController {
             @Parameter(description = "Page number to display")
             Integer page) {
 
-        PagedModel<ProductProjectionResponse> pageResponse = productService.getPendingProducts(orderStatus, days, size, page);
+        Page<ProductProjectionResponse> pageResponse = productService.getPendingProducts(orderStatus, days, size, page);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 

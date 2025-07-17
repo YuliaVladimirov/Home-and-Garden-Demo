@@ -22,7 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.homeandgarden.wishlist.dto.WishListItemResponse;
 import org.example.homeandgarden.wishlist.service.WishListService;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,7 +48,7 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
-    public ResponseEntity<PagedModel<UserResponse>> getUsersByStatus(
+    public ResponseEntity<Page<UserResponse>> getUsersByStatus(
 
             @RequestParam(value = "isEnabled", defaultValue = "true")
             @Parameter(description = "Enabled status: 'true' or 'false'", schema = @Schema(allowableValues = {"true", "false"}))
@@ -78,7 +78,7 @@ public class UserController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"firstName", "lastName", "registeredAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<UserResponse> pageResponse = userService.getUsersByStatus(isEnabled, isNonLocked, size, page, order, sortBy);
+        Page<UserResponse> pageResponse = userService.getUsersByStatus(isEnabled, isNonLocked, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -105,7 +105,7 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{userId}/wishlist")
-    public ResponseEntity<PagedModel<WishListItemResponse>> getUserWishListItems(
+    public ResponseEntity<Page<WishListItemResponse>> getUserWishListItems(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
@@ -127,7 +127,7 @@ public class UserController {
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order) {
 
-        PagedModel<WishListItemResponse> pageResponse = wishListService.getUserWishListItems(userId, size, page, order);
+        Page<WishListItemResponse> pageResponse = wishListService.getUserWishListItems(userId, size, page, order);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -137,7 +137,7 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{userId}/cart")
-    public ResponseEntity<PagedModel<CartItemResponse>> getUserCartItems(
+    public ResponseEntity<Page<CartItemResponse>> getUserCartItems(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
@@ -164,7 +164,7 @@ public class UserController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"addedAt", "quantity"}))
             String sortBy) {
 
-        PagedModel<CartItemResponse> pageResponse = cartService.getUserCartItems(userId, size, page, order, sortBy);
+        Page<CartItemResponse> pageResponse = cartService.getUserCartItems(userId, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -174,7 +174,7 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{userId}/orders")
-    public ResponseEntity<PagedModel<OrderResponse>> getUserOrders(
+    public ResponseEntity<Page<OrderResponse>> getUserOrders(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
@@ -201,7 +201,7 @@ public class UserController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"status", "createdAt"}))
             String sortBy) {
 
-        PagedModel<OrderResponse> pageResponse = orderService.getUserOrders(userId, size, page, order, sortBy);
+        Page<OrderResponse> pageResponse = orderService.getUserOrders(userId, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 

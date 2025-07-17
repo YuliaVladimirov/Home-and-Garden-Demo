@@ -19,7 +19,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.swagger.GroupOneErrorResponses;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +42,7 @@ public class OrderController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/{orderId}/items")
-    public ResponseEntity<PagedModel<OrderItemResponse>> getOrderItems(
+    public ResponseEntity<Page<OrderItemResponse>> getOrderItems(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
@@ -69,7 +69,7 @@ public class OrderController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"quantity", "priceAtPurchase"}))
             String sortBy) {
 
-        PagedModel<OrderItemResponse> pageResponse = orderItemService.getOrderItems(orderId, size, page, order, sortBy);
+        Page<OrderItemResponse> pageResponse = orderItemService.getOrderItems(orderId, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 

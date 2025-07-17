@@ -20,7 +20,7 @@ import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.swagger.GroupFourErrorResponses;
 import org.example.homeandgarden.swagger.GroupOneErrorResponses;
 import org.example.homeandgarden.swagger.GroupTwoErrorResponses;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +44,7 @@ public class CategoryController {
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<PagedModel<CategoryResponse>> getAllActiveCategories(
+    public ResponseEntity<Page<CategoryResponse>> getAllActiveCategories(
 
             @RequestParam(value = "size", defaultValue = "10")
             @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
@@ -66,7 +66,7 @@ public class CategoryController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<CategoryResponse> pageResponse = categoryService.getAllActiveCategories(size, page, order, sortBy);
+        Page<CategoryResponse> pageResponse = categoryService.getAllActiveCategories(size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -76,7 +76,7 @@ public class CategoryController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping("/status")
-    public ResponseEntity<PagedModel<CategoryResponse>> getCategoriesByStatus(
+    public ResponseEntity<Page<CategoryResponse>> getCategoriesByStatus(
 
             @RequestParam(value = "categoryStatus", required = false)
             @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
@@ -103,7 +103,7 @@ public class CategoryController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<CategoryResponse> pageResponse = categoryService.getCategoriesByStatus(categoryStatus, size, page, order, sortBy);
+        Page<CategoryResponse> pageResponse = categoryService.getCategoriesByStatus(categoryStatus, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -112,7 +112,7 @@ public class CategoryController {
     @GroupFourErrorResponses
     @PreAuthorize("permitAll()")
     @GetMapping("/{categoryId}/products")
-    public ResponseEntity<PagedModel<ProductResponse>> getCategoryProducts(
+    public ResponseEntity<Page<ProductResponse>> getCategoryProducts(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
@@ -151,7 +151,7 @@ public class CategoryController {
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"productName", "listPrice", "currentPrice", "addedAt", "updatedAt"}))
             String sortBy) {
 
-        PagedModel<ProductResponse> pageResponse = productService.getCategoryProducts(categoryId, minPrice, maxPrice, size, page, order, sortBy);
+        Page<ProductResponse> pageResponse = productService.getCategoryProducts(categoryId, minPrice, maxPrice, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
