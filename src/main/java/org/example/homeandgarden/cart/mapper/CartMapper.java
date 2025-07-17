@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CartMapper {
 
-    public CartItem createRequestToCartItem(
+    public CartItem requestToCartItem(
             CartItemCreateRequest cartItemCreateRequest,
             User user,
             Product product) {
