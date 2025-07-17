@@ -16,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -104,18 +103,18 @@ class CategoryServiceImplTest {
         when(categoryMapper.categoryToResponse(category1)).thenReturn(categoryResponse1);
         when(categoryMapper.categoryToResponse(category2)).thenReturn(categoryResponse2);
 
-        PagedModel<CategoryResponse> actualResponse = categoryService.getAllActiveCategories(SIZE, PAGE, ORDER, SORT_BY);
+        Page<CategoryResponse> actualResponse = categoryService.getAllActiveCategories(SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findAllByCategoryStatus(CATEGORY_STATUS_ACTIVE, pageRequest);
         verify(categoryMapper, times(1)).categoryToResponse(category1);
         verify(categoryMapper, times(1)).categoryToResponse(category2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allCategories.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allCategories.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allCategories.size(), actualResponse.getContent().size());
@@ -135,17 +134,17 @@ class CategoryServiceImplTest {
 
         when(categoryRepository.findAllByCategoryStatus(CATEGORY_STATUS_ACTIVE, pageRequest)).thenReturn(emptyPage);
 
-        PagedModel<CategoryResponse> actualResponse = categoryService.getAllActiveCategories(SIZE, PAGE, ORDER, SORT_BY);
+        Page<CategoryResponse> actualResponse = categoryService.getAllActiveCategories(SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findAllByCategoryStatus(CATEGORY_STATUS_ACTIVE, pageRequest);
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());
@@ -197,18 +196,18 @@ class CategoryServiceImplTest {
         when(categoryMapper.categoryToResponse(category1)).thenReturn(categoryResponse1);
         when(categoryMapper.categoryToResponse(category2)).thenReturn(categoryResponse2);
 
-        PagedModel<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(CATEGORY_STATUS_ACTIVE.name(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(CATEGORY_STATUS_ACTIVE.name(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findAllByCategoryStatus(CATEGORY_STATUS_ACTIVE, pageRequest);
         verify(categoryMapper, times(1)).categoryToResponse(category1);
         verify(categoryMapper, times(1)).categoryToResponse(category2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allCategories.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allCategories.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allCategories.size(), actualResponse.getContent().size());
@@ -265,18 +264,18 @@ class CategoryServiceImplTest {
         when(categoryMapper.categoryToResponse(category1)).thenReturn(categoryResponse1);
         when(categoryMapper.categoryToResponse(category2)).thenReturn(categoryResponse2);
 
-        PagedModel<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(null, SIZE, PAGE, ORDER, SORT_BY);
+        Page<CategoryResponse> actualResponse = categoryService.getCategoriesByStatus(null, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findAll(pageRequest);
         verify(categoryMapper, times(1)).categoryToResponse(category1);
         verify(categoryMapper, times(1)).categoryToResponse(category2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allCategories.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allCategories.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allCategories.size(), actualResponse.getContent().size());

@@ -16,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -133,18 +132,18 @@ class UserServiceImplTest {
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
         when(userMapper.userToResponseDetailed(user2)).thenReturn(userResponseDetailed2);
 
-        PagedModel<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
+        Page<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest);
         verify(userMapper, times(1)).userToResponseDetailed(user1);
         verify(userMapper, times(1)).userToResponseDetailed(user2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allUsers.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allUsers.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allUsers.size(), actualResponse.getContent().size());
@@ -232,18 +231,18 @@ class UserServiceImplTest {
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
         when(userMapper.userToResponseDetailed(user2)).thenReturn(userResponseDetailed2);
 
-        PagedModel<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
+        Page<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest);
         verify(userMapper, times(1)).userToResponseDetailed(user1);
         verify(userMapper, times(1)).userToResponseDetailed(user2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allUsers.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allUsers.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allUsers.size(), actualResponse.getContent().size());
@@ -331,18 +330,18 @@ class UserServiceImplTest {
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
         when(userMapper.userToResponseDetailed(user2)).thenReturn(userResponseDetailed2);
 
-        PagedModel<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
+        Page<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest);
         verify(userMapper, times(1)).userToResponseDetailed(user1);
         verify(userMapper, times(1)).userToResponseDetailed(user2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allUsers.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allUsers.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allUsers.size(), actualResponse.getContent().size());
@@ -430,18 +429,18 @@ class UserServiceImplTest {
         when(userMapper.userToResponseDetailed(user1)).thenReturn(userResponseDetailed1);
         when(userMapper.userToResponseDetailed(user2)).thenReturn(userResponseDetailed2);
 
-        PagedModel<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
+        Page<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest);
         verify(userMapper, times(1)).userToResponseDetailed(user1);
         verify(userMapper, times(1)).userToResponseDetailed(user2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(allUsers.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(allUsers.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(allUsers.size(), actualResponse.getContent().size());
@@ -475,17 +474,17 @@ class UserServiceImplTest {
 
         when(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest)).thenReturn(emptyPage);
 
-        PagedModel<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
+        Page<UserResponse> actualResponse = userService.getUsersByStatus(isEnabled, isNonLocked, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest);
         verify(userMapper, never()).userToResponseDetailed(any(User.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long)PAGE, actualResponse.getMetadata().number());
-        assertEquals((long)SIZE, actualResponse.getMetadata().size());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long)SIZE, actualResponse.getSize());
+        assertEquals((long)PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());

@@ -23,7 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -159,7 +158,7 @@ class WishListServiceImplTest {
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
         when(wishListMapper.wishListItemToResponse(wishListItem2, productResponse2)).thenReturn(wishListItemResponse2);
 
-        PagedModel<WishListItemResponse> actualResponse = wishListService.getUserWishListItems(USER_ID.toString(), SIZE, PAGE, ORDER);
+        Page<WishListItemResponse> actualResponse = wishListService.getUserWishListItems(USER_ID.toString(), SIZE, PAGE, ORDER);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(wishListRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
@@ -169,11 +168,11 @@ class WishListServiceImplTest {
         verify(wishListMapper, times(1)).wishListItemToResponse(wishListItem2, productResponse2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(wishListItems.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(wishListItems.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
@@ -218,7 +217,7 @@ class WishListServiceImplTest {
         when(userRepository.existsByUserId(USER_ID)).thenReturn(true);
         when(wishListRepository.findByUserUserId(USER_ID, pageRequest)).thenReturn(emptyWishListItemPage);
 
-        PagedModel<WishListItemResponse> actualResponse = wishListService.getUserWishListItems(USER_ID.toString(), SIZE, PAGE, ORDER);
+        Page<WishListItemResponse> actualResponse = wishListService.getUserWishListItems(USER_ID.toString(), SIZE, PAGE, ORDER);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(wishListRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
@@ -226,11 +225,11 @@ class WishListServiceImplTest {
         verify(wishListMapper, never()).wishListItemToResponse(any(WishListItem.class), any(ProductResponse.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());

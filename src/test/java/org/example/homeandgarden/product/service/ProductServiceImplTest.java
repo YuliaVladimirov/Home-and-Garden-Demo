@@ -19,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -140,7 +139,7 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY);
+        Page<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), MIN_PRICE, MAX_PRICE, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
@@ -149,11 +148,11 @@ class ProductServiceImplTest {
         verify(productMapper, times(1)).productToResponse(product2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(products.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(products.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
@@ -236,7 +235,7 @@ class ProductServiceImplTest {
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
         when(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(CATEGORY_ID, PRODUCT_STATUS_AVAILABLE, minPrice, maxPrice, pageRequest)).thenReturn(emptyProductPage);
 
-        PagedModel<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), minPrice, maxPrice, SIZE, PAGE, ORDER, SORT_BY);
+        Page<ProductResponse> actualResponse = productService.getCategoryProducts(CATEGORY_ID.toString(), minPrice, maxPrice, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productRepository, times(1)).findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(
@@ -244,11 +243,11 @@ class ProductServiceImplTest {
         verify(productMapper, never()).productToResponse(any(Product.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());
@@ -310,18 +309,18 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(PRODUCT_STATUS_AVAILABLE.name(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<ProductResponse> actualResponse = productService.getProductsByStatus(PRODUCT_STATUS_AVAILABLE.name(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(productRepository, times(1)).findAllByProductStatus(PRODUCT_STATUS_AVAILABLE, pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
         verify(productMapper, times(1)).productToResponse(product2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(products.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(products.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(products.size(), actualResponse.getContent().size());
@@ -388,18 +387,18 @@ class ProductServiceImplTest {
         when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
 
-        PagedModel<ProductResponse> actualResponse = productService.getProductsByStatus(null, SIZE, PAGE, ORDER, SORT_BY);
+        Page<ProductResponse> actualResponse = productService.getProductsByStatus(null, SIZE, PAGE, ORDER, SORT_BY);
 
         verify(productRepository, times(1)).findAll(pageRequest);
         verify(productMapper, times(1)).productToResponse(product1);
         verify(productMapper, times(1)).productToResponse(product2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(products.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(products.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(products.size(), actualResponse.getContent().size());
@@ -479,18 +478,18 @@ class ProductServiceImplTest {
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("PAID", SIZE, PAGE);
+        Page<ProductProjectionResponse> actualResponse = productService.getTopProducts("PAID", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(eq(expectedStatuses), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
         verify(productMapper, times(1)).productProjectionToResponse(productProjection2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(projections.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -556,18 +555,18 @@ class ProductServiceImplTest {
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
+        Page<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(eq(expectedStatuses), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
         verify(productMapper, times(1)).productProjectionToResponse(productProjection2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(projections.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -584,15 +583,15 @@ class ProductServiceImplTest {
 
         when(productRepository.findTopProducts(expectedStatuses, pageRequest)).thenReturn(emptyPage);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
+        Page<ProductProjectionResponse> actualResponse = productService.getTopProducts("CANCELED", SIZE, PAGE);
 
         verify(productRepository, times(1)).findTopProducts(expectedStatuses, pageRequest);
         verify(productMapper, never()).productProjectionToResponse(any(ProductProjection.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
         assertTrue(actualResponse.getContent().isEmpty());
     }
 
@@ -657,18 +656,18 @@ class ProductServiceImplTest {
         when(productMapper.productProjectionToResponse(productProjection1)).thenReturn(productProjectionResponse1);
         when(productMapper.productProjectionToResponse(productProjection2)).thenReturn(productProjectionResponse2);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
+        Page<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
 
         verify(productRepository, times(1)).findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest));
         verify(productMapper, times(1)).productProjectionToResponse(productProjection1);
         verify(productMapper, times(1)).productProjectionToResponse(productProjection2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(projections.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(projections.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(projections.size(), actualResponse.getContent().size());
@@ -677,7 +676,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void getPendingProducts_shouldReturnEmptyPagedModelIfNoPendingProductsMatch() {
+    void getPendingProducts_shouldReturnEmptyPagedModelWhenNoPendingProductsMatch() {
 
         OrderStatus orderStatus = OrderStatus.PAID;
         String orderStatusString = orderStatus.name();
@@ -688,15 +687,15 @@ class ProductServiceImplTest {
 
         when(productRepository.findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest))).thenReturn(emptyPage);
 
-        PagedModel<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
+        Page<ProductProjectionResponse> actualResponse = productService.getPendingProducts(orderStatusString, days, SIZE, PAGE);
 
         verify(productRepository, times(1)).findPendingProducts(eq(orderStatus), any(Instant.class), eq(pageRequest));
         verify(productMapper, never()).productProjectionToResponse(any(ProductProjection.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
         assertTrue(actualResponse.getContent().isEmpty());
     }
 

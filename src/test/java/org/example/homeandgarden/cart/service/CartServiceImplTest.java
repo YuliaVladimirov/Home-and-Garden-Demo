@@ -23,7 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -169,7 +168,7 @@ class CartServiceImplTest {
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
         when(cartMapper.cartItemToResponse(cartItem2, productResponse2)).thenReturn(cartItemResponse2);
 
-        PagedModel<CartItemResponse> actualResponse = cartService.getUserCartItems(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<CartItemResponse> actualResponse = cartService.getUserCartItems(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(cartRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
@@ -179,11 +178,11 @@ class CartServiceImplTest {
         verify(cartMapper, times(1)).cartItemToResponse(cartItem2, productResponse2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(cartItems.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(cartItems.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
@@ -228,7 +227,7 @@ class CartServiceImplTest {
         when(userRepository.existsByUserId(USER_ID)).thenReturn(true);
         when(cartRepository.findByUserUserId(USER_ID, pageRequest)).thenReturn(emptyCartItemPage);
 
-        PagedModel<CartItemResponse> actualResponse = cartService.getUserCartItems(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<CartItemResponse> actualResponse = cartService.getUserCartItems(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(cartRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
@@ -236,11 +235,11 @@ class CartServiceImplTest {
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());

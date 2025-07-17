@@ -27,7 +27,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -159,7 +158,7 @@ class OrderServiceImplTest {
         when(orderMapper.orderToResponse(order1)).thenReturn(orderResponse1);
         when(orderMapper.orderToResponse(order2)).thenReturn(orderResponse2);
 
-        PagedModel<OrderResponse> actualResponse = orderService.getUserOrders(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<OrderResponse> actualResponse = orderService.getUserOrders(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(orderRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
@@ -167,11 +166,11 @@ class OrderServiceImplTest {
         verify(orderMapper, times(1)).orderToResponse(order2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(orders.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(orders.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
@@ -214,18 +213,18 @@ class OrderServiceImplTest {
         when(userRepository.existsByUserId(USER_ID)).thenReturn(true);
         when(orderRepository.findByUserUserId(USER_ID, pageRequest)).thenReturn(emptyOrderPage);
 
-        PagedModel<OrderResponse> actualResponse = orderService.getUserOrders(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<OrderResponse> actualResponse = orderService.getUserOrders(USER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(orderRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(0L, actualResponse.getMetadata().totalElements());
-        assertEquals(0L, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertTrue(actualResponse.getContent().isEmpty());

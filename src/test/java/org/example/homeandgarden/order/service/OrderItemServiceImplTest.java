@@ -17,7 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
-import org.springframework.data.web.PagedModel;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -148,7 +147,7 @@ class OrderItemServiceImplTest {
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
         when(orderItemMapper.orderItemToResponse(orderItem2, productResponse2)).thenReturn(orderItemResponse2);
 
-        PagedModel<OrderItemResponse> actualResponse = orderItemService.getOrderItems(ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<OrderItemResponse> actualResponse = orderItemService.getOrderItems(ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(orderRepository, times(1)).existsByOrderId(ORDER_ID);
         verify(orderItemRepository, times(1)).findByOrderOrderId(ORDER_ID, pageRequest);
@@ -158,11 +157,11 @@ class OrderItemServiceImplTest {
         verify(orderItemMapper, times(1)).orderItemToResponse(orderItem2, productResponse2);
 
         assertNotNull(actualResponse);
-        assertNotNull(actualResponse.getMetadata());
-        assertEquals(orderItems.size(), actualResponse.getMetadata().totalElements());
-        assertEquals(expectedTotalPages, actualResponse.getMetadata().totalPages());
-        assertEquals((long) SIZE, actualResponse.getMetadata().size());
-        assertEquals((long) PAGE, actualResponse.getMetadata().number());
+        assertNotNull(actualResponse.getContent());
+        assertEquals(orderItems.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
 
         assertNotNull(actualResponse.getContent());
         assertEquals(2, actualResponse.getContent().size());
