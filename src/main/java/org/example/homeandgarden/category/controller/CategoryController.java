@@ -79,7 +79,7 @@ public class CategoryController {
     public ResponseEntity<PagedModel<CategoryResponse>> getCategoriesByStatus(
 
             @RequestParam(value = "categoryStatus", required = false)
-            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order orderStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
+            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
             @Parameter(description = "Status of the category in the system")
             String categoryStatus,
 
