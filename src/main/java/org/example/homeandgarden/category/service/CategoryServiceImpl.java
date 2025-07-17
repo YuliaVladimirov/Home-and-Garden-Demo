@@ -10,10 +10,7 @@ import org.example.homeandgarden.category.repository.CategoryRepository;
 import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.shared.MessageResponse;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,19 +25,19 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryMapper categoryMapper;
 
     @Override
-    public PagedModel<CategoryResponse> getAllActiveCategories(Integer size, Integer page, String order, String sortBy) {
+    public Page<CategoryResponse> getAllActiveCategories(Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(categoryRepository.findAllByCategoryStatus(CategoryStatus.ACTIVE, pageRequest).map(categoryMapper::categoryToResponse));
+        return categoryRepository.findAllByCategoryStatus(CategoryStatus.ACTIVE, pageRequest).map(categoryMapper::categoryToResponse);
     }
 
     @Override
-    public PagedModel<CategoryResponse> getCategoriesByStatus(String categoryStatus, Integer size, Integer page, String order, String sortBy) {
+    public Page<CategoryResponse> getCategoriesByStatus(String categoryStatus, Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         if(categoryStatus == null) {
-            return new PagedModel<>(categoryRepository.findAll(pageRequest).map(categoryMapper::categoryToResponse));
+            return categoryRepository.findAll(pageRequest).map(categoryMapper::categoryToResponse);
         } else {
             CategoryStatus status = CategoryStatus.valueOf(categoryStatus.toUpperCase());
-            return new PagedModel<>(categoryRepository.findAllByCategoryStatus(status, pageRequest).map(categoryMapper::categoryToResponse));
+            return categoryRepository.findAllByCategoryStatus(status, pageRequest).map(categoryMapper::categoryToResponse);
         }
     }
 

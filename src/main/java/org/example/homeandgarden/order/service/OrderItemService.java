@@ -1,9 +1,9 @@
 package org.example.homeandgarden.order.service;
 
 import org.example.homeandgarden.order.dto.OrderItemResponse;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 
 public interface OrderItemService {
 
-    PagedModel<OrderItemResponse>  getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy);
+    Page<OrderItemResponse> getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy);
 }

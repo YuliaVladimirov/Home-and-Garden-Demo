@@ -19,7 +19,6 @@ import org.example.homeandgarden.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,7 +40,7 @@ public class OrderServiceImpl implements OrderService{
     private final OrderItemMapper orderItemMapper;
 
     @Override
-    public PagedModel<OrderResponse> getUserOrders(String userId, Integer size, Integer page, String order, String sortBy) {
+    public Page<OrderResponse> getUserOrders(String userId, Integer size, Integer page, String order, String sortBy) {
         UUID id = UUID.fromString(userId);
         if (!userRepository.existsByUserId(id)) {
             throw new DataNotFoundException(String.format("User with id: %s, was not found.", userId));
@@ -49,7 +48,7 @@ public class OrderServiceImpl implements OrderService{
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         Page<Order> orderPage = orderRepository.findByUserUserId(id, pageRequest);
 
-        return new PagedModel<>(orderPage.map(orderMapper::orderToResponse));
+        return orderPage.map(orderMapper::orderToResponse);
     }
 
     @Override

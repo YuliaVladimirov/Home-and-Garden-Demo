@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +36,7 @@ public class CartServiceImpl implements CartService {
     private final ProductMapper productMapper;
 
     @Override
-    public PagedModel<CartItemResponse> getUserCartItems(String userId, Integer size, Integer page, String order, String sortBy) {
+    public Page<CartItemResponse> getUserCartItems(String userId, Integer size, Integer page, String order, String sortBy) {
         UUID id = UUID.fromString(userId);
         if (!userRepository.existsByUserId(id)) {
             throw new DataNotFoundException(String.format("User with id: %s, was not found.", userId));
@@ -45,8 +44,8 @@ public class CartServiceImpl implements CartService {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         Page<CartItem> cartPage = cartRepository.findByUserUserId(id, pageRequest);
 
-        return new PagedModel<>(cartPage.map((item) -> cartMapper.cartItemToResponse(item,
-                productMapper.productToResponse(item.getProduct()))));
+        return cartPage.map((item) -> cartMapper.cartItemToResponse(item,
+                productMapper.productToResponse(item.getProduct())));
     }
 
     @Override

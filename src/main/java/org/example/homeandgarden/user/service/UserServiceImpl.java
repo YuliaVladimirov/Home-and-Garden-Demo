@@ -8,7 +8,7 @@ import org.example.homeandgarden.user.entity.enums.UserRole;
 import org.example.homeandgarden.user.entity.User;
 import org.example.homeandgarden.user.mapper.UserMapper;
 import org.example.homeandgarden.user.repository.UserRepository;
-import org.springframework.data.web.PagedModel;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,9 +29,9 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
-    public PagedModel<UserResponse> getUsersByStatus(Boolean isEnabled, Boolean isNonLocked, Integer size, Integer page, String order, String sortBy) {
+    public Page<UserResponse> getUsersByStatus(Boolean isEnabled, Boolean isNonLocked, Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest).map(userMapper::userToResponseDetailed));
+        return userRepository.findAllByIsEnabledAndIsNonLocked(isEnabled, isNonLocked, pageRequest).map(userMapper::userToResponseDetailed);
     }
 
     @Override

@@ -12,10 +12,10 @@ import org.example.homeandgarden.product.entity.enums.ProductStatus;
 import org.example.homeandgarden.product.mapper.ProductMapper;
 import org.example.homeandgarden.product.repository.ProductRepository;
 import org.example.homeandgarden.shared.MessageResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
 
     @Override
-    public PagedModel<ProductResponse> getCategoryProducts(String categoryId, BigDecimal minPrice, BigDecimal maxPrice, Integer size, Integer page, String order, String sortBy) {
+    public Page<ProductResponse> getCategoryProducts(String categoryId, BigDecimal minPrice, BigDecimal maxPrice, Integer size, Integer page, String order, String sortBy) {
 
         UUID id = UUID.fromString(categoryId);
         Category existingCategory = categoryRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Category with id: %s, was not found.", categoryId)));
@@ -46,36 +46,36 @@ public class ProductServiceImpl implements ProductService {
         }
 
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
-        return new PagedModel<>(productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(id, ProductStatus.AVAILABLE, minPrice, maxPrice, pageRequest).map(productMapper::productToResponse));
+        return productRepository.findAllByCategoryCategoryIdAndProductStatusIsAndCurrentPriceGreaterThanAndCurrentPriceLessThan(id, ProductStatus.AVAILABLE, minPrice, maxPrice, pageRequest).map(productMapper::productToResponse);
     }
 
     @Override
-    public PagedModel<ProductResponse> getProductsByStatus(String productStatus, Integer size, Integer page, String order, String sortBy) {
+    public Page<ProductResponse> getProductsByStatus(String productStatus, Integer size, Integer page, String order, String sortBy) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         if(productStatus == null) {
-            return new PagedModel<>(productRepository.findAll(pageRequest).map(productMapper::productToResponse));
+            return productRepository.findAll(pageRequest).map(productMapper::productToResponse);
         } else {
             ProductStatus status = ProductStatus.valueOf(productStatus.toUpperCase());
-            return new PagedModel<>(productRepository.findAllByProductStatus(status, pageRequest).map(productMapper::productToResponse));
+            return productRepository.findAllByProductStatus(status, pageRequest).map(productMapper::productToResponse);
         }
     }
 
     @Override
-    public PagedModel<ProductProjectionResponse> getTopProducts(String status, Integer size, Integer page) {
+    public Page<ProductProjectionResponse> getTopProducts(String status, Integer size, Integer page) {
         List<OrderStatus> statuses;
         if (status.equalsIgnoreCase("PAID")) {
             statuses = List.of(OrderStatus.PAID, OrderStatus.ON_THE_WAY, OrderStatus.DELIVERED);
         } else {
             statuses = List.of(OrderStatus.CANCELED, OrderStatus.RETURNED);
         }
-        return new PagedModel<>(productRepository.findTopProducts(statuses, PageRequest.of(page, size)).map(productMapper::productProjectionToResponse));
+        return productRepository.findTopProducts(statuses, PageRequest.of(page, size)).map(productMapper::productProjectionToResponse);
     }
 
     @Override
-    public PagedModel<ProductProjectionResponse> getPendingProducts(String orderStatus, Integer days, Integer size, Integer page) {
+    public Page<ProductProjectionResponse> getPendingProducts(String orderStatus, Integer days, Integer size, Integer page) {
         OrderStatus status = OrderStatus.valueOf(orderStatus.toUpperCase());
         Instant cutoff = Instant.now().minus(days, ChronoUnit.DAYS);
-        return new PagedModel<>(productRepository.findPendingProducts(status, cutoff, PageRequest.of(page, size)).map(productMapper::productProjectionToResponse));
+        return productRepository.findPendingProducts(status, cutoff, PageRequest.of(page, size)).map(productMapper::productProjectionToResponse);
     }
 
     @Override

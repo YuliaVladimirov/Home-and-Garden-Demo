@@ -12,7 +12,6 @@ import org.example.homeandgarden.product.mapper.ProductMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -28,7 +27,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final ProductMapper productMapper;
 
     @Override
-    public PagedModel<OrderItemResponse> getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy) {
+    public Page<OrderItemResponse> getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy) {
         UUID id = UUID.fromString(orderId);
         if (!orderRepository.existsByOrderId(id)) {
             throw new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId));
@@ -36,7 +35,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
         Page<OrderItem> orderItemPage = orderItemRepository.findByOrderOrderId(id, pageRequest);
 
-        return new PagedModel<>(orderItemPage.map((item) -> orderItemMapper.orderItemToResponse(item,
-                productMapper.productToResponse(item.getProduct()))));
+        return orderItemPage.map((item) -> orderItemMapper.orderItemToResponse(item,
+                productMapper.productToResponse(item.getProduct())));
     }
 }

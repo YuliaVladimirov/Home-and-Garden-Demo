@@ -18,7 +18,6 @@ import org.example.homeandgarden.wishlist.entity.WishListItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PagedModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ public class WishListServiceImpl implements WishListService {
     private final ProductMapper productMapper;
 
     @Override
-    public PagedModel<WishListItemResponse> getUserWishListItems(String userId, Integer size, Integer page, String order) {
+    public Page<WishListItemResponse> getUserWishListItems(String userId, Integer size, Integer page, String order) {
 
         UUID id = UUID.fromString(userId);
         if (!userRepository.existsByUserId(id)) {
@@ -46,8 +45,8 @@ public class WishListServiceImpl implements WishListService {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), "addedAt");
         Page<WishListItem> wishListPage = wishListRepository.findByUserUserId(id, pageRequest);
 
-        return new PagedModel<>(wishListPage.map((item) -> wishListMapper.wishListItemToResponse(item,
-                productMapper.productToResponse(item.getProduct()))));
+        return wishListPage.map((item) -> wishListMapper.wishListItemToResponse(item,
+                productMapper.productToResponse(item.getProduct())));
     }
 
 
