@@ -169,6 +169,7 @@ class CategoryControllerTest {
 
     @Test
     void getAllActiveCategories_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
         mockMvc.perform(get("/categories")
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
@@ -183,6 +184,7 @@ class CategoryControllerTest {
 
     @Test
     void getAllActiveCategories_shouldReturnBadRequestWhenInvalidPage() throws Exception {
+
         mockMvc.perform(get("/categories")
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -356,6 +358,7 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidCategoryStatus() throws Exception {
+
         mockMvc.perform(get("/categories/status")
                         .param("categoryStatus", "INVALID_STATUS")
                         .accept(MediaType.APPLICATION_JSON))
@@ -371,6 +374,7 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
         mockMvc.perform(get("/categories/status")
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
@@ -386,6 +390,7 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
         mockMvc.perform(get("/categories/status")
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -401,6 +406,7 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
         mockMvc.perform(get("/categories/status")
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
@@ -416,6 +422,7 @@ class CategoryControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
         mockMvc.perform(get("/categories/status")
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
@@ -431,7 +438,7 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnPagedProducts_whenValidParameters() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -457,13 +464,13 @@ class CategoryControllerTest {
         Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 50);
 
         when(productService.getCategoryProducts(
-                eq(ValidCategoryId),
+                eq(validCategoryId),
                 eq(new BigDecimal("10.00")),
                 eq(new BigDecimal("100.00")),
                 eq(2), eq(0), eq("DESC"), eq("productName")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("minPrice", "10.00")
                         .param("maxPrice", "100.00")
                         .param("size", "2")
@@ -483,7 +490,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.totalPages").value(25));
 
         verify(productService, times(1)).getCategoryProducts(
-                eq(ValidCategoryId),
+                eq(validCategoryId),
                 eq(new BigDecimal("10.00")),
                 eq(new BigDecimal("100.00")),
                 eq(2), eq(0), eq("DESC"), eq("productName"));
@@ -492,7 +499,7 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnPagedProducts_whenDefaultParameters() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -518,12 +525,12 @@ class CategoryControllerTest {
         Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 20);
 
         when(productService.getCategoryProducts(
-                eq(ValidCategoryId),
+                eq(validCategoryId),
                 eq(new BigDecimal("0.0")),
                 eq(new BigDecimal("999999.0")),
                 eq(10), eq(0), eq("ASC"), eq("addedAt"))).thenReturn(mockPage);
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -537,7 +544,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.totalPages").value(2));
 
         verify(productService, times(1)).getCategoryProducts(
-                eq(ValidCategoryId),
+                eq(validCategoryId),
                 eq(new BigDecimal("0.0")),
                 eq(new BigDecimal("999999.0")),
                 eq(10), eq(0), eq("ASC"), eq("addedAt"));
@@ -546,9 +553,7 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenInvalidCategoryId() throws Exception {
 
-        String invalidCategoryId = "Invalid UUID";
-
-        mockMvc.perform(get("/categories/{categoryId}/products", invalidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", "INVALID_UUID")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
@@ -562,9 +567,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMinPriceIsNegative() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("minPrice", "-0.01")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -579,9 +584,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMaxPriceIsNegative() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("maxPrice", "-0.01")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -596,9 +601,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMinPriceExceedsLimit() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("minPrice", "1000000.00")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -613,9 +618,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMaxPriceExceedsLimit() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("maxPrice", "1000000.00")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -630,9 +635,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMinPriceHasTooManyFractionDigits() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("minPrice", "123456.789")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -647,9 +652,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenMaxPriceHasTooManyFractionDigits() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("maxPrice", "123456.789")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -664,9 +669,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenInvalidSize() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -681,9 +686,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenInvalidPage() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -698,9 +703,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -715,9 +720,9 @@ class CategoryControllerTest {
     @Test
     void getCategoryProducts_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/categories/{categoryId}/products", ValidCategoryId)
+        mockMvc.perform(get("/categories/{categoryId}/products", validCategoryId)
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -863,7 +868,7 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateCategory_shouldReturnUpdatedCategory_whenValidRequestAndAdminRole() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest request = CategoryRequest.builder()
                 .categoryName("Updated Category Name")
@@ -877,10 +882,10 @@ class CategoryControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(categoryService.updateCategory(eq(ValidCategoryId), eq(request)))
+        when(categoryService.updateCategory(eq(validCategoryId), eq(request)))
                 .thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -890,21 +895,21 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.createdAt").value(expectedResponse.getCreatedAt().toString()))
                 .andExpect(jsonPath("$.updatedAt").value(expectedResponse.getUpdatedAt().toString()));
 
-        verify(categoryService, times(1)).updateCategory(eq(ValidCategoryId), eq(request));
+        verify(categoryService, times(1)).updateCategory(eq(validCategoryId), eq(request));
     }
 
     @Test
     @WithMockUser(roles = {"CLIENT"})
     void updateCategory_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest request = CategoryRequest.builder()
                 .categoryName("Updated Category Name")
                 .build();
 
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
@@ -919,14 +924,14 @@ class CategoryControllerTest {
     @Test
     void updateCategory_shouldReturnUnauthorized_whenNoAuthentication() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest request = CategoryRequest.builder()
                 .categoryName("Updated Category Name")
                 .build();
 
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -942,13 +947,11 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateCategory_shouldReturnBadRequest_whenInvalidCategoryId() throws Exception {
 
-        String invalidCategoryId = "INVALID_UUID";
-
         CategoryRequest request = CategoryRequest.builder()
                 .categoryName("Updated Category Name")
                 .build();
 
-        mockMvc.perform(patch("/categories/{categoryId}", invalidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", "INVALID_UUID")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -964,13 +967,13 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateCategory_shouldReturnBadRequest_whenCategoryNameIsAnEmptyString() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest invalidRequest = CategoryRequest.builder()
                 .categoryName("")
                 .build();
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -986,13 +989,13 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateCategory_shouldReturnBadRequest_whenCategoryNameIsTooShort() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest invalidRequest = CategoryRequest.builder()
                 .categoryName("A")
                 .build();
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -1008,13 +1011,13 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateCategory_shouldReturnBadRequest_whenCategoryNameIsTooLong() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         CategoryRequest invalidRequest = CategoryRequest.builder()
                 .categoryName("A".repeat(51))
                 .build();
 
-        mockMvc.perform(patch("/categories/{categoryId}", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
@@ -1026,36 +1029,35 @@ class CategoryControllerTest {
         verify(categoryService, never()).updateCategory(any(), any());
     }
 
-
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void setCategoryStatus_shouldReturnOk_whenValidRequestAndAdminRole() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message("Category status updated successfully to ACTIVE")
                 .build();
 
-        when(categoryService.setCategoryStatus(eq(ValidCategoryId), eq("ACTIVE")))
+        when(categoryService.setCategoryStatus(eq(validCategoryId), eq("ACTIVE")))
                 .thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/categories/{categoryId}/status", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
                         .param("categoryStatus", "ACTIVE")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(expectedResponse.getMessage()));
 
-        verify(categoryService, times(1)).setCategoryStatus(eq(ValidCategoryId), eq("ACTIVE"));
+        verify(categoryService, times(1)).setCategoryStatus(eq(validCategoryId), eq("ACTIVE"));
     }
 
     @Test
     @WithMockUser(roles = {"CLIENT"})
     void setCategoryStatus_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(patch("/categories/{categoryId}/status", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
                         .param("categoryStatus", "ACTIVE")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
@@ -1070,9 +1072,9 @@ class CategoryControllerTest {
     @Test
     void setCategoryStatus_shouldReturnUnauthorized_whenNoAuthentication() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(patch("/categories/{categoryId}/status", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
                         .param("categoryStatus", "ACTIVE")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
@@ -1088,29 +1090,27 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void setCategoryStatus_shouldReturnOk_whenStatusOmittedAndDefaultUsed() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message("Category status updated successfully to ACTIVE")
                 .build();
-        when(categoryService.setCategoryStatus(eq(ValidCategoryId), eq("ACTIVE")))
+        when(categoryService.setCategoryStatus(eq(validCategoryId), eq("ACTIVE")))
                 .thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/categories/{categoryId}/status", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(expectedResponse.getMessage()));
 
-        verify(categoryService, times(1)).setCategoryStatus(eq(ValidCategoryId), eq("ACTIVE"));
+        verify(categoryService, times(1)).setCategoryStatus(eq(validCategoryId), eq("ACTIVE"));
     }
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void setCategoryStatus_shouldReturnBadRequest_whenInvalidCategoryId() throws Exception {
 
-        String invalidCategoryId = "Invalid UUID";
-
-        mockMvc.perform(patch("/categories/{categoryId}/status", invalidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", "INVALID_UUID")
                         .param("categoryStatus", "ACTIVE")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1126,9 +1126,9 @@ class CategoryControllerTest {
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void setCategoryStatus_shouldReturnBadRequest_whenInvalidCategoryStatus() throws Exception {
 
-        String ValidCategoryId = UUID.randomUUID().toString();
+        String validCategoryId = UUID.randomUUID().toString();
 
-        mockMvc.perform(patch("/categories/{categoryId}/status", ValidCategoryId)
+        mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
                         .param("categoryStatus", "INVALID_STATUS")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
