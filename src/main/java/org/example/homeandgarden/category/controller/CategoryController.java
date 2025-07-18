@@ -120,14 +120,16 @@ public class CategoryController {
             String categoryId,
 
             @RequestParam(value = "minPrice",defaultValue = "0.0")
-            @DecimalMin(value = "0.0")
-            @Digits(integer = 6, fraction = 2)
+            @DecimalMin(value = "0.0", message = "Minimal Price must be non-negative")
+            @DecimalMax(value = "999999.99", message = "Minimal Price must be less than or equal to 999999.99")
+            @Digits(integer = 6, fraction = 2, message = "Minimal Price must have up to 6 digits and 2 decimal places")
             @Parameter(description = "Minimal price for the filter range")
             BigDecimal minPrice,
 
             @RequestParam(value = "maxPrice",defaultValue = "999999.0")
-            @DecimalMax(value = "999999.0")
-            @Digits(integer = 6, fraction = 2)
+            @DecimalMin(value = "0.0", message = "Maximal Price must be non-negative")
+            @DecimalMax(value = "999999.99", message = "Maximal Price must be less than or equal to 999999.99")
+            @Digits(integer = 6, fraction = 2, message = "Maximal Price must have up to 6 digits and 2 decimal places")
             @Parameter(description = "Maximal price for the filter range")
             BigDecimal maxPrice,
 
