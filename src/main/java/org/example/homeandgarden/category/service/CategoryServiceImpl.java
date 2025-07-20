@@ -64,7 +64,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new IllegalArgumentException(String.format("Category with id: %s, is inactive and can not be updated.", categoryId));
         }
 
-        Optional.ofNullable(categoryRequest.getCategoryName()).ifPresent(existingCategory::setCategoryName);
+        existingCategory.setCategoryName(categoryRequest.getCategoryName());
 
         Category updatedCategory = categoryRepository.saveAndFlush(existingCategory);
         return categoryMapper.categoryToResponse(updatedCategory);
