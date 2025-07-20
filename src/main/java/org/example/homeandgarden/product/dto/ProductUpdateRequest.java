@@ -28,14 +28,16 @@ public class ProductUpdateRequest {
     private String description;
 
     @JsonProperty("listPrice")
-    @DecimalMin(value = "0.00")
-    @Digits(integer=6, fraction=2)
+    @DecimalMin(value = "0.0", message = "List price must be non-negative")
+    @DecimalMax(value = "999999.99", message = "List price must be less than or equal to 999999.99")
+    @Digits(integer = 6, fraction = 2, message = "List price must have up to 6 digits and 2 decimal places")
     @Schema(description = "Price of the product in the catalog")
     private BigDecimal listPrice;
 
     @JsonProperty("currentPrice")
-    @DecimalMin(value = "0.00")
-    @Digits(integer=6, fraction=2)
+    @DecimalMin(value = "0.0", message = "Current price must be non-negative")
+    @DecimalMax(value = "999999.99", message = "Current price must be less than or equal to 999999.99")
+    @Digits(integer = 6, fraction = 2, message = "Current price must have up to 6 digits and 2 decimal places")
     @Schema(description = "Current price of the product")
     private BigDecimal currentPrice;
 

@@ -36,9 +36,10 @@ public class ProductCreateRequest {
     private String description;
 
     @JsonProperty("listPrice")
-    @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.00")
-    @Digits(integer=6, fraction=2)
+    @NotNull(message = "List price is required")
+    @DecimalMin(value = "0.0", message = "List price must be non-negative")
+    @DecimalMax(value = "999999.99", message = "List price must be less than or equal to 999999.99")
+    @Digits(integer = 6, fraction = 2, message = "List price must have up to 6 digits and 2 decimal places")
     @Schema(description = "Price of the product in the catalog")
     private BigDecimal listPrice;
 
