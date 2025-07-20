@@ -574,7 +574,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal Price must be non-negative")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal price must be non-negative")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -591,7 +591,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal Price must be non-negative")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal price must be non-negative")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -608,7 +608,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal Price must have up to 6 digits and 2 decimal places","Minimal Price must be less than or equal to 999999.99")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal price must have up to 6 digits and 2 decimal places","Minimal price must be less than or equal to 999999.99")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -625,7 +625,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal Price must have up to 6 digits and 2 decimal places","Maximal Price must be less than or equal to 999999.99")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal price must have up to 6 digits and 2 decimal places","Maximal price must be less than or equal to 999999.99")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -642,7 +642,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal Price must have up to 6 digits and 2 decimal places")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Minimal price must have up to 6 digits and 2 decimal places")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -659,7 +659,7 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal Price must have up to 6 digits and 2 decimal places")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Maximal price must have up to 6 digits and 2 decimal places")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -806,7 +806,7 @@ class CategoryControllerTest {
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
-    void addCategory_shouldReturnBadRequest_whenCategoryNameIsAnEmptyString() throws Exception {
+    void addCategory_shouldReturnBadRequest_whenCategoryNameIsBlank() throws Exception {
 
         CategoryRequest invalidRequest = CategoryRequest.builder()
                 .categoryName("")
@@ -930,7 +930,6 @@ class CategoryControllerTest {
                 .categoryName("Updated Category Name")
                 .build();
 
-
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -965,7 +964,7 @@ class CategoryControllerTest {
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateCategory_shouldReturnBadRequest_whenCategoryNameIsAnEmptyString() throws Exception {
+    void updateCategory_shouldReturnBadRequest_whenCategoryNameIsBlank() throws Exception {
 
         String validCategoryId = UUID.randomUUID().toString();
 
