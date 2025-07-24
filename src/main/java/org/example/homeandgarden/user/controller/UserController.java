@@ -69,12 +69,12 @@ public class UserController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "registeredAt")
-            @Pattern(regexp = "^(firstName|lastName|registeredAt|updatedAt)$", message = "Invalid value: Must be one of the following: firstName, lastName, registeredAt, updatedAt")
+            @Pattern(regexp = "^(firstName|lastName|registeredAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'firstName', 'lastName', 'registeredAt', 'updatedAt'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"firstName", "lastName", "registeredAt", "updatedAt"}))
             String sortBy) {
 
@@ -123,7 +123,7 @@ public class UserController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order) {
 
@@ -155,12 +155,12 @@ public class UserController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "addedAt")
-            @Pattern(regexp = "^(addedAt|quantity)$", message = "Invalid value: Must be either: addedAt or quantity")
+            @Pattern(regexp = "^(addedAt|quantity)$", message = "Invalid value: Must be either: 'addedAt' or 'quantity'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"addedAt", "quantity"}))
             String sortBy) {
 
@@ -192,12 +192,12 @@ public class UserController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "createdAt")
-            @Pattern(regexp = "^(status|createdAt)$", message = "Invalid value: Must be either: orderStatus or createdAt")
+            @Pattern(regexp = "^(status|createdAt)$", message = "Invalid value: Must be either: 'orderStatus' or 'createdAt'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"status", "createdAt"}))
             String sortBy) {
 

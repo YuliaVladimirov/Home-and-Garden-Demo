@@ -60,12 +60,12 @@ public class OrderController {
             Integer page,
 
             @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be ASC or DESC (asc or desc)")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
             @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
             String order,
 
             @RequestParam(value = "sortBy", defaultValue = "priceAtPurchase")
-            @Pattern(regexp = "^(quantity|priceAtPurchase)$", message = "Invalid value: Must be either: quantity or priceAtPurchase")
+            @Pattern(regexp = "^(quantity|priceAtPurchase)$", message = "Invalid value: Must be either: 'quantity' or 'priceAtPurchase'")
             @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"quantity", "priceAtPurchase"}))
             String sortBy) {
 
