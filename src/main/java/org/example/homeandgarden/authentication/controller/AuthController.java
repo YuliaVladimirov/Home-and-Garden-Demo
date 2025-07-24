@@ -1,17 +1,17 @@
-package org.example.homeandgarden.security.controller;
+package org.example.homeandgarden.authentication.controller;
 
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.example.homeandgarden.security.dto.LoginRequest;
-import org.example.homeandgarden.security.dto.RefreshRequest;
-import org.example.homeandgarden.security.dto.LoginResponse;
-import org.example.homeandgarden.security.dto.RefreshResponse;
+import org.example.homeandgarden.authentication.dto.LoginRequest;
+import org.example.homeandgarden.authentication.dto.RefreshRequest;
+import org.example.homeandgarden.authentication.dto.LoginResponse;
+import org.example.homeandgarden.authentication.dto.RefreshResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.example.homeandgarden.security.service.AuthService;
+import org.example.homeandgarden.authentication.service.AuthService;
 import org.example.homeandgarden.shared.ErrorResponse;
 import org.example.homeandgarden.swagger.GroupFourErrorResponses;
 import org.example.homeandgarden.swagger.GroupThreeErrorResponses;

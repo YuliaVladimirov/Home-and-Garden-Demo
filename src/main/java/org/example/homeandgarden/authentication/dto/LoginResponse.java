@@ -1,4 +1,4 @@
-package org.example.homeandgarden.security.dto;
+package org.example.homeandgarden.authentication.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

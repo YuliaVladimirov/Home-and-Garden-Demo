@@ -1,4 +1,4 @@
-package org.example.homeandgarden.security.dto;
+package org.example.homeandgarden.authentication.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,7 +27,7 @@ public class LoginRequest {
     @JsonProperty("password")
     @NotBlank(message = "Password is required")
     @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,20}$",
-            message = "password: invalid password format, must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")
+            message = "Invalid value for password: Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")
     @Schema(description = "User's password")
     private String password;
 }
