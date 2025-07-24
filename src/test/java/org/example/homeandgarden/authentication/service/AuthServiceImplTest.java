@@ -1,6 +1,5 @@
 package org.example.homeandgarden.authentication.service;
 
-import org.example.homeandgarden.authentication.service.AuthServiceImpl;
 import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.security.config.JwtService;
