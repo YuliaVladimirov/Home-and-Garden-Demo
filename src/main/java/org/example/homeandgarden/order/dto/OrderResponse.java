@@ -64,5 +64,4 @@ public class OrderResponse {
     @JsonProperty("updatedAt")
     @Schema(description = "Date the order was last updated")
     private Instant updatedAt;
-
 }

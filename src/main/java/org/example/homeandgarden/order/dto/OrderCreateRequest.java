@@ -61,7 +61,7 @@ public class OrderCreateRequest {
 
     @JsonProperty("deliveryMethod")
     @NotBlank(message = "Delivery method is required")
-    @Pattern(regexp = "^(COURIER_DELIVERY|CUSTOMER_PICKUP)$", message = "Invalid Delivery method: Must be one of: COURIER_DELIVERY or CUSTOMER_PICKUP")
+    @Pattern(regexp = "^(COURIER_DELIVERY|CUSTOMER_PICKUP)$", message = "Invalid Delivery method: Must be one of: 'COURIER_DELIVERY' or 'CUSTOMER_PICKUP'")
     @Schema(description = "Order delivery method")
     private String deliveryMethod;
 

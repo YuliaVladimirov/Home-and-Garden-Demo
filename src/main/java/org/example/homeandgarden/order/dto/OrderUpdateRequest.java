@@ -22,12 +22,12 @@ public class OrderUpdateRequest {
     private String firstName;
 
     @JsonProperty("lastName")
-    @Size(min = 2, max = 30, message = "Invalid first name: Must be of 2 - 30 characters")
+    @Size(min = 2, max = 30, message = "Invalid last name: Must be of 2 - 30 characters")
     @Schema(description = "Last name of order recipient")
     private String lastName;
 
     @JsonProperty("address")
-    @Size(min = 1, max = 255, message = "Delivery address must be less than or equal to 255 characters")
+    @Size(max = 255, message = "Delivery address must be less than or equal to 255 characters")
     @Schema(description = "Shipping address")
     private String address;
 
@@ -47,7 +47,7 @@ public class OrderUpdateRequest {
     private String phone;
 
     @JsonProperty("deliveryMethod")
-    @Pattern(regexp = "^(COURIER_DELIVERY|CUSTOMER_PICKUP)$", message = "Invalid Delivery method: Must be one of: COURIER_DELIVERY or CUSTOMER_PICKUP")
+    @Pattern(regexp = "^(COURIER_DELIVERY|CUSTOMER_PICKUP)$", message = "Invalid Delivery method: Must be one of: 'COURIER_DELIVERY' or 'CUSTOMER_PICKUP'")
     @Schema(description = "Order delivery method")
     private String deliveryMethod;
 }
