@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -85,7 +86,7 @@ class CategoryControllerTest {
 
         CategoryResponse categoryResponse1 = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category One")
+                .categoryName("Category One")
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
@@ -93,14 +94,15 @@ class CategoryControllerTest {
 
         CategoryResponse categoryResponse2 = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category Two")
+                .categoryName("Category Two")
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .build();
 
         List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 100);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "categoryName");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 100);
 
         when(categoryService.getAllActiveCategories(eq(2), eq(0), eq("DESC"), eq("categoryName"))).thenReturn(mockPage);
 
@@ -113,10 +115,14 @@ class CategoryControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].categoryName").value("Test Category One"))
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
+                .andExpect(jsonPath("$.content[0].categoryName").value("Category One"))
                 .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.ACTIVE.name()))
-                .andExpect(jsonPath("$.content[1].categoryName").value("Test Category Two"))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
+                .andExpect(jsonPath("$.content[1].categoryName").value("Category Two"))
                 .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(100))
@@ -130,7 +136,7 @@ class CategoryControllerTest {
 
         CategoryResponse categoryResponse1 = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category One")
+                .categoryName("Category One")
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
@@ -138,14 +144,15 @@ class CategoryControllerTest {
 
         CategoryResponse categoryResponse2 = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category Two")
+                .categoryName("Category Two")
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .build();
 
         List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 50);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
 
         when(categoryService.getAllActiveCategories(eq(10), eq(0), eq("ASC"), eq("createdAt")))
                 .thenReturn(mockPage);
@@ -155,10 +162,14 @@ class CategoryControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].categoryName").value("Test Category One"))
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
+                .andExpect(jsonPath("$.content[0].categoryName").value("Category One"))
                 .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.ACTIVE.name()))
-                .andExpect(jsonPath("$.content[1].categoryName").value("Test Category Two"))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
+                .andExpect(jsonPath("$.content[1].categoryName").value("Category Two"))
                 .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(50))
@@ -246,7 +257,8 @@ class CategoryControllerTest {
                 .build();
 
         List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 50);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "categoryName");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
 
         when(categoryService.getCategoriesByStatus(eq("INACTIVE"), eq(2), eq(0), eq("DESC"), eq("categoryName")))
                 .thenReturn(mockPage);
@@ -261,10 +273,14 @@ class CategoryControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
                 .andExpect(jsonPath("$.content[0].categoryName").value("Inactive Category One"))
                 .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.INACTIVE.name()))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
                 .andExpect(jsonPath("$.content[1].categoryName").value("Inactive Category Two"))
                 .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.INACTIVE.name()))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(50))
@@ -294,7 +310,8 @@ class CategoryControllerTest {
                 .build();
 
         List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 50);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
 
         when(categoryService.getCategoriesByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("createdAt")))
                 .thenReturn(mockPage);
@@ -304,10 +321,14 @@ class CategoryControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
                 .andExpect(jsonPath("$.content[0].categoryName").value("Active Category One"))
                 .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
                 .andExpect(jsonPath("$.content[1].categoryName").value("Active Category Two"))
                 .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(50))
@@ -443,9 +464,11 @@ class CategoryControllerTest {
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product One")
+                .description("Description One")
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(35.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image1.jpg")
                 .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
@@ -453,15 +476,18 @@ class CategoryControllerTest {
         ProductResponse productResponse2 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product Two")
+                .description("Description Two")
                 .listPrice(BigDecimal.valueOf(50.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image2.jpg")
                 .addedAt(Instant.now().minus(11, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(7, ChronoUnit.DAYS))
                 .build();
 
         List<ProductResponse> content = Arrays.asList(productResponse1, productResponse2);
-        Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 50);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "productName");
+        Page<ProductResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
 
         when(productService.getCategoryProducts(
                 eq(validCategoryId),
@@ -480,10 +506,14 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].productId").exists())
                 .andExpect(jsonPath("$.content[0].productName").value("Product One"))
-                .andExpect(jsonPath("$.content[0].currentPrice").value("35.0"))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(35.00)))
+
+                .andExpect(jsonPath("$.content[1].productId").exists())
                 .andExpect(jsonPath("$.content[1].productName").value("Product Two"))
-                .andExpect(jsonPath("$.content[1].currentPrice").value("40.0"))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(40.00)))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(50))
@@ -504,9 +534,11 @@ class CategoryControllerTest {
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product One")
+                .description("Description One")
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(35.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image1.jpg")
                 .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
@@ -514,15 +546,18 @@ class CategoryControllerTest {
         ProductResponse productResponse2 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product Two")
+                .description("Description Two")
                 .listPrice(BigDecimal.valueOf(50.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image2.jpg")
                 .addedAt(Instant.now().minus(11, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(7, ChronoUnit.DAYS))
                 .build();
 
         List<ProductResponse> content = Arrays.asList(productResponse1, productResponse2);
-        Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 20);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
+        Page<ProductResponse> mockPage = new PageImpl<>(content, pageRequest, 20);
 
         when(productService.getCategoryProducts(
                 eq(validCategoryId),
@@ -534,10 +569,14 @@ class CategoryControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].productId").exists())
                 .andExpect(jsonPath("$.content[0].productName").value("Product One"))
-                .andExpect(jsonPath("$.content[0].currentPrice").value("35.0"))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(35.00)))
+
+                .andExpect(jsonPath("$.content[1].productId").exists())
                 .andExpect(jsonPath("$.content[1].productName").value("Product Two"))
-                .andExpect(jsonPath("$.content[1].currentPrice").value("40.0"))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(40.00)))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(20))
@@ -744,25 +783,25 @@ class CategoryControllerTest {
 
         CategoryResponse expectedResponse = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category")
+                .categoryName(request.getCategoryName())
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        when(categoryService.addCategory(any(CategoryRequest.class))).thenReturn(expectedResponse);
+        when(categoryService.addCategory(eq(request))).thenReturn(expectedResponse);
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))).andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.categoryId").value(expectedResponse.getCategoryId().toString()))
-                .andExpect(jsonPath("$.categoryName").value(expectedResponse.getCategoryName()))
-                .andExpect(jsonPath("$.categoryStatus").value(expectedResponse.getCategoryStatus().name()))
-                .andExpect(jsonPath("$.createdAt").value(expectedResponse.getCreatedAt().toString()))
-                .andExpect(jsonPath("$.updatedAt").value(expectedResponse.getUpdatedAt().toString()));
+                .andExpect(jsonPath("$.categoryId").exists())
+                .andExpect(jsonPath("$.categoryName").value("Test Category"))
+                .andExpect(jsonPath("$.categoryStatus").value(CategoryStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(categoryService, times(1)).addCategory(any(CategoryRequest.class));
+        verify(categoryService, times(1)).addCategory(eq(request));
     }
 
     @Test
@@ -782,7 +821,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.path").value("/categories"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(categoryService, never()).addCategory(any(CategoryRequest.class));
+        verify(categoryService, never()).addCategory(any());
     }
 
     @Test
@@ -801,7 +840,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.path").value("/categories"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(categoryService, times(0)).addCategory(any(CategoryRequest.class));
+        verify(categoryService, times(0)).addCategory(any());
     }
 
     @Test
@@ -821,7 +860,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.path").value("/categories"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(categoryService, never()).addCategory(any(CategoryRequest.class));
+        verify(categoryService, never()).addCategory(any());
     }
 
     @Test
@@ -841,7 +880,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.path").value("/categories"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(categoryService, never()).addCategory(any(CategoryRequest.class));
+        verify(categoryService, never()).addCategory(any());
     }
 
     @Test
@@ -861,7 +900,7 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.path").value("/categories"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(categoryService, never()).addCategory(any(CategoryRequest.class));
+        verify(categoryService, never()).addCategory(any());
     }
 
     @Test
@@ -876,7 +915,7 @@ class CategoryControllerTest {
 
         CategoryResponse expectedResponse = CategoryResponse.builder()
                 .categoryId(UUID.randomUUID())
-                .categoryName("Test Category")
+                .categoryName(request.getCategoryName())
                 .categoryStatus(CategoryStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -889,11 +928,11 @@ class CategoryControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.categoryId").value(expectedResponse.getCategoryId().toString()))
-                .andExpect(jsonPath("$.categoryName").value(expectedResponse.getCategoryName()))
-                .andExpect(jsonPath("$.categoryStatus").value(expectedResponse.getCategoryStatus().name()))
-                .andExpect(jsonPath("$.createdAt").value(expectedResponse.getCreatedAt().toString()))
-                .andExpect(jsonPath("$.updatedAt").value(expectedResponse.getUpdatedAt().toString()));
+                .andExpect(jsonPath("$.categoryId").exists())
+                .andExpect(jsonPath("$.categoryName").value("Updated Category Name"))
+                .andExpect(jsonPath("$.categoryStatus").value(CategoryStatus.ACTIVE.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
 
         verify(categoryService, times(1)).updateCategory(eq(validCategoryId), eq(request));
     }
@@ -956,6 +995,26 @@ class CategoryControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).updateCategory(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateCategory_shouldReturnBadRequest_whenCategoryRequestIsEmpty() throws Exception {
+
+        String validCategoryId = UUID.randomUUID().toString();
+
+        CategoryRequest emptyRequest = CategoryRequest.builder().build();
+
+        mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(emptyRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Category name is required")))
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
@@ -1033,12 +1092,13 @@ class CategoryControllerTest {
     void setCategoryStatus_shouldReturnOk_whenValidRequestAndAdminRole() throws Exception {
 
         String validCategoryId = UUID.randomUUID().toString();
+        String validStatus = CategoryStatus.ACTIVE.name();
 
         MessageResponse expectedResponse = MessageResponse.builder()
-                .message("Category status updated successfully to ACTIVE")
+                .message(String.format("Status '%s' was set for category with id: %s.", validStatus, validCategoryId))
                 .build();
 
-        when(categoryService.setCategoryStatus(eq(validCategoryId), eq("ACTIVE")))
+        when(categoryService.setCategoryStatus(eq(validCategoryId), eq(validStatus)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/categories/{categoryId}/status", validCategoryId)
@@ -1047,7 +1107,7 @@ class CategoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(expectedResponse.getMessage()));
 
-        verify(categoryService, times(1)).setCategoryStatus(eq(validCategoryId), eq("ACTIVE"));
+        verify(categoryService, times(1)).setCategoryStatus(eq(validCategoryId), eq(validStatus));
     }
 
     @Test
@@ -1092,8 +1152,9 @@ class CategoryControllerTest {
         String validCategoryId = UUID.randomUUID().toString();
 
         MessageResponse expectedResponse = MessageResponse.builder()
-                .message("Category status updated successfully to ACTIVE")
+                .message(String.format("Status '%s' was set for category with id: %s.", "ACTIVE", validCategoryId))
                 .build();
+
         when(categoryService.setCategoryStatus(eq(validCategoryId), eq("ACTIVE")))
                 .thenReturn(expectedResponse);
 

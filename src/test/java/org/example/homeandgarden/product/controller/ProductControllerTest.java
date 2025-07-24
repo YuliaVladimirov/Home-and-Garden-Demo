@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -74,9 +75,11 @@ class ProductControllerTest {
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product One")
-                .listPrice(BigDecimal.valueOf(40.00))
-                .currentPrice(BigDecimal.valueOf(35.00))
+                .description("Description One")
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(BigDecimal.valueOf(35.0))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image1.jpg")
                 .addedAt(Instant.now().minus(11, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
@@ -84,39 +87,52 @@ class ProductControllerTest {
         ProductResponse productResponse2 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product Two")
-                .listPrice(BigDecimal.valueOf(50.00))
-                .currentPrice(BigDecimal.valueOf(40.00))
+                .description("Description Two")
+                .listPrice(BigDecimal.valueOf(50.0))
+                .currentPrice(BigDecimal.valueOf(40.0))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image2.jpg")
                 .addedAt(Instant.now().minus(8, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(7, ChronoUnit.DAYS))
                 .build();
 
         List<ProductResponse> content = Arrays.asList(productResponse1, productResponse2);
-        Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 50);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "productName");
+        Page<ProductResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
 
-        when(productService.getProductsByStatus(eq("AVAILABLE"), eq(2), eq(0), eq("ASC"), eq("addedAt")))
+        when(productService.getProductsByStatus(eq("AVAILABLE"), eq(2), eq(0), eq("DESC"), eq("productName")))
                 .thenReturn(mockPage);
 
         mockMvc.perform(get("/products/status")
                         .param("productStatus", "AVAILABLE")
                         .param("size", "2")
                         .param("page", "0")
-                        .param("order", "ASC")
-                        .param("sortBy", "addedAt")
+                        .param("order", "DESC")
+                        .param("sortBy", "productName")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].description").value("Description One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(35.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].description").value("Description Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(50.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(50))
                 .andExpect(jsonPath("$.totalPages").value(25));
 
-        verify(productService, times(1)).getProductsByStatus(eq("AVAILABLE"), eq(2), eq(0), eq("ASC"), eq("addedAt"));
+        verify(productService, times(1)).getProductsByStatus(eq("AVAILABLE"), eq(2), eq(0), eq("DESC"), eq("productName"));
     }
 
     @Test
@@ -159,25 +175,30 @@ class ProductControllerTest {
         ProductResponse productResponse1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product One")
-                .listPrice(BigDecimal.valueOf(40.00))
-                .currentPrice(BigDecimal.valueOf(35.00))
+                .description("Description One")
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(BigDecimal.valueOf(35.0))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image1.jpg")
+                .addedAt(Instant.now().minus(11, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
         ProductResponse productResponse2 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
                 .productName("Product Two")
-                .listPrice(BigDecimal.valueOf(50.00))
-                .currentPrice(BigDecimal.valueOf(40.00))
+                .description("Description Two")
+                .listPrice(BigDecimal.valueOf(50.0))
+                .currentPrice(BigDecimal.valueOf(40.0))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(11, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image2.jpg")
+                .addedAt(Instant.now().minus(8, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(7, ChronoUnit.DAYS))
                 .build();
 
         List<ProductResponse> content = Arrays.asList(productResponse1, productResponse2);
-        Page<ProductResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 100);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
+        Page<ProductResponse> mockPage = new PageImpl<>(content, pageRequest, 100);
 
         when(productService.getProductsByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("addedAt")))
                 .thenReturn(mockPage);
@@ -187,9 +208,19 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].description").value("Description One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(35.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].description").value("Description Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(50.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(100))
@@ -201,6 +232,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnBadRequest_whenInvalidProductStatus() throws Exception {
+
         mockMvc.perform(get("/products/status")
                         .param("productStatus", "INVALID_STATUS")
                         .accept(MediaType.APPLICATION_JSON))
@@ -217,6 +249,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
         mockMvc.perform(get("/products/status")
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
@@ -233,6 +266,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
         mockMvc.perform(get("/products/status")
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -249,6 +283,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
         mockMvc.perform(get("/products/status")
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
@@ -265,6 +300,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
         mockMvc.perform(get("/products/status")
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
@@ -288,6 +324,7 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image1.jpg")
                 .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(56L)
@@ -299,6 +336,7 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image2.jpg")
                 .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(39L)
@@ -307,8 +345,7 @@ class ProductControllerTest {
         List<ProductProjectionResponse> content = Arrays.asList(productProjection1, productProjection2);
         Page<ProductProjectionResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 2), 10);
 
-        when(productService.getTopProducts(eq("CANCELED"), eq(2), eq(0)))
-                .thenReturn(mockPage);
+        when(productService.getTopProducts(eq("CANCELED"), eq(2), eq(0))).thenReturn(mockPage);
 
         mockMvc.perform(get("/products/top")
                         .param("status", "CANCELED")
@@ -318,10 +355,19 @@ class ProductControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+
                 .andExpect(jsonPath("$.content[0].productName").value("Projection One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Projection Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(20.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(10))
@@ -376,11 +422,11 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image1.jpg")
                 .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(56L)
                 .build();
-
 
         ProductProjectionResponse productProjection2 = ProductProjectionResponse.builder()
                 .productId(UUID.randomUUID())
@@ -388,6 +434,7 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("https://example.com/image2.jpg")
                 .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(39L)
@@ -396,18 +443,26 @@ class ProductControllerTest {
         List<ProductProjectionResponse> content = Arrays.asList(productProjection1, productProjection2);
         Page<ProductProjectionResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 20);
 
-        when(productService.getTopProducts(eq("PAID"), eq(10), eq(0)))
-                .thenReturn(mockPage);
+        when(productService.getTopProducts(eq("PAID"), eq(10), eq(0))).thenReturn(mockPage);
 
         mockMvc.perform(get("/products/top")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+
                 .andExpect(jsonPath("$.content[0].productName").value("Projection One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Projection Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(20.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(20))
@@ -474,7 +529,8 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(100, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image1.jpg")
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(56L)
                 .build();
@@ -485,7 +541,8 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(100, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image2.jpg")
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(39L)
                 .build();
@@ -505,10 +562,19 @@ class ProductControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+
                 .andExpect(jsonPath("$.content[0].productName").value("Projection One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Projection Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(20.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(10))
@@ -558,7 +624,8 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(40.00))
                 .currentPrice(BigDecimal.valueOf(40.00))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(100, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image1.jpg")
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(56L)
                 .build();
@@ -569,7 +636,8 @@ class ProductControllerTest {
                 .listPrice(BigDecimal.valueOf(30.00))
                 .currentPrice(BigDecimal.valueOf(20.00))
                 .productStatus(ProductStatus.AVAILABLE)
-                .addedAt(Instant.now().minus(100, ChronoUnit.DAYS))
+                .imageUrl("https://example.com/image2.jpg")
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .totalAmount(39L)
                 .build();
@@ -578,18 +646,26 @@ class ProductControllerTest {
         List<ProductProjectionResponse> content = Arrays.asList(productProjection1, productProjection2);
         Page<ProductProjectionResponse> mockPage = new PageImpl<>(content, PageRequest.of(0, 10), 20);
 
-        when(productService.getPendingProducts(eq("CREATED"), eq(10), eq(10), eq(0)))
-                .thenReturn(mockPage);
+        when(productService.getPendingProducts(eq("CREATED"), eq(10), eq(10), eq(0))).thenReturn(mockPage);
 
         mockMvc.perform(get("/products/pending")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
+
                 .andExpect(jsonPath("$.content[0].productName").value("Projection One"))
+                .andExpect(jsonPath("$.content[0].listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.content[0].currentPrice").value(BigDecimal.valueOf(40.0)))
                 .andExpect(jsonPath("$.content[0].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[0].imageUrl").value("https://example.com/image1.jpg"))
+
                 .andExpect(jsonPath("$.content[1].productName").value("Projection Two"))
+                .andExpect(jsonPath("$.content[1].listPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.content[1].currentPrice").value(BigDecimal.valueOf(20.0)))
                 .andExpect(jsonPath("$.content[1].productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].imageUrl").value("https://example.com/image2.jpg"))
+
                 .andExpect(jsonPath("$.pageable.pageSize").value(10))
                 .andExpect(jsonPath("$.pageable.pageNumber").value(0))
                 .andExpect(jsonPath("$.totalElements").value(20))
@@ -664,20 +740,19 @@ class ProductControllerTest {
     void getProfitByPeriod_shouldReturnProductProfitResponse_whenValidParametersAndAdminRole() throws Exception {
 
         ProductProfitResponse expectedResponse = ProductProfitResponse.builder()
-                .profit(new BigDecimal("12345.67"))
                 .timeUnit("WEEK")
                 .timePeriod(4)
+                .profit(BigDecimal.valueOf(12345.67))
                 .build();
 
-        when(productService.getProfitByPeriod(eq("WEEK"), eq(4)))
-                .thenReturn(expectedResponse);
+        when(productService.getProfitByPeriod(eq("WEEK"), eq(4))).thenReturn(expectedResponse);
 
         mockMvc.perform(get("/products/profit")
                         .param("timeUnit", "WEEK")
                         .param("timePeriod", "4")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profit").value(12345.67))
+                .andExpect(jsonPath("$.profit").value(BigDecimal.valueOf(12345.67)))
                 .andExpect(jsonPath("$.timeUnit").value("WEEK"))
                 .andExpect(jsonPath("$.timePeriod").value(4));
 
@@ -722,17 +797,16 @@ class ProductControllerTest {
     void getProfitByPeriod_shouldReturnProductProfitResponse_whenDefaultParameters() throws Exception {
 
         ProductProfitResponse expectedResponse = ProductProfitResponse.builder()
-                .profit(new BigDecimal("5000.00"))
                 .timeUnit("DAY")
                 .timePeriod(10)
+                .profit(BigDecimal.valueOf(5000.00))
                 .build();
 
-        when(productService.getProfitByPeriod(eq("DAY"), eq(10)))
-                .thenReturn(expectedResponse);
+        when(productService.getProfitByPeriod(eq("DAY"), eq(10))).thenReturn(expectedResponse);
 
         mockMvc.perform(get("/products/profit").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profit").value(5000.00))
+                .andExpect(jsonPath("$.profit").value(BigDecimal.valueOf(5000.00)))
                 .andExpect(jsonPath("$.timeUnit").value("DAY"))
                 .andExpect(jsonPath("$.timePeriod").value(10));
 
@@ -758,6 +832,7 @@ class ProductControllerTest {
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProfitByPeriod_shouldReturnBadRequest_whenNonPositiveTimePeriod() throws Exception {
+
         mockMvc.perform(get("/products/profit")
                         .param("timeUnit", "DAY")
                         .param("timePeriod", "-1")
@@ -778,28 +853,27 @@ class ProductControllerTest {
 
         ProductResponse expectedProduct = ProductResponse.builder()
                 .productId(UUID.fromString(validProductId))
-                .productName("Test Product")
-                .description("A sample product for testing.")
-                .listPrice(new BigDecimal("100.00"))
-                .currentPrice(new BigDecimal("90.00"))
+                .productName("Product Name")
+                .description("Product Description")
+                .listPrice(BigDecimal.valueOf(100.00))
+                .currentPrice(BigDecimal.valueOf(90.00))
                 .productStatus(ProductStatus.AVAILABLE)
                 .imageUrl("http://example.com/image.jpg")
                 .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
-        when(productService.getProductById(eq(validProductId)))
-                .thenReturn(expectedProduct);
+        when(productService.getProductById(eq(validProductId))).thenReturn(expectedProduct);
 
         mockMvc.perform(get("/products/{productId}", validProductId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
-                .andExpect(jsonPath("$.productName").value("Test Product"))
-                .andExpect(jsonPath("$.description").value("A sample product for testing."))
-                .andExpect(jsonPath("$.listPrice").value(100.00))
-                .andExpect(jsonPath("$.currentPrice").value(90.00))
+                .andExpect(jsonPath("$.productName").value("Product Name"))
+                .andExpect(jsonPath("$.description").value("Product Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(100.00)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(90.00)))
                 .andExpect(jsonPath("$.productStatus").value(ProductStatus.AVAILABLE.name()))
                 .andExpect(jsonPath("$.imageUrl").value("http://example.com/image.jpg"))
                 .andExpect(jsonPath("$.addedAt").exists())
@@ -833,10 +907,10 @@ class ProductControllerTest {
 
         ProductCreateRequest createRequest = ProductCreateRequest.builder()
                 .categoryId(categoryId)
-                .productName("New Awesome Gadget")
-                .description("This is a fantastic new gadget with many features.")
-                .listPrice(new BigDecimal("199.99"))
-                .imageUrl("https://example.com/gadget.jpg")
+                .productName("New Name")
+                .description("New Description")
+                .listPrice(BigDecimal.valueOf(199.99))
+                .imageUrl("http://example.com/image.jpg")
                 .build();
 
         ProductResponse expectedResponse = ProductResponse.builder()
@@ -851,8 +925,7 @@ class ProductControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(productService.addProduct(any(ProductCreateRequest.class)))
-                .thenReturn(expectedResponse);
+        when(productService.addProduct(eq(createRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -860,30 +933,31 @@ class ProductControllerTest {
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.productId").exists())
-                .andExpect(jsonPath("$.productName").value(createRequest.getProductName()))
-                .andExpect(jsonPath("$.description").value(createRequest.getDescription()))
-                .andExpect(jsonPath("$.listPrice").value(createRequest.getListPrice()))
-                .andExpect(jsonPath("$.imageUrl").value(createRequest.getImageUrl()))
+                .andExpect(jsonPath("$.productName").value("New Name"))
+                .andExpect(jsonPath("$.description").value("New Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(199.99)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(199.99)))
+                .andExpect(jsonPath("$.imageUrl").value("http://example.com/image.jpg"))
                 .andExpect(jsonPath("$.productStatus").value(ProductStatus.AVAILABLE.name()));
 
-        verify(productService, times(1)).addProduct(createRequest);
+        verify(productService, times(1)).addProduct(eq(createRequest));
     }
 
     @Test
     @WithMockUser(roles = {"CLIENT"})
     void addProduct_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
-        ProductCreateRequest request = ProductCreateRequest.builder()
+        ProductCreateRequest createRequest = ProductCreateRequest.builder()
                 .categoryId(UUID.randomUUID().toString())
-                .productName("Temp Product")
-                .description("Temp Description")
-                .listPrice(BigDecimal.TEN)
-                .imageUrl("https://temp.com/img.jpg")
+                .productName("New Name")
+                .description("New Description")
+                .listPrice(BigDecimal.valueOf(199.99))
+                .imageUrl("http://example.com/image.jpg")
                 .build();
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
                 .andExpect(jsonPath("$.details").value("Access Denied"))
@@ -896,17 +970,17 @@ class ProductControllerTest {
     @Test
     void addProduct_shouldReturnUnauthorized_whenNoAuthentication() throws Exception {
 
-        ProductCreateRequest request = ProductCreateRequest.builder()
+        ProductCreateRequest createRequest = ProductCreateRequest.builder()
                 .categoryId(UUID.randomUUID().toString())
-                .productName("Temp Product")
-                .description("Temp Description")
-                .listPrice(BigDecimal.TEN)
-                .imageUrl("https://temp.com/img.jpg")
+                .productName("New Name")
+                .description("New Description")
+                .listPrice(BigDecimal.valueOf(199.99))
+                .imageUrl("http://example.com/image.jpg")
                 .build();
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
@@ -937,7 +1011,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -961,7 +1035,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -986,7 +1060,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1006,11 +1080,11 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(                        "Invalid name: Must be of 2 - 50 characters")))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid name: Must be of 2 - 50 characters")))
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1034,7 +1108,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1058,7 +1132,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1082,7 +1156,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1106,7 +1180,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1130,7 +1204,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1141,7 +1215,7 @@ class ProductControllerTest {
                 .categoryId(UUID.randomUUID().toString())
                 .productName("Valid Name")
                 .description("Valid Description")
-                .listPrice(new BigDecimal("-0.01"))
+                .listPrice(BigDecimal.valueOf(-0.01))
                 .imageUrl("https://valid.com/img.jpg")
                 .build();
 
@@ -1154,7 +1228,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1165,7 +1239,7 @@ class ProductControllerTest {
                 .categoryId(UUID.randomUUID().toString())
                 .productName("Valid Name")
                 .description("Valid Description")
-                .listPrice(new BigDecimal("1000000.00"))
+                .listPrice(BigDecimal.valueOf(1000000.00))
                 .imageUrl("https://valid.com/img.jpg")
                 .build();
 
@@ -1178,7 +1252,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1189,7 +1263,7 @@ class ProductControllerTest {
                 .categoryId(UUID.randomUUID().toString())
                 .productName("Valid Name")
                 .description("Valid Description")
-                .listPrice(new BigDecimal("123456.789"))
+                .listPrice(BigDecimal.valueOf(123456.789))
                 .imageUrl("https://valid.com/img.jpg")
                 .build();
 
@@ -1202,7 +1276,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1226,7 +1300,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1250,7 +1324,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.path").value("/products"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(productService, never()).addProduct(any(ProductCreateRequest.class));
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -1261,9 +1335,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.0"))
-                .currentPrice(new BigDecimal("220.0"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1279,8 +1353,7 @@ class ProductControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(productService.updateProduct(eq(validProductId), eq(updateRequest)))
-                .thenReturn(expectedResponse);
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1288,11 +1361,11 @@ class ProductControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
-                .andExpect(jsonPath("$.productName").value(updateRequest.getProductName()))
-                .andExpect(jsonPath("$.description").value(updateRequest.getDescription()))
-                .andExpect(jsonPath("$.listPrice").value(updateRequest.getListPrice()))
-                .andExpect(jsonPath("$.currentPrice").value(updateRequest.getCurrentPrice()))
-                .andExpect(jsonPath("$.imageUrl").value(updateRequest.getImageUrl()));
+                .andExpect(jsonPath("$.productName").value("Updated Product Name"))
+                .andExpect(jsonPath("$.description").value("Updated Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(250.00)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(220.00)))
+                .andExpect(jsonPath("$.imageUrl").value("https://example.com/updated-image.jpg"));
 
         verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
     }
@@ -1305,9 +1378,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1330,9 +1403,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1357,9 +1430,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1383,9 +1456,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("A")
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1409,9 +1482,9 @@ class ProductControllerTest {
 
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("A".repeat(51))
-                .description("Updated description for the product.")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .description("Updated Description")
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1436,8 +1509,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("A")
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1462,8 +1535,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("A".repeat(256))
-                .listPrice(new BigDecimal("250.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1488,8 +1561,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("-0.01"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(-0.01))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1514,8 +1587,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("1000000.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(1000000.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1540,8 +1613,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("123456.789"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(123456.789))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1566,8 +1639,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("220.00"))
-                .currentPrice(new BigDecimal("-0.01"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(-0.01))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1592,8 +1665,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("220.00"))
-                .currentPrice(new BigDecimal("1000000.00"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(1000000.00))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1618,8 +1691,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("220.00"))
-                .currentPrice(new BigDecimal("123456.789"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(123456.789))
                 .imageUrl("https://example.com/updated-image.jpg")
                 .build();
 
@@ -1644,8 +1717,8 @@ class ProductControllerTest {
         ProductUpdateRequest invalidRequest = ProductUpdateRequest.builder()
                 .productName("Updated Product Name")
                 .description("Updated Description")
-                .listPrice(new BigDecimal("220.00"))
-                .currentPrice(new BigDecimal("220.00"))
+                .listPrice(BigDecimal.valueOf(250.00))
+                .currentPrice(BigDecimal.valueOf(220.00))
                 .imageUrl("INVALID_URL")
                 .build();
 
@@ -1659,6 +1732,200 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(productService, never()).updateProduct(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateProduct_shouldReturnBadRequest_whenOnlyProductNameIsProvided() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
+                .productName("Updated Product Name")
+                .build();
+
+        ProductResponse expectedResponse = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName(updateRequest.getProductName())
+                .description("Original Description")
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(BigDecimal.valueOf(30.0))
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("Original Url")
+                .addedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/products/{productId}", validProductId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Updated Product Name"))
+                .andExpect(jsonPath("$.description").value("Original Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.imageUrl").value("Original Url"));
+
+        verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateProduct_shouldReturnBadRequest_whenOnlyDescriptionIsProvided() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
+                .description("Updated Description")
+                .build();
+
+        ProductResponse expectedResponse = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName("Original Product Name")
+                .description(updateRequest.getDescription())
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(BigDecimal.valueOf(30.0))
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("Original Url")
+                .addedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest)))
+                .thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/products/{productId}", validProductId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Original Product Name"))
+                .andExpect(jsonPath("$.description").value("Updated Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.imageUrl").value("Original Url"));
+
+        verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateProduct_shouldReturnBadRequest_whenOnlyListPriceIsProvided() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
+                .listPrice(BigDecimal.valueOf(50.0))
+                .build();
+
+        ProductResponse expectedResponse = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName("Original Product Name")
+                .description("Original Description")
+                .listPrice(updateRequest.getListPrice())
+                .currentPrice(BigDecimal.valueOf(30.0))
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("Original Url")
+                .addedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest)))
+                .thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/products/{productId}", validProductId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Original Product Name"))
+                .andExpect(jsonPath("$.description").value("Original Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(50.0)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.imageUrl").value("Original Url"));
+
+        verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateProduct_shouldReturnBadRequest_whenOnlyCurrentPriceIsProvided() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
+                .currentPrice(BigDecimal.valueOf(20.0))
+                .build();
+
+        ProductResponse expectedResponse = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName("Original Product Name")
+                .description("Original Description")
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(updateRequest.getCurrentPrice())
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("Original Url")
+                .addedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest)))
+                .thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/products/{productId}", validProductId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Original Product Name"))
+                .andExpect(jsonPath("$.description").value("Original Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(20.0)))
+                .andExpect(jsonPath("$.imageUrl").value("Original Url"));
+
+        verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void updateProduct_shouldReturnBadRequest_whenOnlyImageUrlIsProvided() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductUpdateRequest updateRequest = ProductUpdateRequest.builder()
+                .imageUrl("https://example.com/updated-image.jpg")
+                .build();
+
+        ProductResponse expectedResponse = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName("Original Product Name")
+                .description("Original Description")
+                .listPrice(BigDecimal.valueOf(40.0))
+                .currentPrice(BigDecimal.valueOf(30.0))
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl(updateRequest.getImageUrl())
+                .addedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(productService.updateProduct(eq(validProductId), eq(updateRequest)))
+                .thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/products/{productId}", validProductId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Original Product Name"))
+                .andExpect(jsonPath("$.description").value("Original Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(40.0)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(30.0)))
+                .andExpect(jsonPath("$.imageUrl").value("https://example.com/updated-image.jpg"));
+
+        verify(productService, times(1)).updateProduct(eq(validProductId), eq(updateRequest));
     }
 
     @Test
