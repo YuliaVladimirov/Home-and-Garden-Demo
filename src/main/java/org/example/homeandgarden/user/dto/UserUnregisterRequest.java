@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Request for unregister a user")
+@Schema(description = "Request to unregister a user")
 public class UserUnregisterRequest {
 
     @JsonProperty("password")

@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Request for register a new user")
+@Schema(description = "Request to register a new user")
 public class UserRegisterRequest {
 
     @JsonProperty("email")
