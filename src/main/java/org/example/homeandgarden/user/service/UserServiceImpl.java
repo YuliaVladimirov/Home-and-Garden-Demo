@@ -42,6 +42,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse getMyProfile(String userEmail) {
+
+        User existingUser = userRepository.findByEmail(userEmail).orElseThrow(() -> new DataNotFoundException (String.format("User with email: %s, was not found.", userEmail)));
+        return userMapper.userToResponse(existingUser);
+    }
+
+    @Override
     @Transactional
     public UserResponse updateUser(String userId, UserUpdateRequest userUpdateRequest) {
 
@@ -104,7 +111,6 @@ public class UserServiceImpl implements UserService {
         existingUser.setIsNonLocked(!lockState);
 
         User lockedUser = userRepository.saveAndFlush(existingUser);
-
         return MessageResponse.builder()
                 .message(String.format("User with id: %s has been %s.", lockedUser.getUserId().toString(), lockState ? "locked" : "unlocked"))
                 .build();
@@ -112,34 +118,48 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public MessageResponse unregisterUser(String userId, UserUnregisterRequest userUnregisterRequest) {
+    public MessageResponse unregisterMyAccount(String email, UserUnregisterRequest userUnregisterRequest) {
 
         if (!userUnregisterRequest.getPassword().equals(userUnregisterRequest.getConfirmPassword())) {
             throw new BadCredentialsException("Password doesn't match the CONFIRM PASSWORD field.");
         }
 
-        UUID id = UUID.fromString(userId);
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", userId)));
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
 
         if (!passwordEncoder.matches(userUnregisterRequest.getPassword(), existingUser.getPasswordHash())) {
             throw new BadCredentialsException("Given password doesn't match the password saved in database.");
         }
-        if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is locked and can not be unregistered.", userId));
-        }
-        if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is already unregistered.", userId));
-        }
 
         existingUser.setEmail(String.format("%s@example.com", existingUser.getUserId()));
-        existingUser.setFirstName("Deleted User");
-        existingUser.setLastName("Deleted User");
+        existingUser.setFirstName("Disabled User");
+        existingUser.setLastName("Disabled User");
         existingUser.setRefreshToken(null);
         existingUser.setIsEnabled(Boolean.FALSE);
-        User unregisteredUser = userRepository.saveAndFlush(existingUser);
+        userRepository.saveAndFlush(existingUser);
 
         return MessageResponse.builder()
-                .message(String.format("User with id: %s, has been unregistered.", unregisteredUser.getUserId().toString()))
+                .message(String.format("User with email: %s, has been unregistered.", email))
+                .build();
+    }
+
+    @Override
+    public MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest) {
+
+        if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmNewPassword())) {
+            throw new BadCredentialsException("Password doesn't match the CONFIRM NEW PASSWORD field.");
+        }
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+
+        if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), existingUser.getPasswordHash())) {
+            throw new BadCredentialsException("Given current password doesn't match the one in database.");
+        }
+
+        existingUser.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        User updatedUser = userRepository.saveAndFlush(existingUser);
+
+        return MessageResponse.builder()
+                .message(String.format("Password for user with email: %s, has been successfully changed.", updatedUser.getEmail()))
                 .build();
     }
 }
