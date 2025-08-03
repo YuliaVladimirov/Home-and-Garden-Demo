@@ -326,11 +326,11 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Update an existing user", description = "Modifies an existing user account identified by their unique Id. The details that need to be updated are provided in the request body.")
+    @Operation(summary = "Update existing user", description = "Modifies an existing user account identified by their unique Id. The details that need to be updated are provided in the request body.")
     @ApiResponse(responseCode = "200", description = "User successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping("/{userId}")
     public ResponseEntity<UserResponse> updateUser(
 
