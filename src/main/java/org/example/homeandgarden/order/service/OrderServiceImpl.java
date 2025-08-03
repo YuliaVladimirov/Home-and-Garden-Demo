@@ -52,6 +52,18 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
+    public Page<OrderResponse> getMyOrders(String email, Integer size, Integer page, String order, String sortBy) {
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+
+        UUID id = existingUser.getUserId();
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
+        Page<Order> orderPage = orderRepository.findByUserUserId(id, pageRequest);
+
+        return orderPage.map(orderMapper::orderToResponse);
+    }
+
+    @Override
     public OrderResponse getOrderById(String orderId) {
 
         UUID id = UUID.fromString(orderId);

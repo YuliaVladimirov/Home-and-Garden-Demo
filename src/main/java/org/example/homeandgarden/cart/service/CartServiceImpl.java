@@ -49,6 +49,19 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    public Page<CartItemResponse> getMyCartItems(String email, Integer size, Integer page, String order, String sortBy) {
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+
+        UUID id = existingUser.getUserId();
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.Direction.fromString(order), sortBy);
+        Page<CartItem> cartPage = cartRepository.findByUserUserId(id, pageRequest);
+
+        return cartPage.map((item) -> cartMapper.cartItemToResponse(item,
+                productMapper.productToResponse(item.getProduct())));
+    }
+
+    @Override
     @Transactional
     public CartItemResponse addCartItem(CartItemCreateRequest cartItemCreateRequest) {
 
