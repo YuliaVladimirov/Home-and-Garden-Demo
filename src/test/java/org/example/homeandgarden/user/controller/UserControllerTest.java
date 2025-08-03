@@ -1293,7 +1293,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnUpdatedUser_whenValidRequestAndClientRole() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1332,7 +1332,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
+    @WithMockUser(roles = {"CLIENT"})
     void updateUser_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1379,7 +1379,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnBadRequest_whenInvalidUserIdFormat() throws Exception {
 
         String invalidUserId = "INVALID_UUID";
@@ -1403,7 +1403,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1427,7 +1427,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1451,7 +1451,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1475,7 +1475,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1499,7 +1499,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1541,7 +1541,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
@@ -1582,7 +1582,7 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
+    @WithMockUser(roles = {"ADMINISTRATOR"})
     void updateUser_shouldReturnOk_whenEmptyRequestBody() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
