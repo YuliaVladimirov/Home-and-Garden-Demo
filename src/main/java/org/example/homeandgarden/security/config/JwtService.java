@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.example.homeandgarden.exception.DataNotFoundException;
+import org.example.homeandgarden.user.entity.User;
 import org.example.homeandgarden.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -117,10 +119,6 @@ public class JwtService {
             if (email == null) {
                 throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
             }
-
-            if (!userRepository.existsByEmail(email)) {
-                throw new BadCredentialsException("User email does not match the one in the database. Please log in again.");
-            }
             return true;
         }
         return false;
@@ -135,9 +133,18 @@ public class JwtService {
                 throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
             }
 
-            if (!userRepository.existsByEmailAndRefreshToken(email, refreshToken)) {
-                throw new BadCredentialsException("Email or refresh token do not match those in the database. Please log in again.");
+            User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+
+            if (!existingUser.getIsEnabled()) {
+                throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", email));
             }
+            if (!existingUser.getIsNonLocked()) {
+                throw new IllegalArgumentException(String.format("User with email: %s, is locked.", email));
+            }
+            if (!refreshToken.equals(existingUser.getRefreshToken())) {
+                throw new BadCredentialsException("Refresh token does not match the one in the database. Please log in again.");
+            }
+
             return true;
         }
         return false;
