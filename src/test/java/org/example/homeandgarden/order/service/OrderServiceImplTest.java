@@ -73,6 +73,9 @@ class OrderServiceImplTest {
 
     private final String INVALID_ID = "Invalid UUID";
 
+    private final String USER_EMAIL = "user@example.com";
+    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+
     private final DeliveryMethod COURIER_DELIVERY = DeliveryMethod.COURIER_DELIVERY;
     private final DeliveryMethod CUSTOMER_PICKUP = DeliveryMethod.CUSTOMER_PICKUP;
 
@@ -217,6 +220,166 @@ class OrderServiceImplTest {
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(orderRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
+        verify(orderMapper, never()).orderToResponse(any(Order.class));
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertTrue(actualResponse.getContent().isEmpty());
+        assertEquals(0, actualResponse.getContent().size());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnPagedOrdersWhenUserExists() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
+
+        Order order1 = Order.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("Zip Code One")
+                .city("City One")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .build();
+
+        Order order2 = Order.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .address("Address Two")
+                .zipCode("Zip Code Two")
+                .city("City Two")
+                .phone("456")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .build();
+
+        List<Order> orders = List.of(order1, order2);
+        Page<Order> orderPage = new PageImpl<>(orders, pageRequest, orders.size());
+        long expectedTotalPages = (long) Math.ceil((double) orders.size() / SIZE);
+
+        OrderResponse orderResponse1 = OrderResponse.builder()
+                .orderId(order1.getOrderId())
+                .firstName(order1.getFirstName())
+                .lastName(order1.getLastName())
+                .address(order1.getAddress())
+                .zipCode(order1.getZipCode())
+                .city(order1.getCity())
+                .phone(order1.getPhone())
+                .deliveryMethod(order1.getDeliveryMethod())
+                .orderStatus(order1.getOrderStatus())
+                .createdAt(order1.getCreatedAt())
+                .updatedAt(order1.getUpdatedAt())
+                .build();
+
+        OrderResponse orderResponse2 = OrderResponse.builder()
+                .orderId(order2.getOrderId())
+                .firstName(order2.getFirstName())
+                .lastName(order2.getLastName())
+                .address(order2.getAddress())
+                .zipCode(order2.getZipCode())
+                .city(order2.getCity())
+                .phone(order2.getPhone())
+                .deliveryMethod(order2.getDeliveryMethod())
+                .orderStatus(order2.getOrderStatus())
+                .createdAt(order2.getCreatedAt())
+                .updatedAt(order2.getUpdatedAt())
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(orderRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(orderPage);
+        when(orderMapper.orderToResponse(order1)).thenReturn(orderResponse1);
+        when(orderMapper.orderToResponse(order2)).thenReturn(orderResponse2);
+
+        Page<OrderResponse> actualResponse = orderService.getMyOrders(USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(orderRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
+        verify(orderMapper, times(1)).orderToResponse(order1);
+        verify(orderMapper, times(1)).orderToResponse(order2);
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(orders.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertEquals(2, actualResponse.getContent().size());
+        assertEquals(orderResponse1.getOrderId(), actualResponse.getContent().getFirst().getOrderId());
+        assertEquals(orderResponse2.getOrderId(), actualResponse.getContent().get(1).getOrderId());
+    }
+
+    @Test
+    void getMyOrders_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.getMyOrders(NON_EXISTING_USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(orderRepository, never()).findByUserUserId(any(UUID.class), any(PageRequest.class));
+        verify(orderMapper, never()).orderToResponse(any(Order.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnEmptyPagedModelUserHasNoOrders() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
+
+        Page<Order> emptyOrderPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(orderRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(emptyOrderPage);
+
+        Page<OrderResponse> actualResponse = orderService.getMyOrders(USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(orderRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertNotNull(actualResponse);

@@ -68,6 +68,9 @@ class WishListServiceImplTest {
 
     private final String INVALID_ID = "Invalid UUID";
 
+    private final String USER_EMAIL = "user@example.com";
+    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
     private final String PASSWORD_HASH = "Hashed Password";
 
@@ -236,6 +239,179 @@ class WishListServiceImplTest {
         assertEquals(0, actualResponse.getContent().size());
     }
 
+    @Test
+    void getMyWishListItems_shouldReturnPagedWishListItemsWhenUserExists() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), "addedAt");
+
+        Product product1 = Product.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .listPrice(BigDecimal.valueOf(40.00))
+                .currentPrice(BigDecimal.valueOf(40.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        WishListItem wishListItem1 = WishListItem.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .product(product1)
+                .build();
+
+        Product product2 = Product.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .listPrice(BigDecimal.valueOf(30.00))
+                .currentPrice(BigDecimal.valueOf(20.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        WishListItem wishListItem2 = WishListItem.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .product(product2)
+                .build();
+
+        List<WishListItem> wishListItems = List.of(wishListItem1, wishListItem2);
+        Page<WishListItem> wishListItemPage = new PageImpl<>(wishListItems, pageRequest, wishListItems.size());
+        long expectedTotalPages = (long) Math.ceil((double) wishListItems.size() / SIZE);
+
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(product1.getProductId())
+                .productName(product1.getProductName())
+                .listPrice(product1.getListPrice())
+                .currentPrice(product1.getCurrentPrice())
+                .productStatus(product1.getProductStatus())
+                .addedAt(product1.getAddedAt())
+                .updatedAt(product1.getUpdatedAt())
+                .build();
+
+        WishListItemResponse wishListItemResponse1 = WishListItemResponse.builder()
+                .wishListItemId(wishListItem1.getWishListItemId())
+                .addedAt(wishListItem1.getAddedAt())
+                .product(productResponse1)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(product2.getProductId())
+                .productName(product2.getProductName())
+                .listPrice(product2.getListPrice())
+                .currentPrice(product2.getCurrentPrice())
+                .productStatus(product2.getProductStatus())
+                .addedAt(product2.getAddedAt())
+                .updatedAt(product2.getUpdatedAt())
+                .build();
+
+        WishListItemResponse wishListItemResponse2 = WishListItemResponse.builder()
+                .wishListItemId(wishListItem2.getWishListItemId())
+                .addedAt(wishListItem2.getAddedAt())
+                .product(productResponse2)
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(wishListRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(wishListItemPage);
+        when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
+        when(wishListMapper.wishListItemToResponse(wishListItem1, productResponse1)).thenReturn(wishListItemResponse1);
+        when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
+        when(wishListMapper.wishListItemToResponse(wishListItem2, productResponse2)).thenReturn(wishListItemResponse2);
+
+        Page<WishListItemResponse> actualResponse = wishListService.getMyWishListItems(USER_EMAIL, SIZE, PAGE, ORDER);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(wishListRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
+        verify(productMapper, times(1)).productToResponse(product1);
+        verify(wishListMapper, times(1)).wishListItemToResponse(wishListItem1, productResponse1);
+        verify(productMapper, times(1)).productToResponse(product2);
+        verify(wishListMapper, times(1)).wishListItemToResponse(wishListItem2, productResponse2);
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(wishListItems.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertEquals(2, actualResponse.getContent().size());
+        assertEquals(wishListItemResponse1.getWishListItemId(), actualResponse.getContent().getFirst().getWishListItemId());
+        assertEquals(wishListItemResponse2.getWishListItemId(), actualResponse.getContent().get(1).getWishListItemId());
+    }
+
+    @Test
+    void getMyWishListItems_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.getMyWishListItems(NON_EXISTING_USER_EMAIL, SIZE, PAGE, ORDER));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(wishListRepository, never()).findByUserUserId(any(UUID.class), any(PageRequest.class));
+        verify(productMapper, never()).productToResponse(any(Product.class));
+        verify(wishListMapper, never()).wishListItemToResponse(any(WishListItem.class), any(ProductResponse.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnEmptyPagedModelUserWishListIsEmpty() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), "addedAt");
+
+        Page<WishListItem> emptyWishListItemPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(wishListRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(emptyWishListItemPage);
+
+        Page<WishListItemResponse> actualResponse = wishListService.getMyWishListItems(USER_EMAIL, SIZE, PAGE, ORDER);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(wishListRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
+        verify(productMapper, never()).productToResponse(any(Product.class));
+        verify(wishListMapper, never()).wishListItemToResponse(any(WishListItem.class), any(ProductResponse.class));
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertTrue(actualResponse.getContent().isEmpty());
+        assertEquals(0, actualResponse.getContent().size());
+    }
 
     @Test
     void addWishListItem_shouldAddWishListItemSuccessfully() {

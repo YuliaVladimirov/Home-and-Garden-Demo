@@ -69,6 +69,9 @@ class CartServiceImplTest {
 
     private final String INVALID_ID = "Invalid UUID";
 
+    private final String USER_EMAIL = "user@example.com";
+    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
     private final String PASSWORD_HASH = "Hashed Password";
 
@@ -231,6 +234,188 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).existsByUserId(USER_ID);
         verify(cartRepository, times(1)).findByUserUserId(USER_ID, pageRequest);
+        verify(productMapper, never()).productToResponse(any(Product.class));
+        verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(0L, actualResponse.getTotalElements());
+        assertEquals(0L, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertTrue(actualResponse.getContent().isEmpty());
+        assertEquals(0, actualResponse.getContent().size());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnPagedCartItemsWhenUserExists() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
+
+        Product product1 = Product.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .listPrice(BigDecimal.valueOf(40.00))
+                .currentPrice(BigDecimal.valueOf(40.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        CartItem cartItem1 = CartItem.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(1)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .product(product1)
+                .build();
+
+        Product product2 = Product.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .listPrice(BigDecimal.valueOf(30.00))
+                .currentPrice(BigDecimal.valueOf(20.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        CartItem cartItem2 = CartItem.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(2)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().build())
+                .product(product2)
+                .build();
+
+        List<CartItem> cartItems = List.of(cartItem1, cartItem2);
+        Page<CartItem> cartItemPage = new PageImpl<>(cartItems, pageRequest, cartItems.size());
+        long expectedTotalPages = (long) Math.ceil((double) cartItems.size() / SIZE);
+
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(product1.getProductId())
+                .productName(product1.getProductName())
+                .listPrice(product1.getListPrice())
+                .currentPrice(product1.getCurrentPrice())
+                .productStatus(product1.getProductStatus())
+                .addedAt(product1.getAddedAt())
+                .updatedAt(product1.getUpdatedAt())
+                .build();
+
+        CartItemResponse cartItemResponse1 = CartItemResponse.builder()
+                .cartItemId(cartItem1.getCartItemId())
+                .quantity(cartItem1.getQuantity())
+                .addedAt(cartItem1.getAddedAt())
+                .updatedAt(cartItem1.getUpdatedAt())
+                .product(productResponse1)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(product2.getProductId())
+                .productName(product2.getProductName())
+                .listPrice(product2.getListPrice())
+                .currentPrice(product2.getCurrentPrice())
+                .productStatus(product2.getProductStatus())
+                .addedAt(product2.getAddedAt())
+                .updatedAt(product2.getUpdatedAt())
+                .build();
+
+        CartItemResponse cartItemResponse2 = CartItemResponse.builder()
+                .cartItemId(cartItem2.getCartItemId())
+                .quantity(cartItem2.getQuantity())
+                .addedAt(cartItem2.getAddedAt())
+                .updatedAt(cartItem2.getUpdatedAt())
+                .product(productResponse2)
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(cartRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(cartItemPage);
+        when(productMapper.productToResponse(product1)).thenReturn(productResponse1);
+        when(cartMapper.cartItemToResponse(cartItem1, productResponse1)).thenReturn(cartItemResponse1);
+        when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
+        when(cartMapper.cartItemToResponse(cartItem2, productResponse2)).thenReturn(cartItemResponse2);
+
+        Page<CartItemResponse> actualResponse = cartService.getMyCartItems(USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(cartRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
+        verify(productMapper, times(1)).productToResponse(product1);
+        verify(cartMapper, times(1)).cartItemToResponse(cartItem1, productResponse1);
+        verify(productMapper, times(1)).productToResponse(product2);
+        verify(cartMapper, times(1)).cartItemToResponse(cartItem2, productResponse2);
+
+        assertNotNull(actualResponse);
+        assertNotNull(actualResponse.getContent());
+        assertEquals(cartItems.size(), actualResponse.getTotalElements());
+        assertEquals(expectedTotalPages, actualResponse.getTotalPages());
+        assertEquals((long) SIZE, actualResponse.getSize());
+        assertEquals((long) PAGE, actualResponse.getNumber());
+
+        assertNotNull(actualResponse.getContent());
+        assertEquals(2, actualResponse.getContent().size());
+        assertEquals(cartItemResponse1.getCartItemId(), actualResponse.getContent().getFirst().getCartItemId());
+        assertEquals(cartItemResponse2.getCartItemId(), actualResponse.getContent().get(1).getCartItemId());
+    }
+
+    @Test
+    void getMyCartItems_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.getMyCartItems(NON_EXISTING_USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(cartRepository, never()).findByUserUserId(any(UUID.class), any(PageRequest.class));
+        verify(productMapper, never()).productToResponse(any(Product.class));
+        verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnEmptyPagedModelUserCartIsEmpty() {
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(USER_EMAIL)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
+
+        Page<CartItem> emptyCartItemPage = new PageImpl<>(Collections.emptyList(), pageRequest, 0);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(cartRepository.findByUserUserId(existingUser.getUserId(), pageRequest)).thenReturn(emptyCartItemPage);
+
+        Page<CartItemResponse> actualResponse = cartService.getMyCartItems(USER_EMAIL, SIZE, PAGE, ORDER, SORT_BY);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(cartRepository, times(1)).findByUserUserId(existingUser.getUserId(), pageRequest);
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
