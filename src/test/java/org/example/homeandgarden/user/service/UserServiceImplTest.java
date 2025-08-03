@@ -2,6 +2,7 @@ package org.example.homeandgarden.user.service;
 
 import org.example.homeandgarden.exception.DataNotFoundException;
 import org.example.homeandgarden.shared.MessageResponse;
+import org.example.homeandgarden.user.dto.ChangePasswordRequest;
 import org.example.homeandgarden.user.dto.UserResponse;
 import org.example.homeandgarden.user.dto.UserUnregisterRequest;
 import org.example.homeandgarden.user.dto.UserUpdateRequest;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,11 +59,16 @@ class UserServiceImplTest {
 
     private final String INVALID_ID = "Invalid UUID";
 
+    private final String USER_EMAIL = "user@example.com";
+    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+
     private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
     private final UserRole USER_ROLE_ADMIN = UserRole.ADMINISTRATOR;
 
     private final String PASSWORD = "Raw Password";
     private final String PASSWORD_HASH = "Hashed Password";
+    private final String NEW_PASSWORD = "New Password";
+    private final String NEW_PASSWORD_HASH = "New Hashed Password";
 
     private final Instant TIMESTAMP_NOW = Instant.now();
     private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
@@ -554,6 +561,62 @@ class UserServiceImplTest {
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userMapper, never()).userToResponse(any(User.class));
     }
+
+    @Test
+    void getMyProfile_shouldReturnUserResponseWhenUserExists() {
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email("Email")
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        UserResponse userResponse = UserResponse.builder()
+                .userId(existingUser.getUserId())
+                .email(existingUser.getEmail())
+                .firstName(existingUser.getFirstName())
+                .lastName(existingUser.getLastName())
+                .userRole(existingUser.getUserRole())
+                .registeredAt(existingUser.getRegisteredAt())
+                .updatedAt(existingUser.getUpdatedAt())
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(userMapper.userToResponse(existingUser)).thenReturn(userResponse);
+
+        UserResponse actualResponse = userService.getMyProfile(USER_EMAIL);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(userMapper, times(1)).userToResponse(existingUser);
+
+        assertEquals(userResponse.getUserId(), actualResponse.getUserId());
+        assertEquals(userResponse.getEmail(), actualResponse.getEmail());
+        assertEquals(userResponse.getFirstName(), actualResponse.getFirstName());
+        assertEquals(userResponse.getLastName(), actualResponse.getLastName());
+        assertEquals(userResponse.getUserRole(), actualResponse.getUserRole());
+    }
+
+    @Test
+    void getMyProfile_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
+                userService.getMyProfile(NON_EXISTING_USER_EMAIL));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(userMapper, never()).userToResponse(any(User.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
+    }
+
 
 
     @Test
@@ -1142,7 +1205,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void unregisterUser_shouldSucceedWhenUserIsValidAndNotLockedAndPasswordsMatch() {
+    void unregisterMyAccount_shouldReturnMessageResponseWhenUnregisterIsSuccessful() {
 
         UserUnregisterRequest request = UserUnregisterRequest.builder()
                 .password(PASSWORD)
@@ -1166,8 +1229,8 @@ class UserServiceImplTest {
                 .userId(existingUser.getUserId())
                 .email(String.format("%s@example.com", existingUser.getUserId()))
                 .passwordHash(existingUser.getPasswordHash())
-                .firstName("Deleted User")
-                .lastName("Deleted User")
+                .firstName("Disabled User")
+                .lastName("Disabled User")
                 .userRole(existingUser.getUserRole())
                 .isEnabled(false)
                 .isNonLocked(existingUser.getIsNonLocked())
@@ -1177,38 +1240,38 @@ class UserServiceImplTest {
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
         when(userRepository.saveAndFlush(existingUser)).thenReturn(unregisteredUser);
 
-        MessageResponse messageResponse = userService.unregisterUser(USER_ID.toString(), request);
+        MessageResponse messageResponse = userService.unregisterMyAccount(USER_EMAIL, request);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
 
         User capturedUser = userCaptor.getValue();
         assertEquals(String.format("%s@example.com", USER_ID), capturedUser.getEmail());
-        assertEquals("Deleted User", capturedUser.getFirstName());
-        assertEquals("Deleted User", capturedUser.getLastName());
+        assertEquals("Disabled User", capturedUser.getFirstName());
+        assertEquals("Disabled User", capturedUser.getLastName());
         assertNull(capturedUser.getRefreshToken());
         assertFalse(capturedUser.getIsEnabled());
 
         assertNotNull(messageResponse);
-        assertEquals(String.format("User with id: %s, has been unregistered.", USER_ID), messageResponse.getMessage());
+        assertEquals(String.format("User with email: %s, has been unregistered.", USER_EMAIL), messageResponse.getMessage());
     }
 
     @Test
-    void unregisterUser_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
+    void unregisterMyAccount_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
 
         UserUnregisterRequest request = UserUnregisterRequest.builder()
                 .password(PASSWORD)
                 .confirmPassword("wrongPassword")
                 .build();
 
-        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.unregisterUser(USER_ID.toString(), request));
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.unregisterMyAccount(USER_EMAIL, request));
 
-        verify(userRepository, never()).findById(any(UUID.class));
+        verify(userRepository, never()).findByEmail(anyString());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
@@ -1216,48 +1279,33 @@ class UserServiceImplTest {
     }
 
     @Test
-    void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
+    void unregisterMyAccount_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
 
         UserUnregisterRequest request = UserUnregisterRequest.builder()
                 .password(PASSWORD)
                 .confirmPassword(PASSWORD)
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> userService.unregisterUser(INVALID_ID, request));
-
-        verify(userRepository, never()).findById(any(UUID.class));
-        verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-    }
-
-    @Test
-    void unregisterUser_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
-
-        UserUnregisterRequest request = UserUnregisterRequest.builder()
-                .password(PASSWORD)
-                .confirmPassword(PASSWORD)
-                .build();
-
-        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
 
         DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
-                userService.unregisterUser(NON_EXISTING_USER_ID.toString(), request));
+                userService.unregisterMyAccount(NON_EXISTING_USER_EMAIL, request));
 
-        verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrown.getMessage());
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
     }
 
     @Test
-    void unregisterUser_shouldThrowBadCredentialsExceptionWhenPasswordIncorrect() {
+    void unregisterMyAccount_shouldThrowBadCredentialsExceptionWhenPasswordIsIncorrect() {
 
-        String invalidPassword = "Invalid Password";
+        String incorrectPassword = "Incorrect Password";
 
         UserUnregisterRequest request = UserUnregisterRequest.builder()
-                .password(invalidPassword)
-                .confirmPassword(invalidPassword)
+                .password(incorrectPassword)
+                .confirmPassword(incorrectPassword)
                 .build();
 
         User existingUser = User.builder()
@@ -1273,85 +1321,156 @@ class UserServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.matches(incorrectPassword, PASSWORD_HASH)).thenReturn(false);
 
         BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () ->
-                userService.unregisterUser(USER_ID.toString(), request)
+                userService.unregisterMyAccount(USER_EMAIL, request)
         );
 
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(passwordEncoder, times(1)).matches(invalidPassword, PASSWORD_HASH);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(passwordEncoder, times(1)).matches(incorrectPassword, PASSWORD_HASH);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Given password doesn't match the password saved in database.", thrown.getMessage());
     }
 
     @Test
-    void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+    void changeMyPassword_shouldReturnMessageResponseWhenPasswordIsChangedSuccessfully() {
 
-        UserUnregisterRequest request = UserUnregisterRequest.builder()
-                .password(PASSWORD)
-                .confirmPassword(PASSWORD)
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
                 .build();
 
-        User lockedUser = User.builder()
+        User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
                 .userRole(USER_ROLE_CLIENT)
                 .isEnabled(true)
-                .isNonLocked(false)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(lockedUser));
-        when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
-
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                userService.unregisterUser(USER_ID.toString(), request));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-
-        assertEquals(String.format("User with id: %s, is locked and can not be unregistered.", USER_ID), thrown.getMessage());
-    }
-
-    @Test
-    void unregisterUser_shouldThrowIllegalArgumentExceptionWhenUserIsAlreadyUnregistered() {
-
-        UserUnregisterRequest request = UserUnregisterRequest.builder()
-                .password(PASSWORD)
-                .confirmPassword(PASSWORD)
-                .build();
-
-        User unregisteredUser = User.builder()
-                .userId(USER_ID)
-                .email("Email")
-                .passwordHash(PASSWORD_HASH)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(false)
                 .isNonLocked(true)
                 .registeredAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(unregisteredUser));
+        User updatedUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(NEW_PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
+        when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
-                userService.unregisterUser(USER_ID.toString(), request));
+        MessageResponse messageResponse = userService.changeMyPassword(USER_EMAIL, request);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
+        verify(passwordEncoder, times(1)).encode(NEW_PASSWORD);
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
+
+        User capturedUser = userCaptor.getValue();
+        assertEquals(existingUser.getEmail(), capturedUser.getEmail());
+        assertEquals(NEW_PASSWORD_HASH, capturedUser.getPasswordHash());
+        assertEquals(existingUser.getFirstName(), capturedUser.getFirstName());
+        assertEquals(existingUser.getLastName(), capturedUser.getLastName());
+
+        assertNotNull(messageResponse);
+        assertEquals(String.format("Password for user with email: %s, has been successfully changed.", USER_EMAIL), messageResponse.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword("wrongPassword")
+                .build();
+
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.changeMyPassword(USER_EMAIL, request));
+
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is already unregistered.", USER_ID), thrown.getMessage());
+        assertEquals("Password doesn't match the CONFIRM NEW PASSWORD field.", thrown.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
+                .build();
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
+                userService.changeMyPassword(NON_EXISTING_USER_EMAIL, request));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenMyPasswordDoes() {
+
+        String invalidPassword = "Invalid Password";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(invalidPassword)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
+
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () ->
+                userService.changeMyPassword(USER_EMAIL, request)
+        );
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(passwordEncoder, times(1)).matches(invalidPassword, PASSWORD_HASH);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+
+        assertEquals("Given current password doesn't match the one in database.", thrown.getMessage());
     }
 }
