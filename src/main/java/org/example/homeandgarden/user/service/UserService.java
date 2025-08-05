@@ -10,8 +10,8 @@ public interface UserService {
     UserResponse getUserById(String userId);
     UserResponse getMyProfile(String userEmail);
     UserResponse updateMyProfile(String email, UserUpdateRequest userUpdateRequest);
+    MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest);
     MessageResponse setUserRole(String userId, String role);
     MessageResponse toggleUserLockState(String userId);
     MessageResponse unregisterMyAccount(String email, UserUnregisterRequest userUnregisterRequest);
-    MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest);
 }

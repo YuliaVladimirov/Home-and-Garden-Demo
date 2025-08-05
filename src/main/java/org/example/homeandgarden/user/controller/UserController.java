@@ -186,26 +186,6 @@ public class UserController {
         return new ResponseEntity<>(userResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
-    @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @PatchMapping("/me/unregister")
-    public ResponseEntity<MessageResponse> unregisterMyAccount(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestBody
-            @Valid
-            UserUnregisterRequest userUnregisterRequest) {
-
-        String email = userDetails.getUsername();
-        MessageResponse messageResponse = userService.unregisterMyAccount(email, userUnregisterRequest);
-        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
-    }
-
     @Operation(summary = "Change user password", description = "Changes user password. The required confirmation should be provided in the request body")
     @ApiResponse(responseCode = "200", description = "User password successfully changed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
@@ -223,6 +203,26 @@ public class UserController {
 
         String email = userDetails.getUsername();
         MessageResponse messageResponse = userService.changeMyPassword(email, changePasswordRequest);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
+    @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/me/unregister")
+    public ResponseEntity<MessageResponse> unregisterMyAccount(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestBody
+            @Valid
+            UserUnregisterRequest userUnregisterRequest) {
+
+        String email = userDetails.getUsername();
+        MessageResponse messageResponse = userService.unregisterMyAccount(email, userUnregisterRequest);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 

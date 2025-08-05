@@ -63,6 +63,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest) {
+
+        if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmNewPassword())) {
+            throw new BadCredentialsException("Password doesn't match the CONFIRM NEW PASSWORD field.");
+        }
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+
+        if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), existingUser.getPasswordHash())) {
+            throw new BadCredentialsException("Given current password doesn't match the one in database.");
+        }
+
+        existingUser.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        User updatedUser = userRepository.saveAndFlush(existingUser);
+
+        return MessageResponse.builder()
+                .message(String.format("Password for user with email: %s, has been successfully changed.", updatedUser.getEmail()))
+                .build();
+    }
+
+    @Override
     @Transactional
     public MessageResponse setUserRole(String userId, String userRole) {
 
@@ -131,27 +152,6 @@ public class UserServiceImpl implements UserService {
 
         return MessageResponse.builder()
                 .message(String.format("User with email: %s, has been unregistered.", email))
-                .build();
-    }
-
-    @Override
-    public MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest) {
-
-        if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmNewPassword())) {
-            throw new BadCredentialsException("Password doesn't match the CONFIRM NEW PASSWORD field.");
-        }
-
-        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
-
-        if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), existingUser.getPasswordHash())) {
-            throw new BadCredentialsException("Given current password doesn't match the one in database.");
-        }
-
-        existingUser.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
-        User updatedUser = userRepository.saveAndFlush(existingUser);
-
-        return MessageResponse.builder()
-                .message(String.format("Password for user with email: %s, has been successfully changed.", updatedUser.getEmail()))
                 .build();
     }
 }
