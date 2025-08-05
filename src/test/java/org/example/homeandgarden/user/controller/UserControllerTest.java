@@ -111,6 +111,1952 @@ class UserControllerTest {
         reset(userService, wishListService, cartService, orderService);
     }
 
+
+    // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
+
+    @Test
+    void getMyProfile_shouldReturnUser_whenAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserResponse userResponse = UserResponse.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        when(userService.getMyProfile(eq(userEmail))).thenReturn(userResponse);
+
+        mockMvc.perform(get("/users/me/profile", userEmail)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").exists())
+                .andExpect(jsonPath("$.email").value("user@example.com"))
+                .andExpect(jsonPath("$.firstName").value("First Name"))
+                .andExpect(jsonPath("$.lastName").value("Last Name"))
+                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
+                .andExpect(jsonPath("$.isEnabled").value(true))
+                .andExpect(jsonPath("$.isNonLocked").value(true))
+                .andExpect(jsonPath("$.registeredAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(userService, times(1)).getMyProfile(eq(userEmail));
+    }
+
+    @Test
+    void getMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        mockMvc.perform(get("/users/me/profile", userEmail)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).getMyProfile(eq(userEmail));
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnPagedWishlistItems_whenValidParametersAndAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        ProductResponse product1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse product2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        WishListItemResponse item1 = WishListItemResponse.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .product(product1)
+                .build();
+
+        WishListItemResponse item2 = WishListItemResponse.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .product(product2)
+                .build();
+
+        List<WishListItemResponse> content = Arrays.asList(item1, item2);
+
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "addedAt");
+        Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
+
+        when(wishListService.getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .with(user(userDetails))
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].wishListItemId").exists())
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
+
+                .andExpect(jsonPath("$.content[1].wishListItemId").exists())
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"));
+    }
+
+
+    @Test
+    void getMyWishListItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnPagedWishlistItems_whenDefaultParameters() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+
+        ProductResponse product1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse product2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        WishListItemResponse item1 = WishListItemResponse.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .product(product1)
+                .build();
+
+        WishListItemResponse item2 = WishListItemResponse.builder()
+                .wishListItemId(UUID.randomUUID())
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .product(product2)
+                .build();
+
+        List<WishListItemResponse> content = Arrays.asList(item1, item2);
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
+        Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
+
+        when(wishListService.getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].wishListItemId").exists())
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
+
+                .andExpect(jsonPath("$.content[1].wishListItemId").exists())
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(10))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC"));
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .with(user(userDetails))
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .with(user(userDetails))
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyWishListItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/wishListItems")
+                        .with(user(userDetails))
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnPagedCartItems_whenValidParametersAndAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        ProductResponse product1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse product2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name Two")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        CartItemResponse item1 = CartItemResponse.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(2)
+                .addedAt(Instant.now().minus(15, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(15, ChronoUnit.DAYS))
+                .product(product1)
+                .build();
+
+        CartItemResponse item2 = CartItemResponse.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(1)
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .product(product2)
+                .build();
+
+        List<CartItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "quantity");
+        Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
+
+        when(cartService.getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "quantity")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].cartItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(2))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
+
+                .andExpect(jsonPath("$.content[1].cartItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(1))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"));
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnPagedCartItems_whenDefaultParameters() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        ProductResponse product1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse product2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name Two")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        CartItemResponse item1 = CartItemResponse.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(2)
+                .addedAt(Instant.now().minus(15, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(15, ChronoUnit.DAYS))
+                .product(product1)
+                .build();
+
+        CartItemResponse item2 = CartItemResponse.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(1)
+                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .product(product2)
+                .build();
+
+        List<CartItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
+        Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
+
+        when(cartService.getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].cartItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(2))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
+
+                .andExpect(jsonPath("$.content[1].cartItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(1))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt"));
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyCartItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/cartItems")
+                        .with(user(userDetails))
+                        .param("sortBy", "INVALID_SORT_BY")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'addedAt' or 'quantity'")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnPagedOrders_whenValidParametersAndAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        OrderResponse order1 = OrderResponse.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("12345")
+                .city("City One")
+                .phone("+123456789")
+                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
+                .orderStatus(OrderStatus.PAID)
+                .createdAt(Instant.now().minus(20, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        OrderResponse order2 = OrderResponse.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .address("Address Two")
+                .zipCode("54321")
+                .city("City Two")
+                .phone("+987654321")
+                .deliveryMethod(DeliveryMethod.CUSTOMER_PICKUP)
+                .orderStatus(OrderStatus.CREATED)
+                .createdAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(1, ChronoUnit.DAYS))
+                .build();
+
+        List<OrderResponse> content = Arrays.asList(order1, order2);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "status");
+        Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
+
+        when(orderService.getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "status")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderId").exists())
+                .andExpect(jsonPath("$.content[0].firstName").value("First Name One"))
+                .andExpect(jsonPath("$.content[0].lastName").value("Last Name One"))
+                .andExpect(jsonPath("$.content[0].address").value("Address One"))
+                .andExpect(jsonPath("$.content[0].zipCode").value("12345"))
+                .andExpect(jsonPath("$.content[0].city").value("City One"))
+                .andExpect(jsonPath("$.content[0].phone").value("+123456789"))
+                .andExpect(jsonPath("$.content[0].deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
+                .andExpect(jsonPath("$.content[0].orderStatus").value(OrderStatus.PAID.name()))
+
+                .andExpect(jsonPath("$.content[1].orderId").exists())
+                .andExpect(jsonPath("$.content[1].firstName").value("First Name Two"))
+                .andExpect(jsonPath("$.content[1].lastName").value("Last Name Two"))
+                .andExpect(jsonPath("$.content[1].address").value("Address Two"))
+                .andExpect(jsonPath("$.content[1].zipCode").value("54321"))
+                .andExpect(jsonPath("$.content[1].city").value("City Two"))
+                .andExpect(jsonPath("$.content[1].phone").value("+987654321"))
+                .andExpect(jsonPath("$.content[1].deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
+                .andExpect(jsonPath("$.content[1].orderStatus").value(OrderStatus.CREATED.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"));
+    }
+
+    @Test
+    void getMyOrders_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        mockMvc.perform(get("/users/me/orders")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnPagedOrders_whenDefaultParameters() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        OrderResponse order1 = OrderResponse.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("12345")
+                .city("City One")
+                .phone("+123456789")
+                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
+                .orderStatus(OrderStatus.PAID)
+                .createdAt(Instant.now().minus(20, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        OrderResponse order2 = OrderResponse.builder()
+                .orderId(UUID.randomUUID())
+                .firstName("First Name Two")
+                .lastName("Last Name Two")
+                .address("Address Two")
+                .zipCode("54321")
+                .city("City Two")
+                .phone("+987654321")
+                .deliveryMethod(DeliveryMethod.CUSTOMER_PICKUP)
+                .orderStatus(OrderStatus.CREATED)
+                .createdAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(1, ChronoUnit.DAYS))
+                .build();
+
+        List<OrderResponse> content = Arrays.asList(order1, order2);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
+        Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
+
+        when(orderService.getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderId").exists())
+                .andExpect(jsonPath("$.content[0].firstName").value("First Name One"))
+                .andExpect(jsonPath("$.content[0].lastName").value("Last Name One"))
+                .andExpect(jsonPath("$.content[0].address").value("Address One"))
+                .andExpect(jsonPath("$.content[0].zipCode").value("12345"))
+                .andExpect(jsonPath("$.content[0].city").value("City One"))
+                .andExpect(jsonPath("$.content[0].phone").value("+123456789"))
+                .andExpect(jsonPath("$.content[0].deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
+                .andExpect(jsonPath("$.content[0].orderStatus").value(OrderStatus.PAID.name()))
+
+                .andExpect(jsonPath("$.content[1].orderId").exists())
+                .andExpect(jsonPath("$.content[1].firstName").value("First Name Two"))
+                .andExpect(jsonPath("$.content[1].lastName").value("Last Name Two"))
+                .andExpect(jsonPath("$.content[1].address").value("Address Two"))
+                .andExpect(jsonPath("$.content[1].zipCode").value("54321"))
+                .andExpect(jsonPath("$.content[1].city").value("City Two"))
+                .andExpect(jsonPath("$.content[1].phone").value("+987654321"))
+                .andExpect(jsonPath("$.content[1].deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
+                .andExpect(jsonPath("$.content[1].orderStatus").value(OrderStatus.CREATED.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"));
+    }
+
+    @Test
+    void getMyOrders_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrders_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(get("/users/me/orders")
+                        .with(user(userDetails))
+                        .param("sortBy", "INVALID_SORT_BY")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'orderStatus' or 'createdAt'")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnUpdatedUser_whenValidRequestAndAuthenticated() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
+
+        UserResponse expectedResponse = UserResponse.builder()
+                .userId(userId)
+                .email("email@example.com")
+                .firstName(updateRequest.getFirstName())
+                .lastName(updateRequest.getLastName())
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.firstName").value(updateRequest.getFirstName()))
+                .andExpect(jsonPath("$.lastName").value(updateRequest.getLastName()))
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(userService, times(1)).updateMyProfile(eq(email), any(UserUpdateRequest.class));
+    }
+
+
+    @Test
+    void updateMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .build();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).updateMyProfile(any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
+
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
+                .firstName("A")
+                .lastName("Updated Last Name")
+                .build();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).updateMyProfile(any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
+
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
+                .firstName("A".repeat(31))
+                .lastName("Updated Last Name")
+                .build();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).updateMyProfile(any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
+
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("A")
+                .build();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).updateMyProfile(any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
+
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("A".repeat(31))
+                .build();
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).updateMyProfile(any(), any());
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .build();
+
+        UserResponse expectedResponse = UserResponse.builder()
+                .userId(userId)
+                .firstName(updateRequest.getFirstName())
+                .lastName("Original Last Name")
+                .email("email@example.com")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userService.updateMyProfile(eq(email), eq(updateRequest)))
+                .thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.firstName").value("Updated First Name"))
+                .andExpect(jsonPath("$.lastName").value("Original Last Name"))
+                .andExpect(jsonPath("$.email").value("email@example.com"))
+                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
+                .andExpect(jsonPath("$.isEnabled").value(true))
+                .andExpect(jsonPath("$.isNonLocked").value(true))
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
+                .lastName("Updated Last Name")
+                .build();
+
+        UserResponse expectedResponse = UserResponse.builder()
+                .userId(userId)
+                .firstName("Original First Name")
+                .lastName(updateRequest.getLastName())
+                .email("email@example.com")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.firstName").value("Original First Name"))
+                .andExpect(jsonPath("$.lastName").value("Updated Last Name"))
+                .andExpect(jsonPath("$.email").value("email@example.com"))
+                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
+                .andExpect(jsonPath("$.isEnabled").value(true))
+                .andExpect(jsonPath("$.isNonLocked").value(true))
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+    }
+
+    @Test
+    void updateMyProfile_shouldReturnOk_whenEmptyRequestBody() throws Exception {
+
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        UserUpdateRequest updateRequest = UserUpdateRequest.builder().build();
+
+        UserResponse expectedResponse = UserResponse.builder()
+                .userId(userId)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .email("email@example.com")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.firstName").value("Original First Name"))
+                .andExpect(jsonPath("$.lastName").value("Original Last Name"))
+                .andExpect(jsonPath("$.email").value("email@example.com"))
+                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
+                .andExpect(jsonPath("$.isEnabled").value(true))
+                .andExpect(jsonPath("$.isNonLocked").value(true))
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+    }
+
+    @Test
+    void changeMyPassword_shouldReturnOk_whenUserAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(newPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        MessageResponse messageResponse = MessageResponse.builder()
+                .message(String.format("Password for user with email: %s, has been successfully changed.", userEmail))
+                .build();
+
+        when(userService.changeMyPassword(eq(userEmail), eq(request))).thenReturn(messageResponse);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(String.format("Password for user with email: %s, has been successfully changed.", userEmail)));
+
+        verify(userService, times(1)).changeMyPassword(eq(userEmail), eq(request));
+    }
+
+    @Test
+    void changeMyPassword_shouldReturnUnauthorized_whenUserNotAuthenticated() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(newPassword)
+                .build();
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).getMyProfile(eq(userEmail));
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsBlank() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "";
+        String newPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(newPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Current password is required","Invalid value for 'current password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsNotValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Invalid Password";
+        String newPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(newPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Invalid value for 'current password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsBlank() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "";
+        String confirmPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(confirmPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "New password is required","Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsNotValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "Invalid Password";
+        String confirmPassword = "Password123New!";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(confirmPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsBlank() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "Password123New!";
+        String confirmPassword = "";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(confirmPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Confirm new password field is required","Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsNotValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String currentPassword = "Password123!";
+        String newPassword = "Password123New!";
+        String confirmPassword = "Invalid Password";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(currentPassword)
+                .newPassword(newPassword)
+                .confirmNewPassword(confirmPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/change-password")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).changeMyPassword(any(), any());
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnOk_whenUserIsAuthenticatedAndRequestIsValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String validPassword = "Password123!";
+
+        UserUnregisterRequest unregisterRequest = UserUnregisterRequest.builder()
+                .password(validPassword)
+                .confirmPassword(validPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        MessageResponse expectedResponse = MessageResponse.builder()
+                .message(String.format("User with email: %s, has been unregistered.", userEmail))
+                .build();
+
+        when(userService.unregisterMyAccount(eq(userEmail), eq(unregisterRequest))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(unregisterRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(String.format("User with email: %s, has been unregistered.", userEmail)));
+
+        verify(userService, times(1)).unregisterMyAccount(eq(userEmail), eq(unregisterRequest));
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnUnauthorized_whenUserIsNotAuthenticated() throws Exception {
+
+        String validPassword = "Password123!";
+
+        UserUnregisterRequest unregisterRequest = UserUnregisterRequest.builder()
+                .password(validPassword)
+                .confirmPassword(validPassword)
+                .build();
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(unregisterRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).unregisterMyAccount(any(), any());
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsBlank() throws Exception {
+
+        String userEmail = "user@example.com";
+        String validPassword = "Password123!";
+
+        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
+                .password("")
+                .confirmPassword(validPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Password is required", "Invalid value for 'password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).unregisterMyAccount(any(), any());
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsBlank() throws Exception {
+
+        String userEmail = "user@example.com";
+        String validPassword = "Password123!";
+
+        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
+                .password(validPassword)
+                .confirmPassword("")
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Confirm password field is required", "Invalid value for 'confirm password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).unregisterMyAccount(any(), any());
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsNotValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String validPassword = "Password123!";
+        String invalidPassword = "Invalid Password";
+
+        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
+                .password(invalidPassword)
+                .confirmPassword(validPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Invalid value for 'password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).unregisterMyAccount(any(), any());
+    }
+
+    @Test
+    void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsNotValid() throws Exception {
+
+        String userEmail = "user@example.com";
+        String validPassword = "Password123!";
+        String invalidPassword = "Invalid Password";
+
+        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
+                .password(validPassword)
+                .confirmPassword(invalidPassword)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(patch("/users/me/unregister")
+                        .with(user(userDetails))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "Invalid value for 'confirm password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(userService, never()).unregisterMyAccount(any(), any());
+    }
+
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getUsersByStatus_shouldReturnPagedUsers_whenValidParametersAndAdminRole() throws Exception {
@@ -467,75 +2413,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(userService, never()).getUserById(any());
-    }
-
-    @Test
-    void getMyProfile_shouldReturnUser_whenAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserResponse userResponse = UserResponse.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        when(userService.getMyProfile(eq(userEmail))).thenReturn(userResponse);
-
-        mockMvc.perform(get("/users/me/profile", userEmail)
-                        .with(user(userDetails))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").exists())
-                .andExpect(jsonPath("$.email").value("user@example.com"))
-                .andExpect(jsonPath("$.firstName").value("First Name"))
-                .andExpect(jsonPath("$.lastName").value("Last Name"))
-                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
-                .andExpect(jsonPath("$.isEnabled").value(true))
-                .andExpect(jsonPath("$.isNonLocked").value(true))
-                .andExpect(jsonPath("$.registeredAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(userService, times(1)).getMyProfile(eq(userEmail));
-    }
-
-    @Test
-    void getMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        mockMvc.perform(get("/users/me/profile", userEmail)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).getMyProfile(eq(userEmail));
     }
 
     @Test
@@ -1292,409 +3169,6 @@ class UserControllerTest {
         verify(orderService, never()).getUserOrders(any(), any(), any(), any(), any());
     }
 
-    @Test
-    void updateMyProfile_shouldReturnUpdatedUser_whenValidRequestAndAuthenticated() throws Exception {
-
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
-                .email("email@example.com")
-                .firstName(updateRequest.getFirstName())
-                .lastName(updateRequest.getLastName())
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now())
-                .build();
-
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.firstName").value(updateRequest.getFirstName()))
-                .andExpect(jsonPath("$.lastName").value(updateRequest.getLastName()))
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(userService, times(1)).updateMyProfile(eq(email), any(UserUpdateRequest.class));
-    }
-
-
-    @Test
-    void updateMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateMyProfile(any(), any());
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
-
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
-                .firstName("A")
-                .lastName("Updated Last Name")
-                .build();
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateMyProfile(any(), any());
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
-
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
-                .firstName("A".repeat(31))
-                .lastName("Updated Last Name")
-                .build();
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateMyProfile(any(), any());
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
-
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("A")
-                .build();
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateMyProfile(any(), any());
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
-
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("A".repeat(31))
-                .build();
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").value("/users/me/profile"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateMyProfile(any(), any());
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
-
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .build();
-
-        UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
-                .firstName(updateRequest.getFirstName())
-                .lastName("Original Last Name")
-                .email("email@example.com")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now())
-                .build();
-
-        when(userService.updateMyProfile(eq(email), eq(updateRequest)))
-                .thenReturn(expectedResponse);
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.firstName").value("Updated First Name"))
-                .andExpect(jsonPath("$.lastName").value("Original Last Name"))
-                .andExpect(jsonPath("$.email").value("email@example.com"))
-                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
-                .andExpect(jsonPath("$.isEnabled").value(true))
-                .andExpect(jsonPath("$.isNonLocked").value(true))
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
-
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .lastName("Updated Last Name")
-                .build();
-
-        UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
-                .firstName("Original First Name")
-                .lastName(updateRequest.getLastName())
-                .email("email@example.com")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now())
-                .build();
-
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.firstName").value("Original First Name"))
-                .andExpect(jsonPath("$.lastName").value("Updated Last Name"))
-                .andExpect(jsonPath("$.email").value("email@example.com"))
-                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
-                .andExpect(jsonPath("$.isEnabled").value(true))
-                .andExpect(jsonPath("$.isNonLocked").value(true))
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
-    }
-
-    @Test
-    void updateMyProfile_shouldReturnOk_whenEmptyRequestBody() throws Exception {
-
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder().build();
-
-        UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
-                .firstName("Original First Name")
-                .lastName("Original Last Name")
-                .email("email@example.com")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now())
-                .build();
-
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
-
-        mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.firstName").value("Original First Name"))
-                .andExpect(jsonPath("$.lastName").value("Original Last Name"))
-                .andExpect(jsonPath("$.email").value("email@example.com"))
-                .andExpect(jsonPath("$.userRole").value(UserRole.CLIENT.name()))
-                .andExpect(jsonPath("$.isEnabled").value(true))
-                .andExpect(jsonPath("$.isNonLocked").value(true))
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
-    }
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
@@ -1881,1489 +3355,4 @@ class UserControllerTest {
 
         verify(userService, never()).toggleUserLockState(any());
     }
-
-    @Test
-    void unregisterMyAccount_shouldReturnOk_whenUserIsAuthenticatedAndRequestIsValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String validPassword = "Password123!";
-
-        UserUnregisterRequest unregisterRequest = UserUnregisterRequest.builder()
-                .password(validPassword)
-                .confirmPassword(validPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        MessageResponse expectedResponse = MessageResponse.builder()
-                .message(String.format("User with email: %s, has been unregistered.", userEmail))
-                .build();
-
-        when(userService.unregisterMyAccount(eq(userEmail), eq(unregisterRequest))).thenReturn(expectedResponse);
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(unregisterRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value(String.format("User with email: %s, has been unregistered.", userEmail)));
-
-        verify(userService, times(1)).unregisterMyAccount(eq(userEmail), eq(unregisterRequest));
-    }
-
-    @Test
-    void unregisterMyAccount_shouldReturnUnauthorized_whenUserIsNotAuthenticated() throws Exception {
-
-        String validPassword = "Password123!";
-
-        UserUnregisterRequest unregisterRequest = UserUnregisterRequest.builder()
-                .password(validPassword)
-                .confirmPassword(validPassword)
-                .build();
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(unregisterRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).unregisterMyAccount(any(), any());
-    }
-
-    @Test
-    void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-        String validPassword = "Password123!";
-
-        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
-                .password("")
-                .confirmPassword(validPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Password is required", "Invalid value for 'password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).unregisterMyAccount(any(), any());
-    }
-
-    @Test
-    void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-        String validPassword = "Password123!";
-
-        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
-                .password(validPassword)
-                .confirmPassword("")
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Confirm password field is required", "Invalid value for 'confirm password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).unregisterMyAccount(any(), any());
-    }
-
-    @Test
-    void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsNotValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String validPassword = "Password123!";
-        String invalidPassword = "Invalid Password";
-
-        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
-                .password(invalidPassword)
-                .confirmPassword(validPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Invalid value for 'password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).unregisterMyAccount(any(), any());
-    }
-
-    @Test
-    void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsNotValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String validPassword = "Password123!";
-        String invalidPassword = "Invalid Password";
-
-        UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
-                .password(validPassword)
-                .confirmPassword(invalidPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Invalid value for 'confirm password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).unregisterMyAccount(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldReturnOk_whenUserAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(newPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Password for user with email: %s, has been successfully changed.", userEmail))
-                .build();
-
-        when(userService.changeMyPassword(eq(userEmail), eq(request))).thenReturn(messageResponse);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value(String.format("Password for user with email: %s, has been successfully changed.", userEmail)));
-
-        verify(userService, times(1)).changeMyPassword(eq(userEmail), eq(request));
-    }
-
-    @Test
-    void changeMyPassword_shouldReturnUnauthorized_whenUserNotAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(newPassword)
-                .build();
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).getMyProfile(eq(userEmail));
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "";
-        String newPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(newPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Current password is required","Invalid value for 'current password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsNotValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Invalid Password";
-        String newPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(newPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Invalid value for 'current password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "";
-        String confirmPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(confirmPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "New password is required","Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsNotValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "Invalid Password";
-        String confirmPassword = "Password123New!";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(confirmPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "Password123New!";
-        String confirmPassword = "";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(confirmPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Confirm new password field is required","Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-    @Test
-    void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsNotValid() throws Exception {
-
-        String userEmail = "user@example.com";
-        String currentPassword = "Password123!";
-        String newPassword = "Password123New!";
-        String confirmPassword = "Invalid Password";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(currentPassword)
-                .newPassword(newPassword)
-                .confirmNewPassword(confirmPassword)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder(
-                        "Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
-                .andExpect(jsonPath("$.path").value("/users/me/change-password"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).changeMyPassword(any(), any());
-    }
-
-
-
-
-
-
-
-
-
-    @Test
-    void getMyWishListItems_shouldReturnPagedWishlistItems_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        ProductResponse product1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse product2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name Two")
-                .productStatus(ProductStatus.OUT_OF_STOCK)
-                .build();
-
-        WishListItemResponse item1 = WishListItemResponse.builder()
-                .wishListItemId(UUID.randomUUID())
-                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .product(product1)
-                .build();
-
-        WishListItemResponse item2 = WishListItemResponse.builder()
-                .wishListItemId(UUID.randomUUID())
-                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .product(product2)
-                .build();
-
-        List<WishListItemResponse> content = Arrays.asList(item1, item2);
-
-        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "addedAt");
-        Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
-
-        when(wishListService.getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].wishListItemId").exists())
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
-
-                .andExpect(jsonPath("$.content[1].wishListItemId").exists())
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(2))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(5))
-                .andExpect(jsonPath("$.totalPages").value(3));
-
-        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"));
-    }
-
-
-    @Test
-    void getMyWishListItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyWishListItems_shouldReturnPagedWishlistItems_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-
-        ProductResponse product1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse product2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name Two")
-                .productStatus(ProductStatus.OUT_OF_STOCK)
-                .build();
-
-        WishListItemResponse item1 = WishListItemResponse.builder()
-                .wishListItemId(UUID.randomUUID())
-                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .product(product1)
-                .build();
-
-        WishListItemResponse item2 = WishListItemResponse.builder()
-                .wishListItemId(UUID.randomUUID())
-                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .product(product2)
-                .build();
-
-        List<WishListItemResponse> content = Arrays.asList(item1, item2);
-
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
-        Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
-
-        when(wishListService.getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC")))
-                .thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].wishListItemId").exists())
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
-
-                .andExpect(jsonPath("$.content[1].wishListItemId").exists())
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(10))
-                .andExpect(jsonPath("$.totalPages").value(1));
-
-        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC"));
-    }
-
-
-    @Test
-    void getMyWishListItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
-                        .param("size", "0")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyWishListItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
-                        .param("page", "-1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyWishListItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
-                        .param("order", "INVALID_ORDER")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).getMyWishListItems(any(), any(), any(), any());
-    }
-
-
-
-
-
-    @Test
-    void getMyCartItems_shouldReturnPagedCartItems_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        ProductResponse product1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse product2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name Two")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        CartItemResponse item1 = CartItemResponse.builder()
-                .cartItemId(UUID.randomUUID())
-                .quantity(2)
-                .addedAt(Instant.now().minus(15, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(15, ChronoUnit.DAYS))
-                .product(product1)
-                .build();
-
-        CartItemResponse item2 = CartItemResponse.builder()
-                .cartItemId(UUID.randomUUID())
-                .quantity(1)
-                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .product(product2)
-                .build();
-
-        List<CartItemResponse> content = Arrays.asList(item1, item2);
-        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "quantity");
-        Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
-
-        when(cartService.getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .param("sortBy", "quantity")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].cartItemId").exists())
-                .andExpect(jsonPath("$.content[0].quantity").value(2))
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
-
-                .andExpect(jsonPath("$.content[1].cartItemId").exists())
-                .andExpect(jsonPath("$.content[1].quantity").value(1))
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(2))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(5))
-                .andExpect(jsonPath("$.totalPages").value(3));
-
-        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"));
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnPagedCartItems_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        ProductResponse product1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse product2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name Two")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        CartItemResponse item1 = CartItemResponse.builder()
-                .cartItemId(UUID.randomUUID())
-                .quantity(2)
-                .addedAt(Instant.now().minus(15, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(15, ChronoUnit.DAYS))
-                .product(product1)
-                .build();
-
-        CartItemResponse item2 = CartItemResponse.builder()
-                .cartItemId(UUID.randomUUID())
-                .quantity(1)
-                .addedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .product(product2)
-                .build();
-
-        List<CartItemResponse> content = Arrays.asList(item1, item2);
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
-        Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
-
-        when(cartService.getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt")))
-                .thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].cartItemId").exists())
-                .andExpect(jsonPath("$.content[0].quantity").value(2))
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product Name One"))
-
-                .andExpect(jsonPath("$.content[1].cartItemId").exists())
-                .andExpect(jsonPath("$.content[1].quantity").value(1))
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Name Two"))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
-
-        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt"));
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .param("size", "0")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .param("page", "-1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .param("order", "INVALID_ORDER")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyCartItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
-                        .param("sortBy", "INVALID_SORT_BY")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'addedAt' or 'quantity'")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(cartService, never()).getMyCartItems(any(), any(), any(), any(), any());
-    }
-
-
-
-
-
-    @Test
-    void getMyOrders_shouldReturnPagedOrders_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        OrderResponse order1 = OrderResponse.builder()
-                .orderId(UUID.randomUUID())
-                .firstName("First Name One")
-                .lastName("Last Name One")
-                .address("Address One")
-                .zipCode("12345")
-                .city("City One")
-                .phone("+123456789")
-                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
-                .orderStatus(OrderStatus.PAID)
-                .createdAt(Instant.now().minus(20, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        OrderResponse order2 = OrderResponse.builder()
-                .orderId(UUID.randomUUID())
-                .firstName("First Name Two")
-                .lastName("Last Name Two")
-                .address("Address Two")
-                .zipCode("54321")
-                .city("City Two")
-                .phone("+987654321")
-                .deliveryMethod(DeliveryMethod.CUSTOMER_PICKUP)
-                .orderStatus(OrderStatus.CREATED)
-                .createdAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(1, ChronoUnit.DAYS))
-                .build();
-
-        List<OrderResponse> content = Arrays.asList(order1, order2);
-        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "status");
-        Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
-
-        when(orderService.getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"))).thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .param("sortBy", "status")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].orderId").exists())
-                .andExpect(jsonPath("$.content[0].firstName").value("First Name One"))
-                .andExpect(jsonPath("$.content[0].lastName").value("Last Name One"))
-                .andExpect(jsonPath("$.content[0].address").value("Address One"))
-                .andExpect(jsonPath("$.content[0].zipCode").value("12345"))
-                .andExpect(jsonPath("$.content[0].city").value("City One"))
-                .andExpect(jsonPath("$.content[0].phone").value("+123456789"))
-                .andExpect(jsonPath("$.content[0].deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
-                .andExpect(jsonPath("$.content[0].orderStatus").value(OrderStatus.PAID.name()))
-
-                .andExpect(jsonPath("$.content[1].orderId").exists())
-                .andExpect(jsonPath("$.content[1].firstName").value("First Name Two"))
-                .andExpect(jsonPath("$.content[1].lastName").value("Last Name Two"))
-                .andExpect(jsonPath("$.content[1].address").value("Address Two"))
-                .andExpect(jsonPath("$.content[1].zipCode").value("54321"))
-                .andExpect(jsonPath("$.content[1].city").value("City Two"))
-                .andExpect(jsonPath("$.content[1].phone").value("+987654321"))
-                .andExpect(jsonPath("$.content[1].deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
-                .andExpect(jsonPath("$.content[1].orderStatus").value(OrderStatus.CREATED.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(2))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(5))
-                .andExpect(jsonPath("$.totalPages").value(3));
-
-        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"));
-    }
-
-    @Test
-    void getMyOrders_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        mockMvc.perform(get("/users/me/orders")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyOrders_shouldReturnPagedOrders_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        OrderResponse order1 = OrderResponse.builder()
-                .orderId(UUID.randomUUID())
-                .firstName("First Name One")
-                .lastName("Last Name One")
-                .address("Address One")
-                .zipCode("12345")
-                .city("City One")
-                .phone("+123456789")
-                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
-                .orderStatus(OrderStatus.PAID)
-                .createdAt(Instant.now().minus(20, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        OrderResponse order2 = OrderResponse.builder()
-                .orderId(UUID.randomUUID())
-                .firstName("First Name Two")
-                .lastName("Last Name Two")
-                .address("Address Two")
-                .zipCode("54321")
-                .city("City Two")
-                .phone("+987654321")
-                .deliveryMethod(DeliveryMethod.CUSTOMER_PICKUP)
-                .orderStatus(OrderStatus.CREATED)
-                .createdAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(1, ChronoUnit.DAYS))
-                .build();
-
-        List<OrderResponse> content = Arrays.asList(order1, order2);
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
-        Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
-
-        when(orderService.getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"))).thenReturn(mockPage);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].orderId").exists())
-                .andExpect(jsonPath("$.content[0].firstName").value("First Name One"))
-                .andExpect(jsonPath("$.content[0].lastName").value("Last Name One"))
-                .andExpect(jsonPath("$.content[0].address").value("Address One"))
-                .andExpect(jsonPath("$.content[0].zipCode").value("12345"))
-                .andExpect(jsonPath("$.content[0].city").value("City One"))
-                .andExpect(jsonPath("$.content[0].phone").value("+123456789"))
-                .andExpect(jsonPath("$.content[0].deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
-                .andExpect(jsonPath("$.content[0].orderStatus").value(OrderStatus.PAID.name()))
-
-                .andExpect(jsonPath("$.content[1].orderId").exists())
-                .andExpect(jsonPath("$.content[1].firstName").value("First Name Two"))
-                .andExpect(jsonPath("$.content[1].lastName").value("Last Name Two"))
-                .andExpect(jsonPath("$.content[1].address").value("Address Two"))
-                .andExpect(jsonPath("$.content[1].zipCode").value("54321"))
-                .andExpect(jsonPath("$.content[1].city").value("City Two"))
-                .andExpect(jsonPath("$.content[1].phone").value("+987654321"))
-                .andExpect(jsonPath("$.content[1].deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
-                .andExpect(jsonPath("$.content[1].orderStatus").value(OrderStatus.CREATED.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(1));
-
-        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"));
-    }
-
-    @Test
-    void getMyOrders_shouldReturnBadRequest_whenInvalidSize() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .param("size", "0")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyOrders_shouldReturnBadRequest_whenInvalidPage() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .param("page", "-1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyOrders_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .param("order", "INVALID_ORDER")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getMyOrders_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
-        mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
-                        .param("sortBy", "INVALID_SORT_BY")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'orderStatus' or 'createdAt'")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getMyOrders(any(), any(), any(), any(), any());
-    }
-
 }

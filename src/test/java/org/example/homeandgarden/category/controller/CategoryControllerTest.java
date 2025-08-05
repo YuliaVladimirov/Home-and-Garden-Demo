@@ -81,6 +81,9 @@ class CategoryControllerTest {
         reset(categoryService, productService);
     }
 
+
+// 🌐 Public access endpoints — no authentication required (accessible to all users)
+
     @Test
     void getAllActiveCategories_shouldReturnPagedCategories_whenValidParameters() throws Exception {
 
@@ -231,226 +234,6 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")))
                 .andExpect(jsonPath("$.path").value("/categories"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnPagedCategories_whenValidParameters() throws Exception {
-
-        CategoryResponse categoryResponse1 = CategoryResponse.builder()
-                .categoryId(UUID.randomUUID())
-                .categoryName("Inactive Category One")
-                .categoryStatus(CategoryStatus.INACTIVE)
-                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        CategoryResponse categoryResponse2 = CategoryResponse.builder()
-                .categoryId(UUID.randomUUID())
-                .categoryName("Inactive Category Two")
-                .categoryStatus(CategoryStatus.INACTIVE)
-                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "categoryName");
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
-
-        when(categoryService.getCategoriesByStatus(eq("INACTIVE"), eq(2), eq(0), eq("DESC"), eq("categoryName")))
-                .thenReturn(mockPage);
-
-        mockMvc.perform(get("/categories/status")
-                        .param("categoryStatus", "INACTIVE")
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .param("sortBy", "categoryName")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].categoryId").exists())
-                .andExpect(jsonPath("$.content[0].categoryName").value("Inactive Category One"))
-                .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.INACTIVE.name()))
-
-                .andExpect(jsonPath("$.content[1].categoryId").exists())
-                .andExpect(jsonPath("$.content[1].categoryName").value("Inactive Category Two"))
-                .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.INACTIVE.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(2))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(50))
-                .andExpect(jsonPath("$.totalPages").value(25));
-
-        verify(categoryService, times(1)).getCategoriesByStatus(eq("INACTIVE"), eq(2), eq(0), eq("DESC"), eq("categoryName"));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnPagedCategories_whenStatusOmittedAndDefaultParameters() throws Exception {
-
-        CategoryResponse categoryResponse1 = CategoryResponse.builder()
-                .categoryId(UUID.randomUUID())
-                .categoryName("Active Category One")
-                .categoryStatus(CategoryStatus.ACTIVE)
-                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        CategoryResponse categoryResponse2 = CategoryResponse.builder()
-                .categoryId(UUID.randomUUID())
-                .categoryName("Active Category Two")
-                .categoryStatus(CategoryStatus.ACTIVE)
-                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .build();
-
-        List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
-        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
-
-        when(categoryService.getCategoriesByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("createdAt")))
-                .thenReturn(mockPage);
-
-        mockMvc.perform(get("/categories/status")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].categoryId").exists())
-                .andExpect(jsonPath("$.content[0].categoryName").value("Active Category One"))
-                .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.ACTIVE.name()))
-
-                .andExpect(jsonPath("$.content[1].categoryId").exists())
-                .andExpect(jsonPath("$.content[1].categoryName").value("Active Category Two"))
-                .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.ACTIVE.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(50))
-                .andExpect(jsonPath("$.totalPages").value(5));
-
-        verify(categoryService, times(1)).getCategoriesByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("createdAt"));
-    }
-
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void getCategoriesByStatus_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("categoryStatus", "ACTIVE")
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "ASC")
-                        .param("sortBy", "createdAt")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getCategoriesByStatus_shouldReturnUnauthorized_whenNoAuthentication() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("categoryStatus", "ACTIVE")
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "ASC")
-                        .param("sortBy", "createdAt")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidCategoryStatus() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("categoryStatus", "INVALID_STATUS")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSize() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("size", "0")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidPage() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("page", "-1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("order", "INVALID_ORDER")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
-
-        mockMvc.perform(get("/categories/status")
-                        .param("sortBy", "INVALID_SORT_BY")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")))
-                .andExpect(jsonPath("$.path").value("/categories/status"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
@@ -771,6 +554,229 @@ class CategoryControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(productService, never()).getCategoryProducts(any(), any(), any(), any(), any(), any(), any());
+    }
+
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnPagedCategories_whenValidParameters() throws Exception {
+
+        CategoryResponse categoryResponse1 = CategoryResponse.builder()
+                .categoryId(UUID.randomUUID())
+                .categoryName("Inactive Category One")
+                .categoryStatus(CategoryStatus.INACTIVE)
+                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        CategoryResponse categoryResponse2 = CategoryResponse.builder()
+                .categoryId(UUID.randomUUID())
+                .categoryName("Inactive Category Two")
+                .categoryStatus(CategoryStatus.INACTIVE)
+                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "categoryName");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
+
+        when(categoryService.getCategoriesByStatus(eq("INACTIVE"), eq(2), eq(0), eq("DESC"), eq("categoryName")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/categories/status")
+                        .param("categoryStatus", "INACTIVE")
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "categoryName")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
+                .andExpect(jsonPath("$.content[0].categoryName").value("Inactive Category One"))
+                .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.INACTIVE.name()))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
+                .andExpect(jsonPath("$.content[1].categoryName").value("Inactive Category Two"))
+                .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.INACTIVE.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(50))
+                .andExpect(jsonPath("$.totalPages").value(25));
+
+        verify(categoryService, times(1)).getCategoriesByStatus(eq("INACTIVE"), eq(2), eq(0), eq("DESC"), eq("categoryName"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnPagedCategories_whenStatusOmittedAndDefaultParameters() throws Exception {
+
+        CategoryResponse categoryResponse1 = CategoryResponse.builder()
+                .categoryId(UUID.randomUUID())
+                .categoryName("Active Category One")
+                .categoryStatus(CategoryStatus.ACTIVE)
+                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        CategoryResponse categoryResponse2 = CategoryResponse.builder()
+                .categoryId(UUID.randomUUID())
+                .categoryName("Active Category Two")
+                .categoryStatus(CategoryStatus.ACTIVE)
+                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .build();
+
+        List<CategoryResponse> content = Arrays.asList(categoryResponse1, categoryResponse2);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
+        Page<CategoryResponse> mockPage = new PageImpl<>(content, pageRequest, 50);
+
+        when(categoryService.getCategoriesByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("createdAt")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/categories/status")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].categoryId").exists())
+                .andExpect(jsonPath("$.content[0].categoryName").value("Active Category One"))
+                .andExpect(jsonPath("$.content[0].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
+                .andExpect(jsonPath("$.content[1].categoryId").exists())
+                .andExpect(jsonPath("$.content[1].categoryName").value("Active Category Two"))
+                .andExpect(jsonPath("$.content[1].categoryStatus").value(CategoryStatus.ACTIVE.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(50))
+                .andExpect(jsonPath("$.totalPages").value(5));
+
+        verify(categoryService, times(1)).getCategoriesByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("createdAt"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    void getCategoriesByStatus_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("categoryStatus", "ACTIVE")
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "ASC")
+                        .param("sortBy", "createdAt")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
+                .andExpect(jsonPath("$.details").value("Access Denied"))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getCategoriesByStatus_shouldReturnUnauthorized_whenNoAuthentication() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("categoryStatus", "ACTIVE")
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "ASC")
+                        .param("sortBy", "createdAt")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidCategoryStatus() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("categoryStatus", "INVALID_STATUS")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getCategoriesByStatus(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getCategoriesByStatus_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
+        mockMvc.perform(get("/categories/status")
+                        .param("sortBy", "INVALID_SORT_BY")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")))
+                .andExpect(jsonPath("$.path").value("/categories/status"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(categoryService, never()).getAllActiveCategories(any(), any(), any(), any());
     }
 
     @Test

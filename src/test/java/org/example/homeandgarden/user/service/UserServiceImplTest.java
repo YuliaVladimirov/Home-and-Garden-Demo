@@ -795,6 +795,145 @@ class UserServiceImplTest {
     }
 
     @Test
+    void changeMyPassword_shouldReturnMessageResponseWhenPasswordIsChangedSuccessfully() {
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        User updatedUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(NEW_PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
+        when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
+
+        MessageResponse messageResponse = userService.changeMyPassword(USER_EMAIL, request);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
+        verify(passwordEncoder, times(1)).encode(NEW_PASSWORD);
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
+
+        User capturedUser = userCaptor.getValue();
+        assertEquals(existingUser.getEmail(), capturedUser.getEmail());
+        assertEquals(NEW_PASSWORD_HASH, capturedUser.getPasswordHash());
+        assertEquals(existingUser.getFirstName(), capturedUser.getFirstName());
+        assertEquals(existingUser.getLastName(), capturedUser.getLastName());
+
+        assertNotNull(messageResponse);
+        assertEquals(String.format("Password for user with email: %s, has been successfully changed.", USER_EMAIL), messageResponse.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword("wrongPassword")
+                .build();
+
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.changeMyPassword(USER_EMAIL, request));
+
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+
+        assertEquals("Password doesn't match the CONFIRM NEW PASSWORD field.", thrown.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(PASSWORD)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
+                .build();
+
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
+                userService.changeMyPassword(NON_EXISTING_USER_EMAIL, request));
+
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
+    }
+
+    @Test
+    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenMyPasswordDoes() {
+
+        String invalidPassword = "Invalid Password";
+
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword(invalidPassword)
+                .newPassword(NEW_PASSWORD)
+                .confirmNewPassword(NEW_PASSWORD)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
+
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () ->
+                userService.changeMyPassword(USER_EMAIL, request)
+        );
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(passwordEncoder, times(1)).matches(invalidPassword, PASSWORD_HASH);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+
+        assertEquals("Given current password doesn't match the one in database.", thrown.getMessage());
+    }
+
+    @Test
     void setUserRole_shouldSetUserRoleSuccessfullyWhenUserExistsAndIsEnabledAndNonLocked() {
 
         User existingUser = User.builder()
@@ -1252,144 +1391,5 @@ class UserServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Given password doesn't match the password saved in database.", thrown.getMessage());
-    }
-
-    @Test
-    void changeMyPassword_shouldReturnMessageResponseWhenPasswordIsChangedSuccessfully() {
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(PASSWORD)
-                .newPassword(NEW_PASSWORD)
-                .confirmNewPassword(NEW_PASSWORD)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(USER_ID)
-                .email(USER_EMAIL)
-                .passwordHash(PASSWORD_HASH)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        User updatedUser = User.builder()
-                .userId(USER_ID)
-                .email(USER_EMAIL)
-                .passwordHash(NEW_PASSWORD_HASH)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-
-        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
-        when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
-        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
-
-        MessageResponse messageResponse = userService.changeMyPassword(USER_EMAIL, request);
-
-        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
-        verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
-        verify(passwordEncoder, times(1)).encode(NEW_PASSWORD);
-        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
-
-        User capturedUser = userCaptor.getValue();
-        assertEquals(existingUser.getEmail(), capturedUser.getEmail());
-        assertEquals(NEW_PASSWORD_HASH, capturedUser.getPasswordHash());
-        assertEquals(existingUser.getFirstName(), capturedUser.getFirstName());
-        assertEquals(existingUser.getLastName(), capturedUser.getLastName());
-
-        assertNotNull(messageResponse);
-        assertEquals(String.format("Password for user with email: %s, has been successfully changed.", USER_EMAIL), messageResponse.getMessage());
-    }
-
-    @Test
-    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenPasswordsMismatch() {
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(PASSWORD)
-                .newPassword(NEW_PASSWORD)
-                .confirmNewPassword("wrongPassword")
-                .build();
-
-        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> userService.changeMyPassword(USER_EMAIL, request));
-
-        verify(userRepository, never()).findByEmail(anyString());
-        verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-
-        assertEquals("Password doesn't match the CONFIRM NEW PASSWORD field.", thrown.getMessage());
-    }
-
-    @Test
-    void changeMyPassword_shouldThrowDataNotFoundExceptionWhenUserNotFound() {
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(PASSWORD)
-                .newPassword(NEW_PASSWORD)
-                .confirmNewPassword(NEW_PASSWORD)
-                .build();
-
-        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
-
-        DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
-                userService.changeMyPassword(NON_EXISTING_USER_EMAIL, request));
-
-        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
-        verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-
-        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
-    }
-
-    @Test
-    void changeMyPassword_shouldThrowBadCredentialsExceptionWhenMyPasswordDoes() {
-
-        String invalidPassword = "Invalid Password";
-
-        ChangePasswordRequest request = ChangePasswordRequest.builder()
-                .currentPassword(invalidPassword)
-                .newPassword(NEW_PASSWORD)
-                .confirmNewPassword(NEW_PASSWORD)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(USER_ID)
-                .email(USER_EMAIL)
-                .passwordHash(PASSWORD_HASH)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(invalidPassword, PASSWORD_HASH)).thenReturn(false);
-
-        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () ->
-                userService.changeMyPassword(USER_EMAIL, request)
-        );
-
-        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
-        verify(passwordEncoder, times(1)).matches(invalidPassword, PASSWORD_HASH);
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-
-        assertEquals("Given current password doesn't match the one in database.", thrown.getMessage());
     }
 }

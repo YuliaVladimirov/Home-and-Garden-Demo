@@ -71,6 +71,9 @@ class CartControllerTest {
         reset(cartService);
     }
 
+
+    // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
+
     @Test
     void addCartItem_shouldReturnCreatedCartItem_whenValidRequestAndAuthenticated() throws Exception {
 

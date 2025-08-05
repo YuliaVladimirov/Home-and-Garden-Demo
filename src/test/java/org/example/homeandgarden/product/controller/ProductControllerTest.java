@@ -68,6 +68,65 @@ class ProductControllerTest {
         reset(productService);
     }
 
+
+    // 🌐 Public access endpoints — no authentication required (accessible to all users)
+
+    @Test
+    void getProductById_shouldReturnProduct_whenValidId() throws Exception {
+
+        String validProductId = UUID.randomUUID().toString();
+
+        ProductResponse expectedProduct = ProductResponse.builder()
+                .productId(UUID.fromString(validProductId))
+                .productName("Product Name")
+                .description("Product Description")
+                .listPrice(BigDecimal.valueOf(100.00))
+                .currentPrice(BigDecimal.valueOf(90.00))
+                .productStatus(ProductStatus.AVAILABLE)
+                .imageUrl("http://example.com/image.jpg")
+                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        when(productService.getProductById(eq(validProductId))).thenReturn(expectedProduct);
+
+        mockMvc.perform(get("/products/{productId}", validProductId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(validProductId))
+                .andExpect(jsonPath("$.productName").value("Product Name"))
+                .andExpect(jsonPath("$.description").value("Product Description"))
+                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(100.00)))
+                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(90.00)))
+                .andExpect(jsonPath("$.productStatus").value(ProductStatus.AVAILABLE.name()))
+                .andExpect(jsonPath("$.imageUrl").value("http://example.com/image.jpg"))
+                .andExpect(jsonPath("$.addedAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(productService, times(1)).getProductById(eq(validProductId));
+    }
+
+    @Test
+    void getProductById_shouldReturnBadRequest_whenInvalidProductIdFormat() throws Exception {
+
+        String invalidProductId = "INVALID_UUID";
+
+        mockMvc.perform(get("/products/{productId}", invalidProductId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(productService, never()).getProductById(any());
+    }
+
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getProductsByStatus_shouldReturnPagedProducts_whenValidParametersAndAdminRole() throws Exception {
@@ -675,7 +734,6 @@ class ProductControllerTest {
         verify(productService, times(1)).getPendingProducts(eq("CREATED"), eq(10), eq(10), eq(0));
     }
 
-
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
     void getPendingProducts_shouldReturnBadRequest_whenInvalidOrderStatus() throws Exception {
@@ -845,59 +903,6 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(productService, never()).getProfitByPeriod(any(), any());
-    }
-
-    @Test
-    void getProductById_shouldReturnProduct_whenValidId() throws Exception {
-
-        String validProductId = UUID.randomUUID().toString();
-
-        ProductResponse expectedProduct = ProductResponse.builder()
-                .productId(UUID.fromString(validProductId))
-                .productName("Product Name")
-                .description("Product Description")
-                .listPrice(BigDecimal.valueOf(100.00))
-                .currentPrice(BigDecimal.valueOf(90.00))
-                .productStatus(ProductStatus.AVAILABLE)
-                .imageUrl("http://example.com/image.jpg")
-                .addedAt(Instant.now().minus(10, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        when(productService.getProductById(eq(validProductId))).thenReturn(expectedProduct);
-
-        mockMvc.perform(get("/products/{productId}", validProductId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.productId").value(validProductId))
-                .andExpect(jsonPath("$.productName").value("Product Name"))
-                .andExpect(jsonPath("$.description").value("Product Description"))
-                .andExpect(jsonPath("$.listPrice").value(BigDecimal.valueOf(100.00)))
-                .andExpect(jsonPath("$.currentPrice").value(BigDecimal.valueOf(90.00)))
-                .andExpect(jsonPath("$.productStatus").value(ProductStatus.AVAILABLE.name()))
-                .andExpect(jsonPath("$.imageUrl").value("http://example.com/image.jpg"))
-                .andExpect(jsonPath("$.addedAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(productService, times(1)).getProductById(eq(validProductId));
-    }
-
-    @Test
-    void getProductById_shouldReturnBadRequest_whenInvalidProductIdFormat() throws Exception {
-
-        String invalidProductId = "INVALID_UUID";
-
-        mockMvc.perform(get("/products/{productId}", invalidProductId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(productService, never()).getProductById(any());
     }
 
     @Test

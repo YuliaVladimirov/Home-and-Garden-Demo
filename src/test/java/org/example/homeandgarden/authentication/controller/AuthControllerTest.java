@@ -63,6 +63,9 @@ class AuthControllerTest {
         reset(authService);
     }
 
+
+// 🌐 Public access endpoints — no authentication required (accessible to all users)
+
     @Test
     void registerUser_shouldReturnCreatedUser_whenValidRequest() throws Exception {
 

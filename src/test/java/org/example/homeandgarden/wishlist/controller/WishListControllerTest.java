@@ -68,6 +68,9 @@ class WishListControllerTest {
         reset(wishListService);
     }
 
+
+    // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
+
     @Test
     void addWishListItem_shouldReturnCreatedWishListItem_whenValidRequestAndAuthenticated() throws Exception {
 
