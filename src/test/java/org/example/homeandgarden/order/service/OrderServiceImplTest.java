@@ -27,6 +27,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -521,7 +522,6 @@ class OrderServiceImplTest {
     void addOrder_shouldAddOrderSuccessfully() {
 
         OrderCreateRequest orderCreateRequest =  OrderCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .firstName("First Name")
                 .lastName("Last Name")
                 .address("Address")
@@ -533,7 +533,7 @@ class OrderServiceImplTest {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash("Hashed Password")
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -620,15 +620,15 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         ArgumentCaptor<OrderItem> orderItemCaptor = ArgumentCaptor.forClass(OrderItem.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(orderMapper.orderRequestToOrder(orderCreateRequest, existingUser)).thenReturn(orderToAdd);
         when(orderRepository.saveAndFlush(orderToAdd)).thenReturn(addedOrder);
         when(orderItemMapper.cartItemToOrderItem(existingCartItem, addedOrder, existingCartItem.getProduct())).thenReturn(orderItemToAdd);
         when(orderMapper.orderToResponse(addedOrder)).thenReturn(orderResponse);
 
-        OrderResponse actualResponse = orderService.addOrder(orderCreateRequest);
+        OrderResponse actualResponse = orderService.addOrder(USER_EMAIL, orderCreateRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(orderMapper, times(1)).orderRequestToOrder(orderCreateRequest, existingUser);
 
         verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
@@ -656,36 +656,9 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void addOrder_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
-
-        OrderCreateRequest orderCreateRequest =  OrderCreateRequest.builder()
-                .userId(INVALID_ID)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .address("Address")
-                .zipCode("Zip Code")
-                .city("City")
-                .phone("123")
-                .deliveryMethod(COURIER_DELIVERY.name())
-                .build();
-
-        assertThrows(IllegalArgumentException.class, () ->
-                orderService.addOrder(orderCreateRequest));
-
-        verify(userRepository, never()).findById(USER_ID);
-        verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
-        verify(orderRepository, never()).saveAndFlush(any(Order.class));
-        verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
-        verify(orderItemRepository, never()).saveAndFlush(any(OrderItem.class));
-        verify(cartRepository, never()).deleteAll(any(Set.class));
-        verify(orderMapper, never()).orderToResponse(any(Order.class));
-    }
-
-    @Test
     void addOrder_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
         OrderCreateRequest orderCreateRequest =  OrderCreateRequest.builder()
-                .userId(NON_EXISTING_USER_ID.toString())
                 .firstName("First Name")
                 .lastName("Last Name")
                 .address("Address")
@@ -695,12 +668,12 @@ class OrderServiceImplTest {
                 .deliveryMethod(COURIER_DELIVERY.name())
                 .build();
 
-        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                orderService.addOrder(orderCreateRequest));
+                orderService.addOrder(NON_EXISTING_USER_EMAIL, orderCreateRequest));
 
-        verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
@@ -708,14 +681,13 @@ class OrderServiceImplTest {
         verify(cartRepository, never()).deleteAll(any(Set.class));
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
     void addOrder_shouldThrowDataNotFoundExceptionWhenUserCartIsEmpty() {
 
         OrderCreateRequest orderCreateRequest =  OrderCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .firstName("First Name")
                 .lastName("Last Name")
                 .address("Address")
@@ -727,7 +699,7 @@ class OrderServiceImplTest {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash("Hashed Password")
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -739,12 +711,12 @@ class OrderServiceImplTest {
                 .cart(Collections.emptySet())
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
 
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
-                orderService.addOrder(orderCreateRequest));
+                orderService.addOrder(USER_EMAIL, orderCreateRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
@@ -752,7 +724,7 @@ class OrderServiceImplTest {
         verify(cartRepository, never()).deleteAll(any(Set.class));
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
-        assertEquals(String.format("Cannot place order: user with id %s has an empty cart.", USER_ID), thrownException.getMessage());
+        assertEquals(String.format("Cannot place order: user with email %s has an empty cart.", USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
@@ -780,7 +752,7 @@ class OrderServiceImplTest {
                 .orderStatus(ORDER_STATUS_CREATED)
                 .createdAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .build();
 
         Order updatedOrder = Order.builder()
@@ -818,7 +790,7 @@ class OrderServiceImplTest {
         when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
         when(orderMapper.orderToResponse(updatedOrder)).thenReturn(orderResponse);
 
-        OrderResponse actualResponse = orderService.updateOrder(ORDER_ID.toString(), orderUpdateRequest);
+        OrderResponse actualResponse = orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest);
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
         verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
@@ -869,7 +841,7 @@ class OrderServiceImplTest {
                 .orderStatus(ORDER_STATUS_CREATED)
                 .createdAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .build();
 
         Order updatedOrder = Order.builder()
@@ -907,7 +879,7 @@ class OrderServiceImplTest {
         when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
         when(orderMapper.orderToResponse(updatedOrder)).thenReturn(orderResponse);
 
-        OrderResponse actualResponse = orderService.updateOrder(ORDER_ID.toString(), orderUpdateRequest);
+        OrderResponse actualResponse = orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest);
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
         verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
@@ -946,7 +918,7 @@ class OrderServiceImplTest {
                 .deliveryMethod(CUSTOMER_PICKUP.name())
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(INVALID_ID, orderUpdateRequest));
+        assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(USER_EMAIL, INVALID_ID, orderUpdateRequest));
 
         verify(orderRepository, never()).findById(any(UUID.class));
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
@@ -968,13 +940,52 @@ class OrderServiceImplTest {
 
         when(orderRepository.findById(NON_EXISTING_ORDER_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.updateOrder(NON_EXISTING_ORDER_ID.toString(), orderUpdateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.updateOrder(USER_EMAIL, NON_EXISTING_ORDER_ID.toString(), orderUpdateRequest));
 
         verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void updateUser_shouldThrowIllegalArgumentExceptionWhenOrderDoesNotBelongToUser() {
+
+        OrderUpdateRequest orderUpdateRequest = OrderUpdateRequest.builder()
+                .firstName("Updated First Name")
+                .lastName("Updated Last Name")
+                .address("Updated Address")
+                .zipCode("Updated Zip Code")
+                .city("Updated City")
+                .phone("456")
+                .deliveryMethod(CUSTOMER_PICKUP.name())
+                .build();
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("Original First Name")
+                .lastName("Original Last Name")
+                .address("Original Address")
+                .zipCode("Original Zip Code")
+                .city("Original City")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest));
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
+        verify(orderMapper, never()).orderToResponse(existingOrder);
+
+        assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
@@ -1002,12 +1013,12 @@ class OrderServiceImplTest {
                 .orderStatus(ORDER_STATUS_DELIVERED)
                 .createdAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .build();
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(ORDER_ID.toString(), orderUpdateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
@@ -1031,7 +1042,7 @@ class OrderServiceImplTest {
                 .orderStatus(ORDER_STATUS_CREATED)
                 .createdAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .build();
 
         Order updatedOrder = Order.builder()
@@ -1058,7 +1069,7 @@ class OrderServiceImplTest {
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
         when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
-        MessageResponse actualResponse = orderService.cancelOrder(ORDER_ID.toString());
+        MessageResponse actualResponse = orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
@@ -1077,7 +1088,7 @@ class OrderServiceImplTest {
     @Test
     void cancelOrder_shouldThrowIllegalArgumentExceptionWhenOrderIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(INVALID_ID));
+        assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(USER_EMAIL, INVALID_ID));
 
         verify(orderRepository, never()).findById(any(UUID.class));
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
@@ -1088,12 +1099,40 @@ class OrderServiceImplTest {
 
         when(orderRepository.findById(NON_EXISTING_ORDER_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.cancelOrder(NON_EXISTING_ORDER_ID.toString()));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.cancelOrder(USER_EMAIL, NON_EXISTING_ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
         verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void cancelOrder_shouldThrowIllegalArgumentExceptionWhenOrderDoesNotBelongToUser() {
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .address("Address")
+                .zipCode("Zip Code")
+                .city("City")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString()));
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
+
+        assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
@@ -1111,12 +1150,12 @@ class OrderServiceImplTest {
                 .orderStatus(ORDER_STATUS_DELIVERED)
                 .createdAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .build();
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(ORDER_ID.toString()));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
         verify(orderRepository, never()).saveAndFlush(any(Order.class));

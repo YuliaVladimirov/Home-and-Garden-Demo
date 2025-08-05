@@ -617,10 +617,8 @@ class UserServiceImplTest {
         assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
     }
 
-
-
     @Test
-    void updateUser_shouldUpdateUserSuccessfullyWhenUserExistsAndIsEnabledAndNonLocked() {
+    void updateMyProfile_shouldUpdateUserSuccessfullyWhenUserExists() {
 
         UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -629,7 +627,7 @@ class UserServiceImplTest {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Original Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("Original First Name")
                 .lastName("Original Last Name")
@@ -665,13 +663,13 @@ class UserServiceImplTest {
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
-        UserResponse actualResponse = userService.updateUser(USER_ID.toString(), userUpdateRequest);
+        UserResponse actualResponse = userService.updateMyProfile(USER_EMAIL, userUpdateRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
 
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
@@ -699,7 +697,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void updateUser_shouldUpdateOnlyProvidedFieldsAndReturnUpdatedUserResponse() {
+    void updateMyProfile_shouldUpdateOnlyProvidedFieldsAndReturnUpdatedUserResponse() {
 
         UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -708,7 +706,7 @@ class UserServiceImplTest {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Original Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("Original First Name")
                 .lastName("Original Last Name")
@@ -744,13 +742,13 @@ class UserServiceImplTest {
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
-        UserResponse actualResponse = userService.updateUser(USER_ID.toString(), userUpdateRequest);
+        UserResponse actualResponse = userService.updateMyProfile(USER_EMAIL, userUpdateRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
 
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
@@ -778,101 +776,22 @@ class UserServiceImplTest {
     }
 
     @Test
-    void updateUser_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+    void updateMyProfile_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
         UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
 
-        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.updateUser(NON_EXISTING_USER_ID.toString(), userUpdateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.updateMyProfile(NON_EXISTING_USER_EMAIL, userUpdateRequest));
 
-        verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
-    }
-
-    @Test
-    void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
-
-        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        assertThrows(IllegalArgumentException.class, () -> userService.updateUser(INVALID_ID, userUpdateRequest));
-
-        verify(userRepository, never()).findById(any(UUID.class));
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-        verify(userMapper, never()).userToResponse(any(User.class));
-    }
-
-    @Test
-    void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
-
-        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        User existingUser = User.builder()
-                .userId(USER_ID)
-                .email("Original Email")
-                .passwordHash(PASSWORD_HASH)
-                .firstName("Original First Name")
-                .lastName("Original Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(false)
-                .isNonLocked(true)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID.toString(), userUpdateRequest));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-        verify(userMapper, never()).userToResponse(any(User.class));
-
-        assertEquals(String.format("User with id: %s, is unregistered and can not be updated.", USER_ID), thrownException.getMessage());
-    }
-
-    @Test
-    void updateUser_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
-
-        UserUpdateRequest userUpdateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        User existingUser = User.builder()
-                .userId(USER_ID)
-                .email("Original Email")
-                .passwordHash(PASSWORD_HASH)
-                .firstName("Original First Name")
-                .lastName("Original Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(true)
-                .isNonLocked(false)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.updateUser(USER_ID.toString(), userUpdateRequest));
-
-        verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).saveAndFlush(any(User.class));
-        verify(userMapper, never()).userToResponse(any(User.class));
-
-        assertEquals(String.format("User with id: %s, is locked and can not be updated.", USER_ID), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
@@ -1038,7 +957,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleLockState_shouldLockUserWhenUserIsEnabledAndNonLocked() {
+    void toggleUserLockState_shouldLockUserWhenUserIsEnabledAndNonLocked() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1075,7 +994,7 @@ class UserServiceImplTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        MessageResponse actualResponse = userService.toggleLockState(USER_ID.toString());
+        MessageResponse actualResponse = userService.toggleUserLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
@@ -1097,7 +1016,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleLockState_shouldUnlockUserWhenUserIsEnabledAndLocked() {
+    void toggleUserLockState_shouldUnlockUserWhenUserIsEnabledAndLocked() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1134,7 +1053,7 @@ class UserServiceImplTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
-        MessageResponse actualResponse = userService.toggleLockState(USER_ID.toString());
+        MessageResponse actualResponse = userService.toggleUserLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
@@ -1156,21 +1075,21 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleLockState_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
+    void toggleUserLockState_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
 
-        assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(INVALID_ID));
+        assertThrows(IllegalArgumentException.class, () -> userService.toggleUserLockState(INVALID_ID));
 
         verify(userRepository, never()).findById(any(UUID.class));
         verify(userMapper, never()).userToResponse(any(User.class));
     }
 
     @Test
-    void toggleLockState_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
+    void toggleUserLockState_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
         when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
         DataNotFoundException thrown = assertThrows(DataNotFoundException.class, () ->
-                userService.toggleLockState(NON_EXISTING_USER_ID.toString()));
+                userService.toggleUserLockState(NON_EXISTING_USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -1179,7 +1098,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleLockState_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
+    void toggleUserLockState_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1196,7 +1115,7 @@ class UserServiceImplTest {
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleLockState(USER_ID.toString()));
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleUserLockState(USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));

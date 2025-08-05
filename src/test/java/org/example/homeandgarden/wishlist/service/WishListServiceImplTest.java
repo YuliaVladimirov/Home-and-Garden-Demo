@@ -23,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -417,13 +418,12 @@ class WishListServiceImplTest {
     void addWishListItem_shouldAddWishListItemSuccessfully() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -495,16 +495,16 @@ class WishListServiceImplTest {
 
         ArgumentCaptor<WishListItem> wishListItemCaptor = ArgumentCaptor.forClass(WishListItem.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productToAdd));
         when(wishListMapper.requestToWishListItem(existingUser, productToAdd)).thenReturn(wishListItemToAdd);
         when(wishListRepository.saveAndFlush(wishListItemToAdd)).thenReturn(savedWishListItem);
         when(productMapper.productToResponse(productToAdd)).thenReturn(productResponse);
         when(wishListMapper.wishListItemToResponse(savedWishListItem, productResponse)).thenReturn(wishListItemResponse);
 
-        WishListItemResponse actualResponse = wishListService.addWishListItem(wishListItemRequest);
+        WishListItemResponse actualResponse = wishListService.addWishListItem(USER_EMAIL, wishListItemRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(wishListMapper, times(1)).requestToWishListItem(existingUser, productToAdd);
 
@@ -524,55 +524,35 @@ class WishListServiceImplTest {
     }
 
     @Test
-    void addWishListItem_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
-
-        WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(INVALID_ID)
-                .productId(PRODUCT_ID.toString())
-                .build();
-
-        assertThrows(IllegalArgumentException.class, () ->
-                wishListService.addWishListItem(wishListItemRequest));
-
-        verify(userRepository, never()).findById(any(UUID.class));
-        verify(productRepository, never()).findById(any(UUID.class));
-        verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
-        verify(productMapper, never()).productToResponse(any(Product.class));
-        verify(wishListMapper, never()).wishListItemToResponse(any(WishListItem.class), any(ProductResponse.class));
-    }
-
-    @Test
     void addWishListItem_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(NON_EXISTING_USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .build();
 
-        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.addWishListItem(wishListItemRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.addWishListItem(NON_EXISTING_USER_EMAIL, wishListItemRequest));
 
-        verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
         verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(wishListMapper, never()).wishListItemToResponse(any(WishListItem.class), any(ProductResponse.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
     void addWishListItem_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(INVALID_ID)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -583,12 +563,12 @@ class WishListServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
 
         assertThrows(IllegalArgumentException.class, () ->
-                wishListService.addWishListItem(wishListItemRequest));
+                wishListService.addWishListItem(USER_EMAIL, wishListItemRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
         verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -599,13 +579,12 @@ class WishListServiceImplTest {
     void addWishListItem_shouldThrowDataNotFoundExceptionWhenProductDoesNotExist() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(NON_EXISTING_PRODUCT_ID.toString())
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -616,12 +595,12 @@ class WishListServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.addWishListItem(wishListItemRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.addWishListItem(USER_EMAIL, wishListItemRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -634,13 +613,12 @@ class WishListServiceImplTest {
     void addWishListItem_shouldThrowIllegalArgumentExceptionWhenProductIsNotAvailable() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -661,12 +639,12 @@ class WishListServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> wishListService.addWishListItem(wishListItemRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> wishListService.addWishListItem(USER_EMAIL, wishListItemRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -679,13 +657,12 @@ class WishListServiceImplTest {
     void addWishListItem_shouldThrowDataAlreadyExistsExceptionWhenProductIsAlreadyInWishList() {
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -715,12 +692,12 @@ class WishListServiceImplTest {
 
         existingUser.setWishList(Set.of(existingWishListItem));
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingInWishListProduct));
 
-        DataAlreadyExistsException thrownException = assertThrows(DataAlreadyExistsException.class, () -> wishListService.addWishListItem(wishListItemRequest));
+        DataAlreadyExistsException thrownException = assertThrows(DataAlreadyExistsException.class, () -> wishListService.addWishListItem(USER_EMAIL, wishListItemRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(wishListMapper, never()).requestToWishListItem(any(User.class), any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -745,7 +722,7 @@ class WishListServiceImplTest {
         WishListItem existingWishListItem = WishListItem.builder()
                 .wishListItemId(WISH_LIST_ITEM_ID)
                 .addedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .product(existingProduct)
                 .build();
 
@@ -755,7 +732,7 @@ class WishListServiceImplTest {
 
         when(wishListRepository.findById(WISH_LIST_ITEM_ID)).thenReturn(Optional.of(existingWishListItem));
 
-        MessageResponse actualResponse = wishListService.removeWishListItem(WISH_LIST_ITEM_ID.toString());
+        MessageResponse actualResponse = wishListService.removeWishListItem(USER_EMAIL, WISH_LIST_ITEM_ID.toString());
 
         verify(wishListRepository, times(1)).findById(WISH_LIST_ITEM_ID);
         verify(wishListRepository, times(1)).delete(existingWishListItem);
@@ -768,7 +745,7 @@ class WishListServiceImplTest {
     void removeWishListItem_shouldThrowIllegalArgumentExceptionWhenWishListItemIdIsInvalidUuidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                wishListService.removeWishListItem(INVALID_ID));
+                wishListService.removeWishListItem(USER_EMAIL, INVALID_ID));
 
         verify(wishListRepository, never()).findById(any(UUID.class));
         verify(wishListRepository, never()).delete(any(WishListItem.class));
@@ -779,11 +756,41 @@ class WishListServiceImplTest {
 
         when(wishListRepository.findById(NON_EXISTING_WISH_LIST_ITEM_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.removeWishListItem(NON_EXISTING_WISH_LIST_ITEM_ID.toString()));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> wishListService.removeWishListItem(USER_EMAIL, NON_EXISTING_WISH_LIST_ITEM_ID.toString()));
 
         verify(wishListRepository, times(1)).findById(NON_EXISTING_WISH_LIST_ITEM_ID);
         verify(wishListRepository, never()).deleteById(any(UUID.class));
 
         assertEquals(String.format("Wishlist item with id: %s, was not found.", NON_EXISTING_WISH_LIST_ITEM_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void removeWishListItem_shouldThrowAccessDeniedExceptionWhenWishListItemDoesNotBelongToUser() {
+
+        Product existingProduct = Product.builder()
+                .productId(PRODUCT_ID)
+                .productName("Product Name")
+                .listPrice(BigDecimal.valueOf(40.00))
+                .currentPrice(BigDecimal.valueOf(40.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        WishListItem existingWishListItem = WishListItem.builder()
+                .wishListItemId(WISH_LIST_ITEM_ID)
+                .addedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .product(existingProduct)
+                .build();
+
+        when(wishListRepository.findById(WISH_LIST_ITEM_ID)).thenReturn(Optional.of(existingWishListItem));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> wishListService.removeWishListItem(USER_EMAIL, WISH_LIST_ITEM_ID.toString()));
+
+        verify(wishListRepository, times(1)).findById(WISH_LIST_ITEM_ID);
+        verify(wishListRepository, never()).delete(any(WishListItem.class));
+
+        assertEquals(String.format("Wishlist item with id: %s, does not belong to the wishlist of the user with email: %s.", WISH_LIST_ITEM_ID, USER_EMAIL), thrownException.getMessage());
     }
 }

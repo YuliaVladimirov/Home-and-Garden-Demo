@@ -23,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -435,14 +436,13 @@ class CartServiceImplTest {
     void addCartItem_shouldAddCartItemSuccessfully() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .quantity(1)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -522,16 +522,16 @@ class CartServiceImplTest {
 
         ArgumentCaptor<CartItem> cartItemCaptor = ArgumentCaptor.forClass(CartItem.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productToAdd));
         when(cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, productToAdd)).thenReturn(cartItemToAdd);
         when(cartRepository.saveAndFlush(cartItemToAdd)).thenReturn(addedCartItem);
         when(productMapper.productToResponse(productToAdd)).thenReturn(productResponse);
         when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
 
-        CartItemResponse actualResponse = cartService.addCartItem(cartItemCreateRequest);
+        CartItemResponse actualResponse = cartService.addCartItem(USER_EMAIL, cartItemCreateRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(cartMapper, times(1)).requestToCartItem(cartItemCreateRequest, existingUser, productToAdd);
 
@@ -550,61 +550,40 @@ class CartServiceImplTest {
         assertEquals(cartItemResponse.getProduct(), actualResponse.getProduct());
     }
 
-    @Test
-    void addCartItem_shouldThrowIllegalArgumentExceptionWhenUserIdIsInvalidUuidString() {
-
-        CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(INVALID_ID)
-                .productId(PRODUCT_ID.toString())
-                .quantity(1)
-                .build();
-
-        assertThrows(IllegalArgumentException.class, () ->
-                cartService.addCartItem(cartItemCreateRequest));
-
-        verify(userRepository, never()).findById(any(UUID.class));
-        verify(productRepository, never()).findById(any(UUID.class));
-        verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
-        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
-        verify(productMapper, never()).productToResponse(any(Product.class));
-        verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
-    }
 
     @Test
     void addCartItem_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(NON_EXISTING_USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .quantity(1)
                 .build();
 
-        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(NON_EXISTING_USER_EMAIL)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.addCartItem(cartItemCreateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.addCartItem(NON_EXISTING_USER_EMAIL, cartItemCreateRequest));
 
-        verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
+        verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
-        assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
     }
 
     @Test
     void addCartItem_shouldThrowIllegalArgumentExceptionWhenProductIdIsInvalidUuidString() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(INVALID_ID)
                 .quantity(1)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -615,12 +594,12 @@ class CartServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
 
         assertThrows(IllegalArgumentException.class, () ->
-                cartService.addCartItem(cartItemCreateRequest));
+                cartService.addCartItem(USER_EMAIL, cartItemCreateRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
@@ -632,14 +611,13 @@ class CartServiceImplTest {
     void addCartItem_shouldThrowDataNotFoundExceptionWhenProductDoesNotExist() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(NON_EXISTING_PRODUCT_ID.toString())
                 .quantity(1)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -650,12 +628,12 @@ class CartServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(NON_EXISTING_PRODUCT_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.addCartItem(cartItemCreateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.addCartItem(USER_EMAIL, cartItemCreateRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
@@ -669,14 +647,13 @@ class CartServiceImplTest {
     void addCartItem_shouldThrowIllegalArgumentExceptionWhenProductIsNotAvailable() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .quantity(1)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -697,12 +674,12 @@ class CartServiceImplTest {
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> cartService.addCartItem(cartItemCreateRequest));
+        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> cartService.addCartItem(USER_EMAIL, cartItemCreateRequest));
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
@@ -713,17 +690,16 @@ class CartServiceImplTest {
     }
 
     @Test
-    void addCartItem_shouldIncreaseQuantityWhenProductIsAlreadyInWishList() {
+    void addCartItem_shouldIncreaseQuantityWhenProductIsAlreadyInCart() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .userId(USER_ID.toString())
                 .productId(PRODUCT_ID.toString())
                 .quantity(2)
                 .build();
 
         User existingUser = User.builder()
                 .userId(USER_ID)
-                .email("Email")
+                .email(USER_EMAIL)
                 .passwordHash(PASSWORD_HASH)
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -784,7 +760,7 @@ class CartServiceImplTest {
 
         ArgumentCaptor<CartItem> cartItemCaptor = ArgumentCaptor.forClass(CartItem.class);
 
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingInCartProduct));
 
         existingCartItem.setQuantity(5);
@@ -793,9 +769,9 @@ class CartServiceImplTest {
         when(productMapper.productToResponse(existingInCartProduct)).thenReturn(productResponse);
         when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
 
-        CartItemResponse actualResponse = cartService.addCartItem(cartItemCreateRequest);
+        CartItemResponse actualResponse = cartService.addCartItem(USER_EMAIL, cartItemCreateRequest);
 
-        verify(userRepository, times(1)).findById(USER_ID);
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
 
         verify(cartRepository, times(1)).saveAndFlush(cartItemCaptor.capture());
@@ -837,7 +813,7 @@ class CartServiceImplTest {
                 .quantity(1)
                 .addedAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .product(existingProduct)
                 .build();
 
@@ -876,7 +852,7 @@ class CartServiceImplTest {
         when(cartMapper.cartItemToResponse(updatedCartItem, productResponse)).thenReturn(cartItemResponse);
         when(productMapper.productToResponse(existingProduct)).thenReturn(productResponse);
 
-        CartItemResponse actualResponse = cartService.updateCartItem(CART_ITEM_ID.toString(), cartItemUpdateRequest);
+        CartItemResponse actualResponse = cartService.updateCartItem(USER_EMAIL,CART_ITEM_ID.toString(), cartItemUpdateRequest);
 
         verify(cartRepository, times(1)).findById(CART_ITEM_ID);
 
@@ -906,7 +882,7 @@ class CartServiceImplTest {
                 .build();
 
         assertThrows(IllegalArgumentException.class, () ->
-                cartService.updateCartItem(INVALID_ID, cartItemUpdateRequest));
+                cartService.updateCartItem(USER_EMAIL, INVALID_ID, cartItemUpdateRequest));
 
         verify(cartRepository, never()).findById(any(UUID.class));
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
@@ -923,7 +899,7 @@ class CartServiceImplTest {
 
         when(cartRepository.findById(NON_EXISTING_CART_ITEM_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.updateCartItem(NON_EXISTING_CART_ITEM_ID.toString(), cartItemUpdateRequest));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.updateCartItem(USER_EMAIL, NON_EXISTING_CART_ITEM_ID.toString(), cartItemUpdateRequest));
 
         verify(cartRepository, times(1)).findById(NON_EXISTING_CART_ITEM_ID);
         verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
@@ -933,6 +909,43 @@ class CartServiceImplTest {
         assertEquals(String.format("Cart item with id: %s, was not found.", NON_EXISTING_CART_ITEM_ID), thrownException.getMessage());
     }
 
+    @Test
+    void updateCartItem_shouldUpdateCartItemSuccessfullyWhenCartItemDoesNotBelongToUser() {
+
+        CartItemUpdateRequest cartItemUpdateRequest = CartItemUpdateRequest.builder()
+                .quantity(3)
+                .build();
+
+        Product existingProduct = Product.builder()
+                .productId(PRODUCT_ID)
+                .productName("Product Name")
+                .listPrice(BigDecimal.valueOf(40.00))
+                .currentPrice(BigDecimal.valueOf(40.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        CartItem existingCartItem = CartItem.builder()
+                .cartItemId(CART_ITEM_ID)
+                .quantity(1)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .product(existingProduct)
+                .build();
+
+        when(cartRepository.findById(CART_ITEM_ID)).thenReturn(Optional.of(existingCartItem));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> cartService.updateCartItem(USER_EMAIL, CART_ITEM_ID.toString(), cartItemUpdateRequest));
+
+        verify(cartRepository, times(1)).findById(CART_ITEM_ID);
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
+        verify(productMapper, never()).productToResponse(any(Product.class));
+        verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
+
+        assertEquals(String.format("Cart item with id: %s, does not belong to the cart of the user with email: %s.", CART_ITEM_ID, USER_EMAIL), thrownException.getMessage());
+    }
 
     @Test
     void removeCarItem_shouldRemoveCartItemSuccessfully() {
@@ -942,7 +955,7 @@ class CartServiceImplTest {
                 .quantity(1)
                 .addedAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
-                .user(User.builder().build())
+                .user(User.builder().email(USER_EMAIL).build())
                 .product(Product.builder().build())
                 .build();
 
@@ -952,7 +965,7 @@ class CartServiceImplTest {
 
         when(cartRepository.findById(CART_ITEM_ID)).thenReturn(Optional.of(existingCartItem));
 
-        MessageResponse actualResponse = cartService.removeCarItem(CART_ITEM_ID.toString());
+        MessageResponse actualResponse = cartService.removeCarItem(USER_EMAIL, CART_ITEM_ID.toString());
 
         verify(cartRepository, times(1)).findById(CART_ITEM_ID);
         verify(cartRepository, times(1)).delete(existingCartItem);
@@ -965,22 +978,44 @@ class CartServiceImplTest {
     void removeCarItem_shouldThrowIllegalArgumentExceptionWhenCartItemIdIsInvalidUuidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                cartService.removeCarItem(INVALID_ID));
+                cartService.removeCarItem(USER_EMAIL, INVALID_ID));
 
         verify(cartRepository, never()).findById(CART_ITEM_ID);
         verify(cartRepository, never()).delete(any(CartItem.class));
     }
 
     @Test
-    void removeCarItem_shouldThrowDataNotFoundExceptionWhenCartItemDoesNotExist() {
+    void removeCarItem_shouldThrowDataNotFoundExceptionWhenCartItemDoesNotBelongToUser() {
 
         when(cartRepository.findById(NON_EXISTING_CART_ITEM_ID)).thenReturn(Optional.empty());
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.removeCarItem(NON_EXISTING_CART_ITEM_ID.toString()));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.removeCarItem(USER_EMAIL, NON_EXISTING_CART_ITEM_ID.toString()));
 
         verify(cartRepository, times(1)).findById(NON_EXISTING_CART_ITEM_ID);
         verify(cartRepository, never()).delete(any(CartItem.class));
 
         assertEquals(String.format("Cart item with id: %s, was not found.", NON_EXISTING_CART_ITEM_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void removeCarItem_shouldThrowDataNotFoundExceptionWhenCartItemDoesNotExist() {
+
+        CartItem existingCartItem = CartItem.builder()
+                .cartItemId(CART_ITEM_ID)
+                .quantity(1)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .product(Product.builder().build())
+                .build();
+
+        when(cartRepository.findById(CART_ITEM_ID)).thenReturn(Optional.of(existingCartItem));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> cartService.removeCarItem(USER_EMAIL, CART_ITEM_ID.toString()));
+
+        verify(cartRepository, times(1)).findById(CART_ITEM_ID);
+        verify(cartRepository, never()).delete(any(CartItem.class));
+
+        assertEquals(String.format("Cart item with id: %s, does not belong to the cart of the user with email: %s.", CART_ITEM_ID, USER_EMAIL), thrownException.getMessage());
     }
 }

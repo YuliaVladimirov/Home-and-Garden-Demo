@@ -203,7 +203,8 @@ class ProductControllerTest {
         when(productService.getProductsByStatus(eq(null), eq(10), eq(0), eq("ASC"), eq("addedAt")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/products/status").accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/products/status")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
@@ -929,7 +930,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
+                        .content(objectMapper.writeValueAsString(createRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.productId").exists())
@@ -957,7 +959,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
+                        .content(objectMapper.writeValueAsString(createRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
                 .andExpect(jsonPath("$.details").value("Access Denied"))
@@ -980,7 +983,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
+                        .content(objectMapper.writeValueAsString(createRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
@@ -1004,7 +1008,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format","Category id is required")))
@@ -1028,7 +1033,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
@@ -1052,7 +1058,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Product name is required",
@@ -1077,7 +1084,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid name: Must be of 2 - 50 characters")))
@@ -1101,7 +1109,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder(                        "Invalid name: Must be of 2 - 50 characters")))
@@ -1125,7 +1134,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Description is required", "Invalid description: Must be of 2 - 255 characters")))
@@ -1149,7 +1159,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid description: Must be of 2 - 255 characters")))
@@ -1173,7 +1184,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid description: Must be of 2 - 255 characters")))
@@ -1197,7 +1209,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price is required")))
@@ -1221,7 +1234,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must be non-negative")))
@@ -1245,7 +1259,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must have up to 6 digits and 2 decimal places","List price must be less than or equal to 999999.99")))
@@ -1269,7 +1284,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must have up to 6 digits and 2 decimal places")))
@@ -1293,7 +1309,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Image url is required", "Invalid URL")))
@@ -1317,7 +1334,8 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/products")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid URL")))
@@ -1357,7 +1375,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
@@ -1386,7 +1405,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
                 .andExpect(jsonPath("$.details").value("Access Denied"))
@@ -1411,7 +1431,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
@@ -1438,7 +1459,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", invalidProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
@@ -1464,7 +1486,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid name: Must be of 2 - 50 characters")))
@@ -1490,7 +1513,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid name: Must be of 2 - 50 characters")))
@@ -1516,7 +1540,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid description: Must be of 2 - 255 characters")))
@@ -1542,7 +1567,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid description: Must be of 2 - 255 characters")))
@@ -1568,7 +1594,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must be non-negative")))
@@ -1594,7 +1621,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must have up to 6 digits and 2 decimal places","List price must be less than or equal to 999999.99")))
@@ -1620,7 +1648,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("List price must have up to 6 digits and 2 decimal places")))
@@ -1646,7 +1675,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Current price must be non-negative")))
@@ -1672,7 +1702,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Current price must have up to 6 digits and 2 decimal places","Current price must be less than or equal to 999999.99")))
@@ -1698,7 +1729,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Current price must have up to 6 digits and 2 decimal places")))
@@ -1724,7 +1756,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid URL")))
@@ -1760,7 +1793,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
                 .andExpect(jsonPath("$.productName").value("Updated Product Name"))
@@ -1799,7 +1833,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
                 .andExpect(jsonPath("$.productName").value("Original Product Name"))
@@ -1838,7 +1873,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
                 .andExpect(jsonPath("$.productName").value("Original Product Name"))
@@ -1877,7 +1913,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
                 .andExpect(jsonPath("$.productName").value("Original Product Name"))
@@ -1916,7 +1953,8 @@ class ProductControllerTest {
 
         mockMvc.perform(patch("/products/{productId}", validProductId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productId").value(validProductId))
                 .andExpect(jsonPath("$.productName").value("Original Product Name"))

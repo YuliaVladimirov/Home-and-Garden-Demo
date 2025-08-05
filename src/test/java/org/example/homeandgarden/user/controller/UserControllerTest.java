@@ -575,7 +575,7 @@ class UserControllerTest {
 
         when(wishListService.getUserWishListItems(eq(validUserId), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -604,7 +604,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
@@ -620,7 +620,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
@@ -669,7 +669,7 @@ class UserControllerTest {
         when(wishListService.getUserWishListItems(eq(validUserId), eq(10), eq(0), eq("ASC")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -695,7 +695,7 @@ class UserControllerTest {
 
         String invalidUserId = "INVALID_UUID";
 
-        mockMvc.perform(get("/users/{userId}/wishlist", invalidUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", invalidUserId)
                         .param("size", "10")
                         .param("page", "0")
                         .param("order", "ASC")
@@ -716,7 +716,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -734,7 +734,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -752,7 +752,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/wishlist", validUserId)
+        mockMvc.perform(get("/users/{userId}/wishListItems", validUserId)
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -804,7 +804,7 @@ class UserControllerTest {
 
         when(cartService.getUserCartItems(eq(validUserId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -835,7 +835,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
@@ -851,7 +851,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
@@ -903,7 +903,7 @@ class UserControllerTest {
         when(cartService.getUserCartItems(eq(validUserId), eq(10), eq(0), eq("ASC"), eq("addedAt")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -931,7 +931,7 @@ class UserControllerTest {
 
         String invalidUserId = "INVALID_UUID";
 
-        mockMvc.perform(get("/users/{userId}/cart", invalidUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", invalidUserId)
                         .param("size", "1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -950,7 +950,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -968,7 +968,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -986,7 +986,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1004,7 +1004,7 @@ class UserControllerTest {
 
         String validUserId = UUID.randomUUID().toString();
 
-        mockMvc.perform(get("/users/{userId}/cart", validUserId)
+        mockMvc.perform(get("/users/{userId}/cartItems", validUserId)
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1293,10 +1293,25 @@ class UserControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnUpdatedUser_whenValidRequestAndClientRole() throws Exception {
+    void updateMyProfile_shouldReturnUpdatedUser_whenValidRequestAndAuthenticated() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1304,231 +1319,260 @@ class UserControllerTest {
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(UUID.fromString(validUserId))
+                .userId(userId)
                 .email("email@example.com")
                 .firstName(updateRequest.getFirstName())
                 .lastName(updateRequest.getLastName())
                 .userRole(UserRole.CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(Instant.now().minus(60, ChronoUnit.DAYS))
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateUser(eq(validUserId), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(validUserId))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.firstName").value(updateRequest.getFirstName()))
                 .andExpect(jsonPath("$.lastName").value(updateRequest.getLastName()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateUser(eq(validUserId), any(UserUpdateRequest.class));
+        verify(userService, times(1)).updateMyProfile(eq(email), any(UserUpdateRequest.class));
     }
 
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void updateUser_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+    @Test
+    void updateMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateUser(any(), any());
-    }
-
-    @Test
-    void updateUser_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        String validUserId = UUID.randomUUID().toString();
-
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
-                .build();
-
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(userService, never()).updateMyProfile(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnBadRequest_whenInvalidUserIdFormat() throws Exception {
+    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
 
-        String invalidUserId = "INVALID_UUID";
+        String email = "email@example.com";
 
-        UserUpdateRequest updateRequest = UserUpdateRequest.builder()
-                .firstName("Updated First Name")
-                .lastName("Updated Last Name")
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", invalidUserId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(userService, never()).updateUser(any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
-
-        String validUserId = UUID.randomUUID().toString();
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("A")
                 .lastName("Updated Last Name")
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(userService, never()).updateMyProfile(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
+    void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("A".repeat(31))
                 .lastName("Updated Last Name")
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid first name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(userService, never()).updateMyProfile(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
+    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("A")
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(userService, never()).updateMyProfile(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
+    void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("A".repeat(31))
                 .build();
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid last name: Must be of 2 - 30 characters")))
-                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).updateUser(any(), any());
+        verify(userService, never()).updateMyProfile(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
+    void updateMyProfile_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(UUID.fromString(validUserId))
+                .userId(userId)
                 .firstName(updateRequest.getFirstName())
                 .lastName("Original Last Name")
                 .email("email@example.com")
                 .userRole(UserRole.CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(Instant.now().minus(60, ChronoUnit.DAYS))
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateUser(eq(validUserId), eq(updateRequest)))
+        when(userService.updateMyProfile(eq(email), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(validUserId))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.firstName").value("Updated First Name"))
                 .andExpect(jsonPath("$.lastName").value("Original Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1537,39 +1581,55 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateUser(eq(validUserId), any(UserUpdateRequest.class));
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
+    void updateMyProfile_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .lastName("Updated Last Name")
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(UUID.fromString(validUserId))
+                .userId(userId)
                 .firstName("Original First Name")
                 .lastName(updateRequest.getLastName())
                 .email("email@example.com")
                 .userRole(UserRole.CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(Instant.now().minus(60, ChronoUnit.DAYS))
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateUser(eq(validUserId), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(validUserId))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.firstName").value("Original First Name"))
                 .andExpect(jsonPath("$.lastName").value("Updated Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1578,37 +1638,53 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateUser(eq(validUserId), any(UserUpdateRequest.class));
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
     }
 
     @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void updateUser_shouldReturnOk_whenEmptyRequestBody() throws Exception {
+    void updateMyProfile_shouldReturnOk_whenEmptyRequestBody() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        UUID userId = UUID.randomUUID();
+        String email = "email@example.com";
+
+        User existingUser = User.builder()
+                .userId(userId)
+                .email(email)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder().build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(UUID.fromString(validUserId))
+                .userId(userId)
                 .firstName("Original First Name")
                 .lastName("Original Last Name")
                 .email("email@example.com")
                 .userRole(UserRole.CLIENT)
                 .isEnabled(true)
                 .isNonLocked(true)
-                .registeredAt(Instant.now().minus(60, ChronoUnit.DAYS))
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateUser(eq(validUserId), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
 
-        mockMvc.perform(patch("/users/{userId}", validUserId)
+        mockMvc.perform(patch("/users/me/profile")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(validUserId))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.firstName").value("Original First Name"))
                 .andExpect(jsonPath("$.lastName").value("Original Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1617,7 +1693,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateUser(eq(validUserId), any(UserUpdateRequest.class));
+        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
     }
 
     @Test
@@ -1715,7 +1791,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
-    void toggleLockState_shouldReturnOk_whenUserIsLocked() throws Exception {
+    void toggleUserLockState_shouldReturnOk_whenUserIsLocked() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
 
@@ -1723,7 +1799,7 @@ class UserControllerTest {
                 .message(String.format("User with id: %s has been unlocked.", validUserId))
                 .build();
 
-        when(userService.toggleLockState(eq(validUserId))).thenReturn(expectedResponse);
+        when(userService.toggleUserLockState(eq(validUserId))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/{userId}/toggle-lock", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
@@ -1731,12 +1807,12 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("User with id: %s has been unlocked.", validUserId)));
 
-        verify(userService, times(1)).toggleLockState(eq(validUserId));
+        verify(userService, times(1)).toggleUserLockState(eq(validUserId));
     }
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
-    void toggleLockState_shouldReturnOk_whenUserIsUnlocked() throws Exception {
+    void toggleUserLockState_shouldReturnOk_whenUserIsUnlocked() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
 
@@ -1744,7 +1820,7 @@ class UserControllerTest {
                 .message(String.format("User with id: %s has been locked.", validUserId))
                 .build();
 
-        when(userService.toggleLockState(eq(validUserId))).thenReturn(expectedResponse);
+        when(userService.toggleUserLockState(eq(validUserId))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/{userId}/toggle-lock", validUserId)
                         .accept(MediaType.APPLICATION_JSON))
@@ -1752,12 +1828,12 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("User with id: %s has been locked.", validUserId)));
 
-        verify(userService, times(1)).toggleLockState(eq(validUserId));
+        verify(userService, times(1)).toggleUserLockState(eq(validUserId));
     }
 
     @Test
     @WithMockUser(roles = {"CLIENT"})
-    void toggleLockState_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
+    void toggleUserLockState_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
 
@@ -1769,11 +1845,11 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).toggleLockState(any());
+        verify(userService, never()).toggleUserLockState(any());
     }
 
     @Test
-    void toggleLockState_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+    void toggleUserLockState_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
         String validUserId = UUID.randomUUID().toString();
 
@@ -1785,12 +1861,12 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).toggleLockState(any());
+        verify(userService, never()).toggleUserLockState(any());
     }
 
     @Test
     @WithMockUser(roles = {"ADMINISTRATOR"})
-    void toggleLockState_shouldReturnBadRequest_whenInvalidUserIdFormat() throws Exception {
+    void toggleUserLockState_shouldReturnBadRequest_whenInvalidUserIdFormat() throws Exception {
 
         String invalidUserId = "INVALID_UUID";
 
@@ -1803,7 +1879,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).toggleLockState(any());
+        verify(userService, never()).toggleUserLockState(any());
     }
 
     @Test
@@ -2437,7 +2513,7 @@ class UserControllerTest {
 
         when(wishListService.getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .with(user(userDetails))
                         .param("size", "2")
                         .param("page", "0")
@@ -2465,7 +2541,7 @@ class UserControllerTest {
     @Test
     void getMyWishListItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
@@ -2529,7 +2605,7 @@ class UserControllerTest {
         when(wishListService.getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .with(user(userDetails))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -2571,7 +2647,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .with(user(userDetails))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2604,7 +2680,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .with(user(userDetails))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2637,7 +2713,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/wishlist")
+        mockMvc.perform(get("/users/me/wishListItems")
                         .with(user(userDetails))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2708,7 +2784,7 @@ class UserControllerTest {
 
         when(cartService.getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .param("size", "2")
                         .param("page", "0")
@@ -2737,7 +2813,7 @@ class UserControllerTest {
     @Test
     void getMyCartItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
@@ -2803,7 +2879,7 @@ class UserControllerTest {
         when(cartService.getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt")))
                 .thenReturn(mockPage);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -2846,7 +2922,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2879,7 +2955,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2912,7 +2988,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
@@ -2945,7 +3021,7 @@ class UserControllerTest {
 
         UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
-        mockMvc.perform(get("/users/me/cart")
+        mockMvc.perform(get("/users/me/cartItems")
                         .with(user(userDetails))
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))

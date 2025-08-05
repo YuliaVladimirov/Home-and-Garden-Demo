@@ -60,7 +60,7 @@ class OrderItemServiceImplTest {
     private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
 
     @Test
-    void getOrderItems_shouldReturnPagedOrderItemsWhenOrderExists() {
+    void getUserOrderItems_shouldReturnPagedOrderItemsWhenUserOrderExists() {
 
         Pageable pageRequest = PageRequest.of(PAGE, SIZE, Sort.Direction.fromString(ORDER), SORT_BY);
 
@@ -147,7 +147,7 @@ class OrderItemServiceImplTest {
         when(productMapper.productToResponse(product2)).thenReturn(productResponse2);
         when(orderItemMapper.orderItemToResponse(orderItem2, productResponse2)).thenReturn(orderItemResponse2);
 
-        Page<OrderItemResponse> actualResponse = orderItemService.getOrderItems(ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
+        Page<OrderItemResponse> actualResponse = orderItemService.getUserOrderItems(ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY);
 
         verify(orderRepository, times(1)).existsByOrderId(ORDER_ID);
         verify(orderItemRepository, times(1)).findByOrderOrderId(ORDER_ID, pageRequest);
@@ -170,10 +170,10 @@ class OrderItemServiceImplTest {
     }
 
     @Test
-    void getOrderItems_shouldThrowIllegalArgumentExceptionWhenOrderIdIsInvalidUuidString() {
+    void getUserOrderItems_shouldThrowIllegalArgumentExceptionWhenUserOrderIdIsInvalidUuidString() {
 
         assertThrows(IllegalArgumentException.class, () ->
-                orderItemService.getOrderItems(INVALID_ID, SIZE, PAGE, ORDER, SORT_BY));
+                orderItemService.getUserOrderItems(INVALID_ID, SIZE, PAGE, ORDER, SORT_BY));
 
         verify(orderRepository, never()).existsByOrderId(any(UUID.class));
         verify(orderItemRepository, never()).findByOrderOrderId(any(UUID.class), any(PageRequest.class));
@@ -182,11 +182,11 @@ class OrderItemServiceImplTest {
     }
 
     @Test
-    void getUserCartItems_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
+    void getUserOrderItems_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
 
         when(orderRepository.existsByOrderId(NON_EXISTING_ORDER_ID)).thenReturn(false);
 
-        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderItemService.getOrderItems(NON_EXISTING_ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY));
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderItemService.getUserOrderItems(NON_EXISTING_ORDER_ID.toString(), SIZE, PAGE, ORDER, SORT_BY));
 
         verify(orderRepository, times(1)).existsByOrderId(NON_EXISTING_ORDER_ID);
 

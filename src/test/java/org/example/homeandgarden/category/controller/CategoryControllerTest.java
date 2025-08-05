@@ -793,7 +793,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))).andDo(print())
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.categoryId").exists())
                 .andExpect(jsonPath("$.categoryName").value("Test Category"))
@@ -814,7 +815,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
                 .andExpect(jsonPath("$.details").value("Access Denied"))
@@ -833,7 +835,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
@@ -853,7 +856,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Category name is required","Invalid category name: Must be of 2 - 50 characters")))
@@ -873,7 +877,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid category name: Must be of 2 - 50 characters")))
@@ -893,7 +898,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(post("/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid category name: Must be of 2 - 50 characters")))
@@ -926,7 +932,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.categoryId").exists())
                 .andExpect(jsonPath("$.categoryName").value("Updated Category Name"))
@@ -950,7 +957,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
                 .andExpect(jsonPath("$.details").value("Access Denied"))
@@ -971,7 +979,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
@@ -991,7 +1000,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", "INVALID_UUID")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
@@ -1011,7 +1021,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(emptyRequest)))
+                        .content(objectMapper.writeValueAsString(emptyRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Category name is required")))
@@ -1033,7 +1044,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Category name is required","Invalid category name: Must be of 2 - 50 characters")))
@@ -1055,7 +1067,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid category name: Must be of 2 - 50 characters")))
@@ -1077,7 +1090,8 @@ class CategoryControllerTest {
 
         mockMvc.perform(patch("/categories/{categoryId}", validCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid category name: Must be of 2 - 50 characters")))

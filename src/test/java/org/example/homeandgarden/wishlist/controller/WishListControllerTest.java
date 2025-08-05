@@ -3,7 +3,10 @@ package org.example.homeandgarden.wishlist.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.homeandgarden.product.dto.ProductResponse;
 import org.example.homeandgarden.product.entity.enums.ProductStatus;
+import org.example.homeandgarden.security.entity.UserDetailsImpl;
 import org.example.homeandgarden.shared.MessageResponse;
+import org.example.homeandgarden.user.entity.User;
+import org.example.homeandgarden.user.entity.enums.UserRole;
 import org.example.homeandgarden.wishlist.dto.WishListItemRequest;
 import org.example.homeandgarden.wishlist.dto.WishListItemResponse;
 import org.example.homeandgarden.wishlist.service.WishListServiceImpl;
@@ -17,14 +20,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -65,14 +69,28 @@ class WishListControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void addWishListItem_shouldReturnCreatedWishListItem_whenValidRequestAndClientRole() throws Exception {
+    void addWishListItem_shouldReturnCreatedWishListItem_whenValidRequestAndAuthenticated() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
         String validProductId = UUID.randomUUID().toString();
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(validUserId)
                 .productId(validProductId)
                 .build();
 
@@ -88,12 +106,14 @@ class WishListControllerTest {
                 .product(productResponse)
                 .build();
 
-        when(wishListService.addWishListItem(eq(wishListItemRequest)))
+        when(wishListService.addWishListItem(eq(userEmail), eq(wishListItemRequest)))
                 .thenReturn(expectedResponse);
 
-        mockMvc.perform(post("/wishlist")
+        mockMvc.perform(post("/wishlist/me")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(wishListItemRequest)))
+                        .content(objectMapper.writeValueAsString(wishListItemRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.wishListItemId").exists())
@@ -102,184 +122,145 @@ class WishListControllerTest {
                 .andExpect(jsonPath("$.product.productName").value("Product Name"))
                 .andExpect(jsonPath("$.product.productStatus").value(ProductStatus.AVAILABLE.name()));
 
-        verify(wishListService, times(1)).addWishListItem(eq(wishListItemRequest));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void addWishListItem_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
-
-        String validUserId = UUID.randomUUID().toString();
-        String validProductId = UUID.randomUUID().toString();
-
-        WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(validUserId)
-                .productId(validProductId)
-                .build();
-
-        mockMvc.perform(post("/wishlist")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(wishListItemRequest)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).addWishListItem(any());
+        verify(wishListService, times(1)).addWishListItem(eq(userEmail), eq(wishListItemRequest));
     }
 
     @Test
     void addWishListItem_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
         String validProductId = UUID.randomUUID().toString();
 
         WishListItemRequest wishListItemRequest = WishListItemRequest.builder()
-                .userId(validUserId)
                 .productId(validProductId)
                 .build();
 
-        mockMvc.perform(post("/wishlist")
+        mockMvc.perform(post("/wishlist/me")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(wishListItemRequest)))
+                        .content(objectMapper.writeValueAsString(wishListItemRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
                 .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
+                .andExpect(jsonPath("$.path").value("/wishlist/me"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(wishListService, never()).addWishListItem(any());
+        verify(wishListService, never()).addWishListItem(any(), any());
     }
 
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void addWishListItem_shouldReturnBadRequest_whenInvalidUserIdFormat() throws Exception {
-
-        String invalidUserId = "INVALID_UUID";
-        String validProductId = UUID.randomUUID().toString();
-
-        WishListItemRequest invalidRequest = WishListItemRequest.builder()
-                .userId(invalidUserId)
-                .productId(validProductId)
-                .build();
-
-        mockMvc.perform(post("/wishlist")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).addWishListItem(any());
-    }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void addWishListItem_shouldReturnBadRequest_whenMissingUserId() throws Exception {
-
-        String validProductId = UUID.randomUUID().toString();
-
-        WishListItemRequest invalidRequest = WishListItemRequest.builder()
-                .productId(validProductId)
-                .build();
-
-        mockMvc.perform(post("/wishlist")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("User id is required")))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).addWishListItem(any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
     void addWishListItem_shouldReturnBadRequest_whenInvalidProductIdFormat() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
         String invalidProductId = "INVALID_UUID";
 
         WishListItemRequest invalidRequest = WishListItemRequest.builder()
-                .userId(validUserId)
                 .productId(invalidProductId)
                 .build();
 
-        mockMvc.perform(post("/wishlist")
+        mockMvc.perform(post("/wishlist/me")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
+                .andExpect(jsonPath("$.path").value("/wishlist/me"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(wishListService, never()).addWishListItem(any());
+        verify(wishListService, never()).addWishListItem(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
     void addWishListItem_shouldReturnBadRequest_whenMissingProductId() throws Exception {
 
-        String validUserId = UUID.randomUUID().toString();
+        String userEmail = "user@example.com";
 
-        WishListItemRequest invalidRequest = WishListItemRequest.builder()
-                .userId(validUserId)
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
-        mockMvc.perform(post("/wishlist")
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        WishListItemRequest invalidRequest = WishListItemRequest.builder()
+                .productId(null)
+                .build();
+
+        mockMvc.perform(post("/wishlist/me")
+                        .with(user(userDetails))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
                 .andExpect(jsonPath("$.details", containsInAnyOrder("Product id is required")))
-                .andExpect(jsonPath("$.path").value("/wishlist"))
+                .andExpect(jsonPath("$.path").value("/wishlist/me"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(wishListService, never()).addWishListItem(any());
+        verify(wishListService, never()).addWishListItem(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void removeWishListItem_shouldReturnOk_whenValidIdAndClientRole() throws Exception {
+    void removeWishListItem_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
 
         String validWishListItemId = UUID.randomUUID().toString();
+        String userEmail = "user@example.com";
+
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message(String.format("Wishlist item with id: %s, has been removed from wishlist.", validWishListItemId))
                 .build();
 
-        when(wishListService.removeWishListItem(eq(validWishListItemId))).thenReturn(expectedResponse);
+        when(wishListService.removeWishListItem(eq(userEmail), eq(validWishListItemId))).thenReturn(expectedResponse);
 
-        mockMvc.perform(delete("/wishlist/{wishListItemId}", validWishListItemId)
+        mockMvc.perform(delete("/wishlist/me/{wishListItemId}", validWishListItemId)
+                        .with(user(userDetails))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("Wishlist item with id: %s, has been removed from wishlist.", validWishListItemId)));
 
-        verify(wishListService, times(1)).removeWishListItem(eq(validWishListItemId));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void removeWishListItem_shouldReturnForbidden_whenUserHasInsufficientRole() throws Exception {
-
-        String validWishListItemId = UUID.randomUUID().toString();
-
-        mockMvc.perform(delete("/wishlist/{wishListItemId}", validWishListItemId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(wishListService, never()).removeWishListItem(any());
+        verify(wishListService, times(1)).removeWishListItem(eq(userEmail), eq(validWishListItemId));
     }
 
     @Test
@@ -287,7 +268,7 @@ class WishListControllerTest {
 
         String validWishListItemId = UUID.randomUUID().toString();
 
-        mockMvc.perform(delete("/wishlist/{wishListItemId}", validWishListItemId)
+        mockMvc.perform(delete("/wishlist/me/{wishListItemId}", validWishListItemId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
@@ -295,16 +276,32 @@ class WishListControllerTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(wishListService, never()).removeWishListItem(any());
+        verify(wishListService, never()).removeWishListItem(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = {"CLIENT"})
     void removeWishListItem_shouldReturnBadRequest_whenInvalidWishListItemIdFormat() throws Exception {
 
         String invalidWishListItemId = "INVALID_UUID";
+        String userEmail = "user@example.com";
 
-        mockMvc.perform(delete("/wishlist/{wishListItemId}", invalidWishListItemId)
+        User existingUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email(userEmail)
+                .passwordHash("Hashed Password")
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(UserRole.CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+        mockMvc.perform(delete("/wishlist/me/{wishListItemId}", invalidWishListItemId)
+                        .with(user(userDetails))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -313,6 +310,6 @@ class WishListControllerTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(wishListService, never()).removeWishListItem(any());
+        verify(wishListService, never()).removeWishListItem(any(), any());
     }
 }
