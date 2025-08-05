@@ -89,431 +89,8 @@ class OrderControllerTest {
         reset(orderService, orderItemService);
     }
 
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnPagedUserOrderItems_whenValidParametersAndAuthenticated() throws Exception {
 
-        String validOrderId = UUID.randomUUID().toString();
-
-        ProductResponse productResponse1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse productResponse2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Two")
-                .productStatus(ProductStatus.OUT_OF_STOCK)
-                .build();
-
-        OrderItemResponse item1 = OrderItemResponse.builder()
-                .orderItemId(UUID.randomUUID())
-                .quantity(1)
-                .priceAtPurchase(BigDecimal.valueOf(40.00))
-                .product(productResponse1)
-                .build();
-
-        OrderItemResponse item2 = OrderItemResponse.builder()
-                .orderItemId(UUID.randomUUID())
-                .quantity(2)
-                .priceAtPurchase(BigDecimal.valueOf(50.00))
-                .product(productResponse2)
-                .build();
-
-        List<OrderItemResponse> content = Arrays.asList(item1, item2);
-        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.ASC, "quantity");
-        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
-
-        when(orderItemService.getUserOrderItems(eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .param("sortBy", "quantity")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].orderItemId").exists())
-                .andExpect(jsonPath("$.content[0].quantity").value(1))
-                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
-                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
-
-                .andExpect(jsonPath("$.content[1].orderItemId").exists())
-                .andExpect(jsonPath("$.content[1].quantity").value(2))
-                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
-                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(2))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(5))
-                .andExpect(jsonPath("$.totalPages").value(3));
-
-        verify(orderItemService, times(1)).getUserOrderItems(eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"));
-    }
-
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void getUserOrderItems_shouldReturnUnauthorized_whenNotSufficientRole() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    void getUserOrderItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnPagedUserOrderItems_whenDefaultParameters() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        ProductResponse productResponse1 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product One")
-                .productStatus(ProductStatus.AVAILABLE)
-                .build();
-
-        ProductResponse productResponse2 = ProductResponse.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Two")
-                .productStatus(ProductStatus.OUT_OF_STOCK)
-                .build();
-
-        OrderItemResponse item1 = OrderItemResponse.builder()
-                .orderItemId(UUID.randomUUID())
-                .quantity(1)
-                .priceAtPurchase(BigDecimal.valueOf(40.00))
-                .product(productResponse1)
-                .build();
-
-        OrderItemResponse item2 = OrderItemResponse.builder()
-                .orderItemId(UUID.randomUUID())
-                .quantity(2)
-                .priceAtPurchase(BigDecimal.valueOf(50.00))
-                .product(productResponse2)
-                .build();
-
-
-        List<OrderItemResponse> content = Arrays.asList(item1, item2);
-        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "priceAtPurchase");
-        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
-
-        when(orderItemService.getUserOrderItems(eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase")))
-                .thenReturn(mockPage);
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-
-                .andExpect(jsonPath("$.content[0].orderItemId").exists())
-                .andExpect(jsonPath("$.content[0].quantity").value(1))
-                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
-                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
-                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
-
-                .andExpect(jsonPath("$.content[1].orderItemId").exists())
-                .andExpect(jsonPath("$.content[1].quantity").value(2))
-                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
-                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
-                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
-
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.totalElements").value(10))
-                .andExpect(jsonPath("$.totalPages").value(1));
-
-        verify(orderItemService, times(1)).getUserOrderItems(eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase"));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnBadRequest_whenInvalidUserOrderIdFormat() throws Exception {
-
-        String invalidOrderId = "INVALID_UUID";
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", invalidOrderId)
-                        .param("size", "2")
-                        .param("page", "0")
-                        .param("order", "DESC")
-                        .param("sortBy", "quantity")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .param("size", "0")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .param("page", "-1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnBadRequest_whenInvalidUserOrder() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .param("order", "INVALID_ORDER")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getUserOrderItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
-                        .param("sortBy", "INVALID_SORT_BY")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'quantity' or 'priceAtPurchase'")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getOrderById_shouldReturnOrder_whenValidIdAndAuthenticated() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        OrderResponse expectedOrder = OrderResponse.builder()
-                .orderId(UUID.fromString(validOrderId))
-                .firstName("First Name")
-                .lastName("Last Name")
-                .address("Address")
-                .zipCode("12345")
-                .city("City")
-                .phone("+123456789")
-                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
-                .orderStatus(OrderStatus.PAID)
-                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        when(orderService.getOrderById(eq(validOrderId))).thenReturn(expectedOrder);
-
-        mockMvc.perform(get("/orders/{orderId}", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value(validOrderId))
-                .andExpect(jsonPath("$.firstName").value("First Name"))
-                .andExpect(jsonPath("$.lastName").value("Last Name"))
-                .andExpect(jsonPath("$.address").value("Address"))
-                .andExpect(jsonPath("$.zipCode").value("12345"))
-                .andExpect(jsonPath("$.city").value("City"))
-                .andExpect(jsonPath("$.phone").value("+123456789"))
-                .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
-                .andExpect(jsonPath("$.orderStatus").value(OrderStatus.PAID.name()))
-                .andExpect(jsonPath("$.createdAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        verify(orderService, times(1)).getOrderById(eq(validOrderId));
-    }
-
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void getOrderById_shouldReturnUnauthorized_whenUserHasInsufficientRole() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderById(any());
-    }
-
-    @Test
-    void getOrderById_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderById(any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getOrderById_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
-
-        String invalidOrderId = "INVALID_UUID";
-
-        mockMvc.perform(get("/orders/{orderId}", invalidOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderById(any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getOrderStatus_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-        OrderStatus status = OrderStatus.PAID;
-
-        MessageResponse expectedResponse = MessageResponse.builder()
-                .message(String.format("Order with id: %s has status '%s'.", validOrderId, status.name()))
-                .build();
-
-        when(orderService.getOrderStatus(eq(validOrderId))).thenReturn(expectedResponse);
-
-        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value(String.format("Order with id: %s has status '%s'.", validOrderId, status.name())));
-
-        verify(orderService, times(1)).getOrderStatus(eq(validOrderId));
-    }
-
-    @Test
-    @WithMockUser(roles = {"CLIENT"})
-    void getOrderStatus_shouldReturnUnauthorized_whenUserHasInsufficientRole() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
-                .andExpect(jsonPath("$.details").value("Access Denied"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderStatus(any());
-    }
-
-    @Test
-    void getOrderStatus_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
-
-        String validOrderId = UUID.randomUUID().toString();
-
-        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
-                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderStatus(any());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMINISTRATOR"})
-    void getOrderStatus_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
-
-        String invalidOrderId = "INVALID_UUID";
-
-        mockMvc.perform(get("/orders/{orderId}/status", invalidOrderId)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
-                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
-                .andExpect(jsonPath("$.path").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-
-        verify(orderService, never()).getOrderStatus(any());
-    }
+// 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
     @Test
     void addOrder_shouldReturnCreatedOrder_whenValidRequestAndClientRole() throws Exception {
@@ -609,7 +186,6 @@ class OrderControllerTest {
 
         verify(orderService, never()).addOrder(any(), any());
     }
-
 
     @Test
     void addOrder_shouldReturnBadRequest_whenFirstNameIsBlank() throws Exception {
@@ -2529,4 +2105,508 @@ class OrderControllerTest {
 
         verify(orderService, never()).cancelOrder(any(), any());
     }
+
+
+// 👮 Admin access endpoints — restricted to users with administrative privileges
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnPagedUserOrderItems_whenValidParametersAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        OrderItemResponse item1 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(1)
+                .priceAtPurchase(BigDecimal.valueOf(40.00))
+                .product(productResponse1)
+                .build();
+
+        OrderItemResponse item2 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(2)
+                .priceAtPurchase(BigDecimal.valueOf(50.00))
+                .product(productResponse2)
+                .build();
+
+        List<OrderItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.ASC, "quantity");
+        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
+
+        when(orderItemService.getUserOrderItems(eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "quantity")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(1))
+                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
+
+                .andExpect(jsonPath("$.content[1].orderItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(2))
+                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(orderItemService, times(1)).getUserOrderItems(eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    void getUserOrderItems_shouldReturnUnauthorized_whenNotSufficientRole() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
+                .andExpect(jsonPath("$.details").value("Access Denied"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getUserOrderItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnPagedUserOrderItems_whenDefaultParameters() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        OrderItemResponse item1 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(1)
+                .priceAtPurchase(BigDecimal.valueOf(40.00))
+                .product(productResponse1)
+                .build();
+
+        OrderItemResponse item2 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(2)
+                .priceAtPurchase(BigDecimal.valueOf(50.00))
+                .product(productResponse2)
+                .build();
+
+
+        List<OrderItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "priceAtPurchase");
+        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
+
+        when(orderItemService.getUserOrderItems(eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(1))
+                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
+
+                .andExpect(jsonPath("$.content[1].orderItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(2))
+                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(10))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(orderItemService, times(1)).getUserOrderItems(eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnBadRequest_whenInvalidUserOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", invalidOrderId)
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "quantity")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnBadRequest_whenInvalidUserOrder() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getUserOrderItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/orderItems", validOrderId)
+                        .param("sortBy", "INVALID_SORT_BY")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'quantity' or 'priceAtPurchase'")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getUserOrderItems(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getOrderById_shouldReturnOrder_whenValidIdAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        OrderResponse expectedOrder = OrderResponse.builder()
+                .orderId(UUID.fromString(validOrderId))
+                .firstName("First Name")
+                .lastName("Last Name")
+                .address("Address")
+                .zipCode("12345")
+                .city("City")
+                .phone("+123456789")
+                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
+                .orderStatus(OrderStatus.PAID)
+                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .build();
+
+        when(orderService.getOrderById(eq(validOrderId))).thenReturn(expectedOrder);
+
+        mockMvc.perform(get("/orders/{orderId}", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(validOrderId))
+                .andExpect(jsonPath("$.firstName").value("First Name"))
+                .andExpect(jsonPath("$.lastName").value("Last Name"))
+                .andExpect(jsonPath("$.address").value("Address"))
+                .andExpect(jsonPath("$.zipCode").value("12345"))
+                .andExpect(jsonPath("$.city").value("City"))
+                .andExpect(jsonPath("$.phone").value("+123456789"))
+                .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
+                .andExpect(jsonPath("$.orderStatus").value(OrderStatus.PAID.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(orderService, times(1)).getOrderById(eq(validOrderId));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    void getOrderById_shouldReturnUnauthorized_whenUserHasInsufficientRole() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
+                .andExpect(jsonPath("$.details").value("Access Denied"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderById(any());
+    }
+
+    @Test
+    void getOrderById_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderById(any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getOrderById_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/{orderId}", invalidOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderById(any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getOrderStatus_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+        OrderStatus status = OrderStatus.PAID;
+
+        MessageResponse expectedResponse = MessageResponse.builder()
+                .message(String.format("Order with id: %s has status '%s'.", validOrderId, status.name()))
+                .build();
+
+        when(orderService.getOrderStatus(eq(validOrderId))).thenReturn(expectedResponse);
+
+        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(String.format("Order with id: %s has status '%s'.", validOrderId, status.name())));
+
+        verify(orderService, times(1)).getOrderStatus(eq(validOrderId));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    void getOrderStatus_shouldReturnUnauthorized_whenUserHasInsufficientRole() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
+                .andExpect(jsonPath("$.details").value("Access Denied"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderStatus(any());
+    }
+
+    @Test
+    void getOrderStatus_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderStatus(any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void getOrderStatus_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/{orderId}/status", invalidOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getOrderStatus(any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void toggleOrderStatus_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+        OrderStatus initialStatus = OrderStatus.PAID;
+        OrderStatus updatedStatus = OrderStatus.ON_THE_WAY;
+
+        MessageResponse expectedResponse = MessageResponse.builder()
+                .message(String.format("Order with id: %s was updated from status '%s' to status '%s'.", validOrderId, initialStatus.name(), updatedStatus.name()))
+                .build();
+
+        when(orderService.toggleOrderStatus(eq(validOrderId))).thenReturn(expectedResponse);
+
+        mockMvc.perform(patch("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(String.format("Order with id: %s was updated from status '%s' to status '%s'.", validOrderId, initialStatus.name(), updatedStatus.name())));
+
+        verify(orderService, times(1)).toggleOrderStatus(eq(validOrderId));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    void toggleOrderStatus_shouldReturnUnauthorized_whenUserHasInsufficientRole() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(patch("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("AuthorizationDeniedException"))
+                .andExpect(jsonPath("$.details").value("Access Denied"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).toggleOrderStatus(any());
+    }
+
+    @Test
+    void toggleOrderStatus_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(patch("/orders/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).toggleOrderStatus(any());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMINISTRATOR"})
+    void toggleOrderStatus_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(patch("/orders/{orderId}/status", invalidOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).toggleOrderStatus(any());
+    }
+
 }
