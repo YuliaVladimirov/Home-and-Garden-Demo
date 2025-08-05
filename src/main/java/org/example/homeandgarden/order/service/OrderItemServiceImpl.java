@@ -27,7 +27,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final ProductMapper productMapper;
 
     @Override
-    public Page<OrderItemResponse> getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy) {
+    public Page<OrderItemResponse> getUserOrderItems(String orderId, Integer size, Integer page, String order, String sortBy) {
         UUID id = UUID.fromString(orderId);
         if (!orderRepository.existsByOrderId(id)) {
             throw new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId));

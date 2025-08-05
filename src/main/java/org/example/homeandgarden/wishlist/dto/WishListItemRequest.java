@@ -16,12 +16,6 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Request for creating a new wishlist item")
 public class WishListItemRequest {
 
-    @JsonProperty("userId")
-    @NotBlank(message = "User id is required")
-    @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
-    @Schema(description = "Unique user id (UUID)")
-    String userId;
-
     @JsonProperty("productId")
     @NotBlank(message = "Product id is required")
     @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")

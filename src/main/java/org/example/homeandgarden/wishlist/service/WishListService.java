@@ -9,7 +9,7 @@ public interface WishListService {
 
     Page<WishListItemResponse> getUserWishListItems(String userId, Integer size, Integer page, String order);
     Page<WishListItemResponse> getMyWishListItems(String email, Integer size, Integer page, String order);
-    WishListItemResponse addWishListItem(WishListItemRequest wishListItemRequest);
-    MessageResponse removeWishListItem(String wishListItemId);
+    WishListItemResponse addWishListItem(String email, WishListItemRequest wishListItemRequest);
+    MessageResponse removeWishListItem(String email, String wishListItemId);
 
 }

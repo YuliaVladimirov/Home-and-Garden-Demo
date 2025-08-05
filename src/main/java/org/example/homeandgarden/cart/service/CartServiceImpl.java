@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,10 +64,9 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartItemResponse addCartItem(CartItemCreateRequest cartItemCreateRequest) {
+    public CartItemResponse addCartItem(String email, CartItemCreateRequest cartItemCreateRequest) {
 
-        UUID id = UUID.fromString(cartItemCreateRequest.getUserId());
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", cartItemCreateRequest.getUserId())));
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
 
         UUID productId = UUID.fromString(cartItemCreateRequest.getProductId());
         Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException (String.format("Product with id: %s, was not found.", cartItemCreateRequest.getProductId())));
@@ -92,9 +92,14 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartItemResponse updateCartItem(String cartItemId, CartItemUpdateRequest cartItemUpdateRequest) {
+    public CartItemResponse updateCartItem(String email, String cartItemId, CartItemUpdateRequest cartItemUpdateRequest) {
+
         UUID id = UUID.fromString(cartItemId);
         CartItem existingCartItem = cartRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Cart item with id: %s, was not found.", cartItemId)));
+
+        if (!existingCartItem.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Cart item with id: %s, does not belong to the cart of the user with email: %s.", cartItemId, email));
+        }
 
         existingCartItem.setQuantity(cartItemUpdateRequest.getQuantity());
 
@@ -104,10 +109,14 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public MessageResponse removeCarItem(String cartItemId) {
+    public MessageResponse removeCarItem(String email, String cartItemId) {
 
         UUID id = UUID.fromString(cartItemId);
         CartItem existingCartItem = cartRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Cart item with id: %s, was not found.", cartItemId)));
+
+        if (!existingCartItem.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Cart item with id: %s, does not belong to the cart of the user with email: %s.", cartItemId, email));
+        }
 
         cartRepository.delete(existingCartItem);
 

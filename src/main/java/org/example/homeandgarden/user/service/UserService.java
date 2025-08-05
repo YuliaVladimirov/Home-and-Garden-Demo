@@ -9,10 +9,9 @@ public interface UserService {
     Page<UserResponse> getUsersByStatus(Boolean isEnabled, Boolean isNonLocked, Integer size, Integer page, String order, String sortBy);
     UserResponse getUserById(String userId);
     UserResponse getMyProfile(String userEmail);
-    UserResponse updateUser(String id, UserUpdateRequest userUpdateRequest);
+    UserResponse updateMyProfile(String email, UserUpdateRequest userUpdateRequest);
     MessageResponse setUserRole(String userId, String role);
-    MessageResponse toggleLockState(String userId);
+    MessageResponse toggleUserLockState(String userId);
     MessageResponse unregisterMyAccount(String email, UserUnregisterRequest userUnregisterRequest);
     MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest);
-
 }

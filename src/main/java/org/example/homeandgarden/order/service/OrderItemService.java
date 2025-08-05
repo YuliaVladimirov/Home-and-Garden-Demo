@@ -5,5 +5,5 @@ import org.springframework.data.domain.Page;
 
 public interface OrderItemService {
 
-    Page<OrderItemResponse> getOrderItems(String orderId, Integer size, Integer page, String order, String sortBy);
+    Page<OrderItemResponse> getUserOrderItems(String orderId, Integer size, Integer page, String order, String sortBy);
 }

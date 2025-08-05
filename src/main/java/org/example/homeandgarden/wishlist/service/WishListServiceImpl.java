@@ -18,6 +18,7 @@ import org.example.homeandgarden.wishlist.repository.WishListRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,9 +66,9 @@ public class WishListServiceImpl implements WishListService {
 
     @Override
     @Transactional
-    public WishListItemResponse addWishListItem(WishListItemRequest wishListItemRequest) {
-        UUID id = UUID.fromString(wishListItemRequest.getUserId());
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", wishListItemRequest.getUserId())));
+    public WishListItemResponse addWishListItem(String email, WishListItemRequest wishListItemRequest) {
+
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
 
         UUID productId = UUID.fromString(wishListItemRequest.getProductId());
         Product existingProduct = productRepository.findById(productId).orElseThrow(() -> new DataNotFoundException(String.format("Product with id: %s, was not found.", wishListItemRequest.getProductId())));
@@ -90,10 +91,14 @@ public class WishListServiceImpl implements WishListService {
 
     @Override
     @Transactional
-    public MessageResponse removeWishListItem(String wishListItemId) {
+    public MessageResponse removeWishListItem(String email, String wishListItemId) {
 
         UUID id = UUID.fromString(wishListItemId);
         WishListItem existingWishListItem = wishListRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Wishlist item with id: %s, was not found.", wishListItemId)));
+
+        if (!existingWishListItem.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Wishlist item with id: %s, does not belong to the wishlist of the user with email: %s.", wishListItemId, email));
+        }
 
         wishListRepository.delete(existingWishListItem);
 

@@ -39,6 +39,9 @@ public class CategoryController {
     private final CategoryService categoryService;
     private final ProductService productService;
 
+
+// 🌐 Public access endpoints — no authentication required (accessible to all users)
+
     @Operation(summary = "Get all categories with pagination and sorting", description = "Retrieves a paginated and sortable list of categories . Allows specifying page size, page number, sort order, and sort field.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved categories", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @GroupFourErrorResponses
@@ -67,43 +70,6 @@ public class CategoryController {
             String sortBy) {
 
         Page<CategoryResponse> pageResponse = categoryService.getAllActiveCategories(size, page, order, sortBy);
-        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Get categories by status with pagination and sorting", description = "Retrieves a paginated and sortable list of categories based on their status ('ACTIVE', 'INACTIVE') or retrieves all categories if status. Allows specifying page size, page number, sort order, and sort field.")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved categories, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
-    @GroupTwoErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @GetMapping("/status")
-    public ResponseEntity<Page<CategoryResponse>> getCategoriesByStatus(
-
-            @RequestParam(value = "categoryStatus", required = false)
-            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
-            @Parameter(description = "Status of the category in the system")
-            String categoryStatus,
-
-            @RequestParam(value = "size", defaultValue = "10")
-            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
-            @Parameter(description = "Number of elements per one page")
-            Integer size,
-
-            @RequestParam(value = "page", defaultValue = "0")
-            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
-            @Parameter(description = "Page number to display")
-            Integer page,
-
-            @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
-            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
-            String order,
-
-            @RequestParam(value = "sortBy", defaultValue = "createdAt")
-            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")
-            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
-            String sortBy) {
-
-        Page<CategoryResponse> pageResponse = categoryService.getCategoriesByStatus(categoryStatus, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -157,6 +123,45 @@ public class CategoryController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
+    @Operation(summary = "Get categories by status with pagination and sorting", description = "Retrieves a paginated and sortable list of categories based on their status ('ACTIVE', 'INACTIVE') or retrieves all categories if status. Allows specifying page size, page number, sort order, and sort field.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved categories, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
+    @GroupTwoErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @GetMapping("/status")
+    public ResponseEntity<Page<CategoryResponse>> getCategoriesByStatus(
+
+            @RequestParam(value = "categoryStatus", required = false)
+            @Pattern(regexp = "^(ACTIVE|INACTIVE|active|inactive)$", message = "Invalid order categoryStatus: Must be one of the: 'ACTIVE' or 'INACTIVE' or ('active' or 'inactive')")
+            @Parameter(description = "Status of the category in the system")
+            String categoryStatus,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "createdAt")
+            @Pattern(regexp = "^(categoryName|createdAt|updatedAt)$", message = "Invalid value: Must be one of the following: 'categoryName', 'createdAt', 'updatedAt'")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"categoryName", "createdAt", "updatedAt"}))
+            String sortBy) {
+
+        Page<CategoryResponse> pageResponse = categoryService.getCategoriesByStatus(categoryStatus, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
     @Operation(summary = "Add a new category", description = "Adds a new category to the system. The category details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Category successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @ApiResponse(responseCode = "409", description = "Conflict: A category with the provided name already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))

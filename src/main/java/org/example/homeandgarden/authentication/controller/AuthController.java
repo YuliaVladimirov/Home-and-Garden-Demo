@@ -34,6 +34,8 @@ public class AuthController {
     private final AuthService authService;
 
 
+// 🌐 Public access endpoints — no authentication required (accessible to all users)
+
     @Operation(summary = "Register user", description = "Creates a new user account in the system. The user's registration details are provided in the request body." +
             "    ")
     @ApiResponse(responseCode = "201", description = "User successfully registered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
@@ -80,6 +82,5 @@ public class AuthController {
         RefreshResponse refreshResponse = authService.getNewAccessToken(refreshRequest);
         return new ResponseEntity<>(refreshResponse, HttpStatus.OK);
     }
-
 
 }

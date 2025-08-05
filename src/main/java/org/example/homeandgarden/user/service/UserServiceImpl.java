@@ -42,25 +42,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse getMyProfile(String userEmail) {
+    public UserResponse getMyProfile(String email) {
 
-        User existingUser = userRepository.findByEmail(userEmail).orElseThrow(() -> new DataNotFoundException (String.format("User with email: %s, was not found.", userEmail)));
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException (String.format("User with email: %s, was not found.", email)));
         return userMapper.userToResponse(existingUser);
     }
 
     @Override
     @Transactional
-    public UserResponse updateUser(String userId, UserUpdateRequest userUpdateRequest) {
+    public UserResponse updateMyProfile(String email, UserUpdateRequest userUpdateRequest) {
 
-        UUID id = UUID.fromString(userId);
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("User with id: %s, was not found.", userId)));
-
-        if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is unregistered and can not be updated.", userId));
-        }
-        if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is locked and can not be updated.", userId));
-        }
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException (String.format("User with email: %s, was not found.", email)));
 
         Optional.ofNullable(userUpdateRequest.getFirstName()).ifPresent(existingUser::setFirstName);
         Optional.ofNullable(userUpdateRequest.getLastName()).ifPresent(existingUser::setLastName);
@@ -98,7 +90,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public MessageResponse toggleLockState(String userId) {
+    public MessageResponse toggleUserLockState(String userId) {
 
         UUID id = UUID.fromString(userId);
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("User with id: %s, was not found.", userId)));

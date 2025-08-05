@@ -44,6 +44,191 @@ public class UserController {
     private final CartService cartService;
     private final OrderService orderService;
 
+
+    // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
+
+    @Operation(summary = "Get current user's profile", description = "Fetches the profile details of the user currently authenticated in the system.")
+    @ApiResponse(responseCode = "200", description = "User successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me/profile")
+    public ResponseEntity<UserResponse> getMyProfile(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails) {
+
+        String email = userDetails.getUsername();
+        UserResponse user = userService.getMyProfile(email);
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get current user's wish list items", description = "Fetches a paginated and sortable list of wish list items for a user currently authenticated in the system.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved wish list items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me/wishListItems")
+    public ResponseEntity<Page<WishListItemResponse>> getMyWishListItems(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order) {
+
+        String email = userDetails.getUsername();
+        Page<WishListItemResponse> pageResponse = wishListService.getMyWishListItems(email, size, page, order);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get current user's cart items", description = "Fetches a paginated and sortable list of cart items for a user currently authenticated in the system.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved cart items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me/cartItems")
+    public ResponseEntity<Page<CartItemResponse>> getMyCartItems(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "addedAt")
+            @Pattern(regexp = "^(addedAt|quantity)$", message = "Invalid value: Must be either: 'addedAt' or 'quantity'")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"addedAt", "quantity"}))
+            String sortBy) {
+
+        String email = userDetails.getUsername();
+        Page<CartItemResponse> pageResponse = cartService.getMyCartItems(email, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get current user's orders", description = "Fetches a paginated and sortable list of orders for a user currently authenticated in the system.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved orders. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me/orders")
+    public ResponseEntity<Page<OrderResponse>> getMyOrders(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "createdAt")
+            @Pattern(regexp = "^(status|createdAt)$", message = "Invalid value: Must be either: 'orderStatus' or 'createdAt'")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"status", "createdAt"}))
+            String sortBy) {
+
+        String email = userDetails.getUsername();
+        Page<OrderResponse> pageResponse = orderService.getMyOrders(email, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Update current user", description = "Modifies account of the user currently authenticated in the system. The details that need to be updated are provided in the request body.")
+    @ApiResponse(responseCode = "200", description = "User successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/me/profile")
+    public ResponseEntity<UserResponse> updateMyProfile(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestBody
+            @Valid
+            UserUpdateRequest userUpdateRequest) {
+
+        String email = userDetails.getUsername();
+        UserResponse userResponse = userService.updateMyProfile(email, userUpdateRequest);
+        return new ResponseEntity<>(userResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
+    @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/me/unregister")
+    public ResponseEntity<MessageResponse> unregisterMyAccount(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestBody
+            @Valid
+            UserUnregisterRequest userUnregisterRequest) {
+
+        String email = userDetails.getUsername();
+        MessageResponse messageResponse = userService.unregisterMyAccount(email, userUnregisterRequest);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Change user password", description = "Changes user password. The required confirmation should be provided in the request body")
+    @ApiResponse(responseCode = "200", description = "User password successfully changed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/me/change-password")
+    public ResponseEntity<MessageResponse> changeMyPassword(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @RequestBody
+            @Valid
+            ChangePasswordRequest changePasswordRequest) {
+
+        String email = userDetails.getUsername();
+        MessageResponse messageResponse = userService.changeMyPassword(email, changePasswordRequest);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
     @Operation(summary = "Get users with filtering, pagination and sorting", description = "Fetches a paginated and sortable list of user accounts. Results can be filtered by their enabled status ('true' for active users, 'false' for disabled users).")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved users, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupTwoErrorResponses
@@ -101,28 +286,12 @@ public class UserController {
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get current user's profile", description = "Fetches the profile details of the user currently authenticated in the system.")
-    @ApiResponse(responseCode = "200", description = "User successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me/profile")
-    public ResponseEntity<UserResponse> getMyProfile(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails) {
-
-        String email = userDetails.getUsername();
-        UserResponse user = userService.getMyProfile(email);
-        return new ResponseEntity<>(user, HttpStatus.OK);
-    }
-
     @Operation(summary = "Get user's wish list items", description = "Fetches a paginated and sortable list of wish list items for a specific user, identified by its unique Id.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved wish list items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @GetMapping("/{userId}/wishlist")
+    @GetMapping("/{userId}/wishListItems")
     public ResponseEntity<Page<WishListItemResponse>> getUserWishListItems(
 
             @PathVariable
@@ -149,43 +318,12 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get current user's wish list items", description = "Fetches a paginated and sortable list of wish list items for a user currently authenticated in the system.")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved wish list items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = WishListItemResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me/wishlist")
-    public ResponseEntity<Page<WishListItemResponse>> getMyWishListItems(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestParam(value = "size", defaultValue = "10")
-            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
-            @Parameter(description = "Number of elements per one page")
-            Integer size,
-
-            @RequestParam(value = "page", defaultValue = "0")
-            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
-            @Parameter(description = "Page number to display")
-            Integer page,
-
-            @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
-            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
-            String order) {
-
-        String email = userDetails.getUsername();
-        Page<WishListItemResponse> pageResponse = wishListService.getMyWishListItems(email, size, page, order);
-        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
-    }
-
     @Operation(summary = "Get user's cart items", description = "Fetches a paginated and sortable list of cart items for a specific user, identified by its unique Id.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved cart items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @GetMapping("/{userId}/cart")
+    @GetMapping("/{userId}/cartItems")
     public ResponseEntity<Page<CartItemResponse>> getUserCartItems(
 
             @PathVariable
@@ -214,42 +352,6 @@ public class UserController {
             String sortBy) {
 
         Page<CartItemResponse> pageResponse = cartService.getUserCartItems(userId, size, page, order, sortBy);
-        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Get current user's cart items", description = "Fetches a paginated and sortable list of cart items for a user currently authenticated in the system.")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved cart items. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me/cart")
-    public ResponseEntity<Page<CartItemResponse>> getMyCartItems(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestParam(value = "size", defaultValue = "10")
-            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
-            @Parameter(description = "Number of elements per one page")
-            Integer size,
-
-            @RequestParam(value = "page", defaultValue = "0")
-            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
-            @Parameter(description = "Page number to display")
-            Integer page,
-
-            @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
-            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
-            String order,
-
-            @RequestParam(value = "sortBy", defaultValue = "addedAt")
-            @Pattern(regexp = "^(addedAt|quantity)$", message = "Invalid value: Must be either: 'addedAt' or 'quantity'")
-            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"addedAt", "quantity"}))
-            String sortBy) {
-
-        String email = userDetails.getUsername();
-        Page<CartItemResponse> pageResponse = cartService.getMyCartItems(email, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
@@ -290,63 +392,6 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get current user's orders", description = "Fetches a paginated and sortable list of orders for a user currently authenticated in the system.")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved orders. Returns an empty page if the user has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me/orders")
-    public ResponseEntity<Page<OrderResponse>> getMyOrders(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestParam(value = "size", defaultValue = "10")
-            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
-            @Parameter(description = "Number of elements per one page")
-            Integer size,
-
-            @RequestParam(value = "page", defaultValue = "0")
-            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
-            @Parameter(description = "Page number to display")
-            Integer page,
-
-            @RequestParam(value = "order", defaultValue = "ASC")
-            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
-            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
-            String order,
-
-            @RequestParam(value = "sortBy", defaultValue = "createdAt")
-            @Pattern(regexp = "^(status|createdAt)$", message = "Invalid value: Must be either: 'orderStatus' or 'createdAt'")
-            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"status", "createdAt"}))
-            String sortBy) {
-
-        String email = userDetails.getUsername();
-        Page<OrderResponse> pageResponse = orderService.getMyOrders(email, size, page, order, sortBy);
-        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Update existing user", description = "Modifies an existing user account identified by their unique Id. The details that need to be updated are provided in the request body.")
-    @ApiResponse(responseCode = "200", description = "User successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @PatchMapping("/{userId}")
-    public ResponseEntity<UserResponse> updateUser(
-
-            @PathVariable
-            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
-            @Parameter(description = "Unique user id (UUID)")
-            String userId,
-
-            @RequestBody
-            @Valid
-            UserUpdateRequest userUpdateRequest) {
-
-        UserResponse userResponse = userService.updateUser(userId, userUpdateRequest);
-        return new ResponseEntity<>(userResponse, HttpStatus.OK);
-    }
-
     @Operation(summary = "Assign a role to a user ('CLIENT' or 'ADMINISTRATOR')", description = "Updates the role of a specific user identified by their unique Id. A user can be set to 'CLIENT' or 'ADMINISTRATOR'.")
     @ApiResponse(responseCode = "200", description = "User role successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
@@ -375,54 +420,14 @@ public class UserController {
     @SecurityRequirement(name = "JWT")
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PatchMapping("/{userId}/toggle-lock")
-    public ResponseEntity<MessageResponse> toggleLockState(
+    public ResponseEntity<MessageResponse> toggleUserLockState(
 
             @PathVariable
             @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
             @Parameter(description = "Unique user id (UUID)")
             String userId) {
 
-        MessageResponse messageResponse = userService.toggleLockState(userId);
-        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
-    @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @PatchMapping("/me/unregister")
-    public ResponseEntity<MessageResponse> unregisterMyAccount(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestBody
-            @Valid
-            UserUnregisterRequest userUnregisterRequest) {
-
-        String email = userDetails.getUsername();
-        MessageResponse messageResponse = userService.unregisterMyAccount(email, userUnregisterRequest);
-        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
-    }
-
-    @Operation(summary = "Change user password", description = "Changes user password. The required confirmation should be provided in the request body")
-    @ApiResponse(responseCode = "200", description = "User password successfully changed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
-    @GroupOneErrorResponses
-    @SecurityRequirement(name = "JWT")
-    @PreAuthorize("isAuthenticated()")
-    @PatchMapping("/me/change-password")
-    public ResponseEntity<MessageResponse> changeMyPassword(
-
-            @AuthenticationPrincipal
-            UserDetailsImpl userDetails,
-
-            @RequestBody
-            @Valid
-            ChangePasswordRequest changePasswordRequest){
-
-        String email = userDetails.getUsername();
-        MessageResponse messageResponse = userService.changeMyPassword(email, changePasswordRequest);
+        MessageResponse messageResponse = userService.toggleUserLockState(userId);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 }

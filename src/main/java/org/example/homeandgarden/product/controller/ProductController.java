@@ -33,6 +33,28 @@ public class ProductController {
 
     private final ProductService productService;
 
+
+    // 🌐 Public access endpoints — no authentication required (accessible to all users)
+
+    @Operation(summary = "Get product by its id", description = "Fetches the details of a single product using its unique identifier (UUID).")
+    @ApiResponse(responseCode = "200", description = "Product successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
+    @GroupThreeErrorResponses
+    @PreAuthorize("permitAll()")
+    @GetMapping(value = "/{productId}")
+    public ResponseEntity<ProductResponse> getProductById(
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique product id (UUID)")
+            String productId) {
+
+        ProductResponse existingProduct = productService.getProductById(productId);
+        return new ResponseEntity<>(existingProduct, HttpStatus.OK);
+    }
+
+
+    // 👮 Admin access endpoints — restricted to users with administrative privileges
+
     @Operation(summary = "Get products by status with pagination and sorting", description = "Retrieves a paginated and sortable list of products based on their status ('AVAILABLE', 'OUT_OF_STOCK' or 'SOLD_OUT'). Allows specifying page size, page number, sort order, and sort field.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved products, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
     @GroupTwoErrorResponses
@@ -150,23 +172,6 @@ public class ProductController {
         ProductProfitResponse productProfitResponse = productService.getProfitByPeriod(timeUnit, timePeriod);
         return new ResponseEntity<>(productProfitResponse, HttpStatus.OK);
     }
-
-    @Operation(summary = "Get product by its id", description = "Fetches the details of a single product using its unique identifier (UUID).")
-    @ApiResponse(responseCode = "200", description = "Product successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
-    @GroupThreeErrorResponses
-    @PreAuthorize("permitAll()")
-    @GetMapping(value = "/{productId}")
-    public ResponseEntity<ProductResponse> getProductById(
-
-            @PathVariable
-            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
-            @Parameter(description = "Unique product id (UUID)")
-            String productId) {
-
-        ProductResponse existingProduct = productService.getProductById(productId);
-        return new ResponseEntity<>(existingProduct, HttpStatus.OK);
-    }
-
 
     @Operation(summary = "Add a new product", description = "Adds a new product into product catalog. The product details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Product successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))

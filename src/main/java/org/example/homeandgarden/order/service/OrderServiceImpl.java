@@ -19,6 +19,7 @@ import org.example.homeandgarden.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,15 +85,14 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     @Transactional
-    public OrderResponse addOrder(OrderCreateRequest orderCreateRequest) {
+    public OrderResponse addOrder(String email, OrderCreateRequest orderCreateRequest) {
 
-        UUID id = UUID.fromString(orderCreateRequest.getUserId());
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("User with id: %s, was not found.", orderCreateRequest.getUserId())));
+        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
 
         Set<CartItem> cart = existingUser.getCart();
 
         if(cart.isEmpty()){
-            throw new DataNotFoundException(String.format("Cannot place order: user with id %s has an empty cart.", orderCreateRequest.getUserId()));
+            throw new DataNotFoundException(String.format("Cannot place order: user with email %s has an empty cart.", email));
         }
 
         Order orderToAdd = orderMapper.orderRequestToOrder(orderCreateRequest, existingUser);
@@ -111,9 +111,14 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     @Transactional
-    public OrderResponse updateOrder(String orderId, OrderUpdateRequest orderUpdateRequest) {
+    public OrderResponse updateOrder(String email, String orderId, OrderUpdateRequest orderUpdateRequest) {
+
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
+
+        if (!existingOrder.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Order with id: %s, does not belong to the user with email: %s.", orderId, email));
+        }
 
         Set<OrderStatus> finalStatuses = EnumSet.of(
                 OrderStatus.ON_THE_WAY,
@@ -139,9 +144,13 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     @Transactional
-    public MessageResponse cancelOrder(String orderId) {
+    public MessageResponse cancelOrder(String email, String orderId) {
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
+
+        if (!existingOrder.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Order with id: %s, does not belong to the user with email: %s.", orderId, email));
+        }
 
         if (!existingOrder.getOrderStatus().equals(OrderStatus.CREATED)) {
             throw new IllegalArgumentException(String.format("Order with id: %s is already in status '%s' and can not be canceled.", orderId, existingOrder.getOrderStatus().name()));

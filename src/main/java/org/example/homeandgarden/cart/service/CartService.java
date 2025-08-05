@@ -10,7 +10,7 @@ public interface CartService {
 
     Page<CartItemResponse> getUserCartItems(String userId, Integer size, Integer page, String order, String sortBy);
     Page<CartItemResponse> getMyCartItems(String email, Integer size, Integer page, String order, String sortBy);
-    CartItemResponse addCartItem(CartItemCreateRequest cartItemCreateRequest);
-    CartItemResponse updateCartItem(String cartItemId, CartItemUpdateRequest cartItemUpdateRequest);
-    MessageResponse removeCarItem(String cartItemId);
+    CartItemResponse addCartItem(String email, CartItemCreateRequest cartItemCreateRequest);
+    CartItemResponse updateCartItem(String email, String cartItemId, CartItemUpdateRequest cartItemUpdateRequest);
+    MessageResponse removeCarItem(String email, String cartItemId);
 }
