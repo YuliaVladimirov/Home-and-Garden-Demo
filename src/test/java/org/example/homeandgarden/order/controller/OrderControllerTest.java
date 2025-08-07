@@ -89,23 +89,20 @@ class OrderControllerTest {
         reset(orderService, orderItemService);
     }
 
-
-    private final String userEmail = "user@example.com";
-
-    private final User existingUser = User.builder()
-            .userId(UUID.randomUUID())
-            .email(userEmail)
+    private static final String USER_EMAIL = "user@example.com";
+    private static final User EXISTING_USER = User.builder()
+            .userId(UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76"))
+            .email(USER_EMAIL)
             .passwordHash("Hashed Password")
             .firstName("First Name")
             .lastName("Last Name")
             .userRole(UserRole.CLIENT)
             .isEnabled(true)
             .isNonLocked(true)
-            .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-            .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+            .registeredAt(Instant.parse("2024-01-01T12:00:00Z"))
+            .updatedAt(Instant.parse("2024-01-15T08:30:00Z"))
             .build();
-
-    private final UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+    private static final UserDetailsImpl USER_DETAILS = new UserDetailsImpl(EXISTING_USER);
 
 
 // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
@@ -145,10 +142,10 @@ class OrderControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.ASC, "quantity");
         Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
 
-        when(orderItemService.getMyOrderItems(eq(userEmail), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
+        when(orderItemService.getMyOrderItems(eq(USER_EMAIL), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -175,7 +172,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(5))
                 .andExpect(jsonPath("$.totalPages").value(3));
 
-        verify(orderItemService, times(1)).getMyOrderItems(eq(userEmail), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"));
+        verify(orderItemService, times(1)).getMyOrderItems(eq(USER_EMAIL), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"));
     }
 
     @Test
@@ -230,11 +227,11 @@ class OrderControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "priceAtPurchase");
         Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
 
-        when(orderItemService.getMyOrderItems(eq(userEmail), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase")))
+        when(orderItemService.getMyOrderItems(eq(USER_EMAIL), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase")))
                 .thenReturn(mockPage);
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -257,7 +254,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(10))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(orderItemService, times(1)).getMyOrderItems(eq(userEmail), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase"));
+        verify(orderItemService, times(1)).getMyOrderItems(eq(USER_EMAIL), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase"));
     }
 
     @Test
@@ -266,7 +263,7 @@ class OrderControllerTest {
         String invalidOrderId = "INVALID_UUID";
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", invalidOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -288,7 +285,7 @@ class OrderControllerTest {
         String validOrderId = UUID.randomUUID().toString();
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -306,7 +303,7 @@ class OrderControllerTest {
         String validOrderId = UUID.randomUUID().toString();
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -324,7 +321,7 @@ class OrderControllerTest {
         String validOrderId = UUID.randomUUID().toString();
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -342,7 +339,7 @@ class OrderControllerTest {
         String validOrderId = UUID.randomUUID().toString();
 
         mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -373,10 +370,10 @@ class OrderControllerTest {
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
-        when(orderService.getMyOrderById(eq(userEmail), eq(validOrderId))).thenReturn(expectedOrder);
+        when(orderService.getMyOrderById(eq(USER_EMAIL), eq(validOrderId))).thenReturn(expectedOrder);
 
         mockMvc.perform(get("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -392,7 +389,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).getMyOrderById(eq(userEmail), eq(validOrderId));
+        verify(orderService, times(1)).getMyOrderById(eq(USER_EMAIL), eq(validOrderId));
     }
 
     @Test
@@ -417,7 +414,7 @@ class OrderControllerTest {
         String invalidOrderId = "INVALID_UUID";
 
         mockMvc.perform(get("/orders/me/{orderId}", invalidOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -439,16 +436,16 @@ class OrderControllerTest {
                 .message(String.format("Order with id: %s has status '%s'.", validOrderId, status.name()))
                 .build();
 
-        when(orderService.getMyOrderStatus(eq(userEmail), eq(validOrderId))).thenReturn(expectedResponse);
+        when(orderService.getMyOrderStatus(eq(USER_EMAIL), eq(validOrderId))).thenReturn(expectedResponse);
 
         mockMvc.perform(get("/orders/me/{orderId}/status", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("Order with id: %s has status '%s'.", validOrderId, status.name())));
 
-        verify(orderService, times(1)).getMyOrderStatus(eq(userEmail), eq(validOrderId));
+        verify(orderService, times(1)).getMyOrderStatus(eq(USER_EMAIL), eq(validOrderId));
     }
 
     @Test
@@ -473,7 +470,7 @@ class OrderControllerTest {
         String invalidOrderId = "INVALID_UUID";
 
         mockMvc.perform(get("/orders/me/{orderId}/status", invalidOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -512,10 +509,10 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.addOrder(eq(userEmail), eq(createRequest))).thenReturn(expectedResponse);
+        when(orderService.addOrder(eq(USER_EMAIL), eq(createRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -533,7 +530,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).addOrder(eq(userEmail), eq(createRequest));
+        verify(orderService, times(1)).addOrder(eq(USER_EMAIL), eq(createRequest));
     }
 
 
@@ -577,7 +574,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -605,7 +602,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -632,7 +629,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -659,7 +656,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -687,7 +684,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -714,7 +711,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -741,7 +738,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -768,7 +765,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -795,7 +792,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -823,7 +820,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -850,7 +847,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -878,7 +875,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -905,7 +902,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -932,7 +929,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -960,7 +957,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -987,7 +984,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1015,7 +1012,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(post("/orders/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1057,11 +1054,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1077,7 +1074,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1125,7 +1122,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", invalidOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1154,7 +1151,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1183,7 +1180,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1212,7 +1209,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1241,7 +1238,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1270,7 +1267,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1299,7 +1296,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1328,7 +1325,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1357,7 +1354,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1386,7 +1383,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1415,7 +1412,7 @@ class OrderControllerTest {
                 .build();
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1449,11 +1446,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1468,7 +1465,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1494,11 +1491,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1513,7 +1510,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1539,11 +1536,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1558,7 +1555,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1584,11 +1581,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1603,7 +1600,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1629,11 +1626,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1648,7 +1645,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1674,11 +1671,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1693,7 +1690,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1719,11 +1716,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1738,7 +1735,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1764,11 +1761,11 @@ class OrderControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(orderService.updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest)))
+        when(orderService.updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1783,7 +1780,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.CUSTOMER_PICKUP.name()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(orderService, times(1)).updateOrder(eq(userEmail), eq(validOrderId), eq(updateRequest));
+        verify(orderService, times(1)).updateOrder(eq(USER_EMAIL), eq(validOrderId), eq(updateRequest));
     }
 
     @Test
@@ -1795,16 +1792,16 @@ class OrderControllerTest {
                 .message(String.format("Order with id: %s was canceled.", validOrderId))
                 .build();
 
-        when(orderService.cancelOrder(eq(userEmail), eq(validOrderId))).thenReturn(expectedResponse);
+        when(orderService.cancelOrder(eq(USER_EMAIL), eq(validOrderId))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/orders/me/{orderId}/cancel", validOrderId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("Order with id: %s was canceled.", validOrderId)));
 
-        verify(orderService, times(1)).cancelOrder(eq(userEmail), eq(validOrderId));
+        verify(orderService, times(1)).cancelOrder(eq(USER_EMAIL), eq(validOrderId));
     }
 
     @Test
@@ -1826,10 +1823,10 @@ class OrderControllerTest {
     @Test
     void cancelOrder_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
 
-        String validOrderId = "INVALID_UUID";
+        String invalidOrderId = "INVALID_UUID";
 
-        mockMvc.perform(patch("/orders/me/{orderId}/cancel", validOrderId)
-                        .with(user(userDetails))
+        mockMvc.perform(patch("/orders/me/{orderId}/cancel", invalidOrderId)
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())

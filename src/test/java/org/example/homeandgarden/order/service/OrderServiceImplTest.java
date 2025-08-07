@@ -61,34 +61,34 @@ class OrderServiceImplTest {
     @InjectMocks
     private OrderServiceImpl orderService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "createdAt";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "createdAt";
 
-    private final UUID ORDER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_ORDER_ID = UUID.randomUUID();
+    private static final UUID ORDER_ID = UUID.fromString("7e2b1a9f-4d8c-4f3a-a2b1-9f6e7d5c3a1b");
+    private static final UUID NON_EXISTING_ORDER_ID = UUID.fromString("b3f9a2e1-c6d4-49f0-9a7e-1e5d4c3b2a8f");
 
-    private final UUID USER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
+    private static final UUID USER_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_USER_ID = UUID.fromString("28123116-33f4-4b89-8519-b22ac2350834");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final String USER_EMAIL = "user@example.com";
-    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+    private static final String USER_EMAIL = "user@example.com";
+    private static final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
 
-    private final DeliveryMethod COURIER_DELIVERY = DeliveryMethod.COURIER_DELIVERY;
-    private final DeliveryMethod CUSTOMER_PICKUP = DeliveryMethod.CUSTOMER_PICKUP;
+    private static final DeliveryMethod COURIER_DELIVERY = DeliveryMethod.COURIER_DELIVERY;
+    private static final DeliveryMethod CUSTOMER_PICKUP = DeliveryMethod.CUSTOMER_PICKUP;
 
-    private final OrderStatus ORDER_STATUS_CREATED = OrderStatus.CREATED;
-    private final OrderStatus ORDER_STATUS_PAID = OrderStatus.PAID;
-    private final OrderStatus ORDER_STATUS_ON_THE_WAY = OrderStatus.ON_THE_WAY;
-    private final OrderStatus ORDER_STATUS_DELIVERED = OrderStatus.DELIVERED;
-    private final OrderStatus ORDER_STATUS_RETURNED = OrderStatus.RETURNED;
-    private final OrderStatus ORDER_STATUS_CANCELED = OrderStatus.CANCELED;
+    private static final OrderStatus ORDER_STATUS_CREATED = OrderStatus.CREATED;
+    private static final OrderStatus ORDER_STATUS_PAID = OrderStatus.PAID;
+    private static final OrderStatus ORDER_STATUS_ON_THE_WAY = OrderStatus.ON_THE_WAY;
+    private static final OrderStatus ORDER_STATUS_DELIVERED = OrderStatus.DELIVERED;
+    private static final OrderStatus ORDER_STATUS_RETURNED = OrderStatus.RETURNED;
+    private static final OrderStatus ORDER_STATUS_CANCELED = OrderStatus.CANCELED;
 
     private final Instant TIMESTAMP_NOW = Instant.now();
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getUserOrders_shouldReturnPagedOrdersWhenUserExists() {

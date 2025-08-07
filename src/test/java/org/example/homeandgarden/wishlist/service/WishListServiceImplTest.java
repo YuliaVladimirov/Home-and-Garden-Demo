@@ -54,31 +54,31 @@ class WishListServiceImplTest {
     @InjectMocks
     private WishListServiceImpl wishListService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
 
-    private final UUID USER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
+    private static final UUID USER_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_USER_ID = UUID.fromString("28123116-33f4-4b89-8519-b22ac2350834");
 
-    private final UUID PRODUCT_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_PRODUCT_ID = UUID.randomUUID();
+    private static final UUID PRODUCT_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_PRODUCT_ID = UUID.fromString("a0f3bd4e-2c9c-4c23-a9b7-e4b2d99d36e5");
 
-    private final UUID WISH_LIST_ITEM_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_WISH_LIST_ITEM_ID = UUID.randomUUID();
+    private static final UUID WISH_LIST_ITEM_ID = UUID.fromString("f8b4b6f0-1a2e-4d30-b5a7-9c4e7a1e8c3d");
+    private static final UUID NON_EXISTING_WISH_LIST_ITEM_ID = UUID.fromString("3a6e2d4b-5f14-46a0-90e3-8212f6bd93b9");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final String USER_EMAIL = "user@example.com";
-    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+    private static final String USER_EMAIL = "user@example.com";
+    private static final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
 
-    private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
-    private final String PASSWORD_HASH = "Hashed Password";
+    private static final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
+    private static final String PASSWORD_HASH = "Hashed Password";
 
-    private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
-    private final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
+    private static final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
+    private static final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
 
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getUserWishListItems_shouldReturnPagedWishListItemsWhenUserExists() {

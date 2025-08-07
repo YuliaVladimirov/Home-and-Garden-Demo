@@ -54,33 +54,33 @@ class CartServiceImplTest {
     @InjectMocks
     private CartServiceImpl cartService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "addedAt";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "addedAt";
 
-    private final UUID USER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
+    private static final UUID USER_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_USER_ID = UUID.fromString("28123116-33f4-4b89-8519-b22ac2350834");
 
-    private final UUID PRODUCT_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_PRODUCT_ID = UUID.randomUUID();
+    private static final UUID PRODUCT_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_PRODUCT_ID = UUID.fromString("a0f3bd4e-2c9c-4c23-a9b7-e4b2d99d36e5");
 
-    private final UUID CART_ITEM_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_CART_ITEM_ID = UUID.randomUUID();
+    private static final UUID CART_ITEM_ID = UUID.fromString("9f3e7d21-6b8c-4d1a-82b3-75c9b2a8f1de");
+    private static final UUID NON_EXISTING_CART_ITEM_ID = UUID.fromString("c2a3e1d4-3f9b-4c0e-b1a7-2e1a7f5b6c3d");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final String USER_EMAIL = "user@example.com";
-    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+    private static final String USER_EMAIL = "user@example.com";
+    private static final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
 
-    private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
-    private final String PASSWORD_HASH = "Hashed Password";
+    private static final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
+    private static final String PASSWORD_HASH = "Hashed Password";
 
-    private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
-    private final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
+    private static final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
+    private static final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
 
     private final Instant TIMESTAMP_NOW = Instant.now();
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getUserCartItems_shouldReturnPagedCartItemsWhenUserExists() {

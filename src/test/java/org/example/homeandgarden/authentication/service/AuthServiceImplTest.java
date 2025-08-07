@@ -28,7 +28,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,20 +52,20 @@ class AuthServiceImplTest {
     @InjectMocks
     private AuthServiceImpl authService;
 
-    private final UUID USER_ID = UUID.randomUUID();
-    private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
-    private final String EMAIL = "test@example.com";
+    private static final UUID USER_ID = UUID.fromString("aebdd1a2-1bc2-4cc9-8496-674e4c7ee5f2");
+    private static final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
+    private static final String EMAIL = "test@example.com";
 
-    private final String PASSWORD = "Raw Password";
-    private final String PASSWORD_HASH = "Hashed Password";
+    private static final String PASSWORD = "Raw Password";
+    private static final String PASSWORD_HASH = "Hashed Password";
 
-    private final String ACCESS_TOKEN = "Access Token";
-    private final String REFRESH_TOKEN = "Refresh Token";
+    private static final String ACCESS_TOKEN = "Access Token";
+    private static final String REFRESH_TOKEN = "Refresh Token";
 
-    private final String INVALID_REFRESH_TOKEN = "Invalid Refresh Token";
+    private static final String INVALID_REFRESH_TOKEN = "Invalid Refresh Token";
 
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
     private final Instant TIMESTAMP_NOW = Instant.now();
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @BeforeEach
     void setUp() {

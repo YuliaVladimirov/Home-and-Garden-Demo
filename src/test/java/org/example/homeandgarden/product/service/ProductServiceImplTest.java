@@ -22,7 +22,6 @@ import org.springframework.data.domain.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,35 +43,35 @@ class ProductServiceImplTest {
     @InjectMocks
     private ProductServiceImpl productService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "productName";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "productName";
 
-    private final UUID CATEGORY_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_CATEGORY_ID = UUID.randomUUID();
+    private static final UUID CATEGORY_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final UUID NON_EXISTING_CATEGORY_ID = UUID.fromString("a0f3bd4e-2c9c-4c23-a9b7-e4b2d99d36e5");
 
-    private final UUID PRODUCT_1_ID = UUID.randomUUID();
-    private final UUID PRODUCT_2_ID = UUID.randomUUID();
+    private static final UUID PRODUCT_1_ID = UUID.fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6");
+    private static final UUID PRODUCT_2_ID = UUID.fromString("e9b1d3b0-146a-4be0-a1e2-2b9e18b1a8cf");
 
-    private final UUID PRODUCT_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_PRODUCT_ID = UUID.randomUUID();
+    private static final UUID PRODUCT_ID = UUID.fromString("aebdd1a2-1bc2-4cc9-8496-674e4c7ee5f2");
+    private static final UUID NON_EXISTING_PRODUCT_ID = UUID.fromString("de305d54-75b4-431b-adb2-eb6b9e546014");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
-    private final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
+    private static final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
+    private static final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
 
-    private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
-    private final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
+    private static final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
+    private static final ProductStatus PRODUCT_STATUS_OUT_OF_STOCK = ProductStatus.OUT_OF_STOCK;
 
-    private final String INVALID_STATUS = "Invalid Status";
+    private static final String INVALID_STATUS = "Invalid Status";
 
     private final Instant TIMESTAMP_NOW = Instant.now();
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
-    private final BigDecimal MIN_PRICE = BigDecimal.valueOf(10.0);
-    private final BigDecimal MAX_PRICE = BigDecimal.valueOf(50.0);
+    private static final BigDecimal MIN_PRICE = BigDecimal.valueOf(10.0);
+    private static final BigDecimal MAX_PRICE = BigDecimal.valueOf(50.0);
 
     @Test
     void getCategoryProducts_shouldReturnPagedProductsWhenCategoryExistsAndProductsMatchCriteria() {

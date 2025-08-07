@@ -24,7 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -68,28 +67,26 @@ class WishListControllerTest {
         reset(wishListService);
     }
 
+    private static final String USER_EMAIL = "user@example.com";
+    private static final User EXISTING_USER = User.builder()
+            .userId(UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76"))
+            .email(USER_EMAIL)
+            .passwordHash("Hashed Password")
+            .firstName("First Name")
+            .lastName("Last Name")
+            .userRole(UserRole.CLIENT)
+            .isEnabled(true)
+            .isNonLocked(true)
+            .registeredAt(Instant.parse("2024-01-01T12:00:00Z"))
+            .updatedAt(Instant.parse("2024-01-15T08:30:00Z"))
+            .build();
+    private static final UserDetailsImpl USER_DETAILS = new UserDetailsImpl(EXISTING_USER);
+
 
     // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
     @Test
     void addWishListItem_shouldReturnCreatedWishListItem_whenValidRequestAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         String validProductId = UUID.randomUUID().toString();
 
@@ -109,11 +106,11 @@ class WishListControllerTest {
                 .product(productResponse)
                 .build();
 
-        when(wishListService.addWishListItem(eq(userEmail), eq(wishListItemRequest)))
+        when(wishListService.addWishListItem(eq(USER_EMAIL), eq(wishListItemRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(post("/wishlist/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(wishListItemRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -125,7 +122,7 @@ class WishListControllerTest {
                 .andExpect(jsonPath("$.product.productName").value("Product Name"))
                 .andExpect(jsonPath("$.product.productStatus").value(ProductStatus.AVAILABLE.name()));
 
-        verify(wishListService, times(1)).addWishListItem(eq(userEmail), eq(wishListItemRequest));
+        verify(wishListService, times(1)).addWishListItem(eq(USER_EMAIL), eq(wishListItemRequest));
     }
 
     @Test
@@ -154,23 +151,6 @@ class WishListControllerTest {
     @Test
     void addWishListItem_shouldReturnBadRequest_whenInvalidProductIdFormat() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String invalidProductId = "INVALID_UUID";
 
         WishListItemRequest invalidRequest = WishListItemRequest.builder()
@@ -178,7 +158,7 @@ class WishListControllerTest {
                 .build();
 
         mockMvc.perform(post("/wishlist/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -194,29 +174,12 @@ class WishListControllerTest {
     @Test
     void addWishListItem_shouldReturnBadRequest_whenMissingProductId() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         WishListItemRequest invalidRequest = WishListItemRequest.builder()
                 .productId(null)
                 .build();
 
         mockMvc.perform(post("/wishlist/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -233,37 +196,21 @@ class WishListControllerTest {
     void removeWishListItem_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
 
         String validWishListItemId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message(String.format("Wishlist item with id: %s, has been removed from wishlist.", validWishListItemId))
                 .build();
 
-        when(wishListService.removeWishListItem(eq(userEmail), eq(validWishListItemId))).thenReturn(expectedResponse);
+        when(wishListService.removeWishListItem(eq(USER_EMAIL), eq(validWishListItemId))).thenReturn(expectedResponse);
 
         mockMvc.perform(delete("/wishlist/me/{wishListItemId}", validWishListItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("Wishlist item with id: %s, has been removed from wishlist.", validWishListItemId)));
 
-        verify(wishListService, times(1)).removeWishListItem(eq(userEmail), eq(validWishListItemId));
+        verify(wishListService, times(1)).removeWishListItem(eq(USER_EMAIL), eq(validWishListItemId));
     }
 
     @Test
@@ -286,25 +233,9 @@ class WishListControllerTest {
     void removeWishListItem_shouldReturnBadRequest_whenInvalidWishListItemIdFormat() throws Exception {
 
         String invalidWishListItemId = "INVALID_UUID";
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         mockMvc.perform(delete("/wishlist/me/{wishListItemId}", invalidWishListItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())

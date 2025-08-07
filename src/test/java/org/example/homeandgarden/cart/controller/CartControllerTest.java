@@ -71,28 +71,26 @@ class CartControllerTest {
         reset(cartService);
     }
 
+    private static final String USER_EMAIL = "user@example.com";
+    private static final User EXISTING_USER = User.builder()
+            .userId(UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76"))
+            .email(USER_EMAIL)
+            .passwordHash("Hashed Password")
+            .firstName("First Name")
+            .lastName("Last Name")
+            .userRole(UserRole.CLIENT)
+            .isEnabled(true)
+            .isNonLocked(true)
+            .registeredAt(Instant.parse("2024-01-01T12:00:00Z"))
+            .updatedAt(Instant.parse("2024-01-15T08:30:00Z"))
+            .build();
+    private static final UserDetailsImpl USER_DETAILS = new UserDetailsImpl(EXISTING_USER);
+
 
     // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
     @Test
     void addCartItem_shouldReturnCreatedCartItem_whenValidRequestAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         String validProductId = UUID.randomUUID().toString();
 
@@ -115,10 +113,10 @@ class CartControllerTest {
                 .product(productResponse)
                 .build();
 
-        when(cartService.addCartItem(eq(userEmail), eq(cartItemRequest))).thenReturn(expectedResponse);
+        when(cartService.addCartItem(eq(USER_EMAIL), eq(cartItemRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cartItemRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -132,7 +130,7 @@ class CartControllerTest {
                 .andExpect(jsonPath("$.product.productName").value("Product Name"))
                 .andExpect(jsonPath("$.product.productStatus").value(ProductStatus.AVAILABLE.name()));
 
-        verify(cartService, times(1)).addCartItem(eq(userEmail), eq(cartItemRequest));
+        verify(cartService, times(1)).addCartItem(eq(USER_EMAIL), eq(cartItemRequest));
     }
 
 
@@ -162,23 +160,6 @@ class CartControllerTest {
     @Test
     void addCartItem_shouldReturnBadRequest_whenInvalidProductIdFormat() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String invalidProductId = "INVALID_UUID";
 
         CartItemCreateRequest invalidRequest = CartItemCreateRequest.builder()
@@ -187,7 +168,7 @@ class CartControllerTest {
                 .build();
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -203,30 +184,13 @@ class CartControllerTest {
     @Test
     void addCartItem_shouldReturnBadRequest_whenMissingProductId() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         CartItemCreateRequest invalidRequest = CartItemCreateRequest.builder()
                 .quantity(1)
                 .productId(null)
                 .build();
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -242,23 +206,6 @@ class CartControllerTest {
     @Test
     void addCartItem_shouldReturnBadRequest_whenQuantityIsNull() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String validProductId = UUID.randomUUID().toString();
 
         CartItemCreateRequest invalidRequest = CartItemCreateRequest.builder()
@@ -267,7 +214,7 @@ class CartControllerTest {
                 .build();
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -283,23 +230,6 @@ class CartControllerTest {
     @Test
     void addCartItem_shouldReturnBadRequest_whenQuantityIsLessThanOne() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String validProductId = UUID.randomUUID().toString();
 
         CartItemCreateRequest invalidRequest = CartItemCreateRequest.builder()
@@ -308,7 +238,7 @@ class CartControllerTest {
                 .build();
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -324,23 +254,6 @@ class CartControllerTest {
     @Test
     void addCartItem_shouldReturnBadRequest_whenQuantityIsGreaterThanOneThousand() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String validProductId = UUID.randomUUID().toString();
 
         CartItemCreateRequest invalidRequest = CartItemCreateRequest.builder()
@@ -349,7 +262,7 @@ class CartControllerTest {
                 .build();
 
         mockMvc.perform(post("/cart/me")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -365,24 +278,8 @@ class CartControllerTest {
     @Test
     void updateCartItem_shouldReturnUpdatedCartItem_whenValidRequestAndAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
         String validCartItemId = UUID.randomUUID().toString();
         String validProductId = UUID.randomUUID().toString();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         CartItemUpdateRequest updateRequest = CartItemUpdateRequest.builder()
                 .quantity(5)
@@ -402,11 +299,11 @@ class CartControllerTest {
                 .product(productResponse)
                 .build();
 
-        when(cartService.updateCartItem(eq(userEmail), eq(validCartItemId), eq(updateRequest)))
+        when(cartService.updateCartItem(eq(USER_EMAIL), eq(validCartItemId), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/cart/me/{cartItemId}", validCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -420,7 +317,7 @@ class CartControllerTest {
                 .andExpect(jsonPath("$.product.productName").value("Product Name"))
                 .andExpect(jsonPath("$.product.productStatus").value(ProductStatus.AVAILABLE.name()));
 
-        verify(cartService, times(1)).updateCartItem(eq(userEmail), eq(validCartItemId), eq(updateRequest));
+        verify(cartService, times(1)).updateCartItem(eq(USER_EMAIL), eq(validCartItemId), eq(updateRequest));
     }
 
 
@@ -449,30 +346,14 @@ class CartControllerTest {
     @Test
     void updateCartItem_shouldReturnBadRequest_whenInvalidCartItemIdFormat() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         String invalidCartItemId = "INVALID_UUID";
+
         CartItemUpdateRequest updateRequest = CartItemUpdateRequest.builder()
                 .quantity(1)
                 .build();
 
         mockMvc.perform(patch("/cart/me/{cartItemId}", invalidCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -489,30 +370,14 @@ class CartControllerTest {
     @WithMockUser(roles = {"CLIENT"})
     void updateCartItem_shouldReturnBadRequest_whenQuantityIsNull() throws Exception {
 
-        String userEmail = "user@example.com";
         String validCartItemId = UUID.randomUUID().toString();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         CartItemUpdateRequest invalidRequest = CartItemUpdateRequest.builder()
                 .quantity(null)
                 .build();
 
         mockMvc.perform(patch("/cart/me/{cartItemId}", validCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -528,30 +393,14 @@ class CartControllerTest {
     @Test
     void updateCartItem_shouldReturnBadRequest_whenQuantityIsLessThanOne() throws Exception {
 
-        String userEmail = "user@example.com";
         String validCartItemId = UUID.randomUUID().toString();
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         CartItemUpdateRequest invalidRequest = CartItemUpdateRequest.builder()
                 .quantity(0)
                 .build();
 
         mockMvc.perform(patch("/cart/me/{cartItemId}", validCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -568,29 +417,13 @@ class CartControllerTest {
     void updateCartItem_shouldReturnBadRequest_whenQuantityIsGreaterThanOneThousand() throws Exception {
 
         String validCartItemId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         CartItemUpdateRequest invalidRequest = CartItemUpdateRequest.builder()
                 .quantity(1001)
                 .build();
 
         mockMvc.perform(patch("/cart/me/{cartItemId}", validCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -607,37 +440,21 @@ class CartControllerTest {
     void removeCartItem_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
 
         String validCartItemId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message(String.format("Cart item with id: %s, has been removed from cart.", validCartItemId))
                 .build();
 
-        when(cartService.removeCarItem(eq(userEmail), eq(validCartItemId))).thenReturn(expectedResponse);
+        when(cartService.removeCarItem(eq(USER_EMAIL), eq(validCartItemId))).thenReturn(expectedResponse);
 
         mockMvc.perform(delete("/cart/me/{cartItemId}", validCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(String.format("Cart item with id: %s, has been removed from cart.", validCartItemId)));
 
-        verify(cartService, times(1)).removeCarItem(eq(userEmail), eq(validCartItemId));
+        verify(cartService, times(1)).removeCarItem(eq(USER_EMAIL), eq(validCartItemId));
     }
 
     @Test
@@ -660,25 +477,9 @@ class CartControllerTest {
     void removeCartItem_shouldReturnBadRequest_whenInvalidCartItemIdFormat() throws Exception {
 
         String invalidCartItemId = "INVALID_UUID";
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         mockMvc.perform(delete("/cart/me/{cartItemId}", invalidCartItemId)
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isBadRequest())

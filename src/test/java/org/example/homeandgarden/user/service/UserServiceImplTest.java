@@ -21,7 +21,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,32 +45,32 @@ class UserServiceImplTest {
     @InjectMocks
     private UserServiceImpl userService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "createdAt";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "createdAt";
 
-    private final UUID USER_1_ID = UUID.randomUUID();
-    private final UUID USER_2_ID = UUID.randomUUID();
+    private static final UUID USER_1_ID = UUID.fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6");
+    private static final UUID USER_2_ID = UUID.fromString("e9b1d3b0-146a-4be0-a1e2-2b9e18b1a8cf");
 
-    private final UUID USER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_USER_ID = UUID.randomUUID();
+    private static final UUID USER_ID = UUID.fromString("aebdd1a2-1bc2-4cc9-8496-674e4c7ee5f2");
+    private static final UUID NON_EXISTING_USER_ID = UUID.fromString("de305d54-75b4-431b-adb2-eb6b9e546014");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final String USER_EMAIL = "user@example.com";
-    private final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
+    private static final String USER_EMAIL = "user@example.com";
+    private static final String NON_EXISTING_USER_EMAIL = "nonExistingUser@example.com";
 
-    private final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
-    private final UserRole USER_ROLE_ADMIN = UserRole.ADMINISTRATOR;
+    private static final UserRole USER_ROLE_CLIENT = UserRole.CLIENT;
+    private static final UserRole USER_ROLE_ADMIN = UserRole.ADMINISTRATOR;
 
-    private final String PASSWORD = "Raw Password";
-    private final String PASSWORD_HASH = "Hashed Password";
-    private final String NEW_PASSWORD = "New Password";
-    private final String NEW_PASSWORD_HASH = "New Hashed Password";
+    private static final String PASSWORD = "Raw Password";
+    private static final String PASSWORD_HASH = "Hashed Password";
+    private static final String NEW_PASSWORD = "New Password";
+    private static final String NEW_PASSWORD_HASH = "New Hashed Password";
 
     private final Instant TIMESTAMP_NOW = Instant.now();
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getUsersByStatus_shouldReturnPagedModelOfEnabledAndNonLockedUsers() {

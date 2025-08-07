@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,26 +36,26 @@ class CategoryServiceImplTest {
     @InjectMocks
     private CategoryServiceImpl categoryService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "createdAt";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "createdAt";
 
-    private final UUID CATEGORY_1_ID = UUID.randomUUID();
-    private final UUID CATEGORY_2_ID = UUID.randomUUID();
+    private static final UUID CATEGORY_1_ID = UUID.fromString("f81d4fae-7dec-11d0-a765-00a0c91e6bf6");
+    private static final UUID CATEGORY_2_ID = UUID.fromString("e9b1d3b0-146a-4be0-a1e2-2b9e18b1a8cf");
 
-    private final UUID CATEGORY_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_CATEGORY_ID = UUID.randomUUID();
+    private static final UUID CATEGORY_ID = UUID.fromString("aebdd1a2-1bc2-4cc9-8496-674e4c7ee5f2");
+    private static final UUID NON_EXISTING_CATEGORY_ID = UUID.fromString("de305d54-75b4-431b-adb2-eb6b9e546014");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
-    private final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
+    private static final CategoryStatus CATEGORY_STATUS_ACTIVE = CategoryStatus.ACTIVE;
+    private static final CategoryStatus CATEGORY_STATUS_INACTIVE = CategoryStatus.INACTIVE;
 
-    private final String INVALID_STATUS = "Invalid Status";
+    private static final String INVALID_STATUS = "Invalid Status";
 
     private final Instant TIMESTAMP_NOW = Instant.now();
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getAllActiveCategories_shouldReturnPagedActiveCategoriesWhenCategoriesExist() {

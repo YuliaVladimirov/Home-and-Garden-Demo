@@ -23,7 +23,6 @@ import org.springframework.data.domain.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,21 +48,21 @@ class OrderItemServiceImplTest {
     @InjectMocks
     private OrderItemServiceImpl orderItemService;
 
-    private final Integer PAGE = 0;
-    private final Integer SIZE = 5;
-    private final String ORDER = "ASC";
-    private final String SORT_BY = "createdAt";
+    private static final Integer PAGE = 0;
+    private static final Integer SIZE = 5;
+    private static final String ORDER = "ASC";
+    private static final String SORT_BY = "createdAt";
 
-    private final UUID ORDER_ID = UUID.randomUUID();
-    private final UUID NON_EXISTING_ORDER_ID = UUID.randomUUID();
+    private static final UUID ORDER_ID = UUID.fromString("7e2b1a9f-4d8c-4f3a-a2b1-9f6e7d5c3a1b");
+    private static final UUID NON_EXISTING_ORDER_ID = UUID.fromString("b3f9a2e1-c6d4-49f0-9a7e-1e5d4c3b2a8f");
 
-    private final String INVALID_ID = "Invalid UUID";
+    private static final String INVALID_ID = "Invalid UUID";
 
-    private final String USER_EMAIL = "user@example.com";
+    private static final String USER_EMAIL = "user@example.com";
 
-    private final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
+    private static final ProductStatus PRODUCT_STATUS_AVAILABLE = ProductStatus.AVAILABLE;
 
-    private final Instant TIMESTAMP_PAST = Instant.now().minus(10L, ChronoUnit.DAYS);
+    private static final Instant TIMESTAMP_PAST = Instant.parse("2024-12-01T12:00:00Z");
 
     @Test
     void getUserOrderItems_shouldReturnPagedOrderItemsWhenUserOrderExists() {

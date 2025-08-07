@@ -111,32 +111,31 @@ class UserControllerTest {
         reset(userService, wishListService, cartService, orderService);
     }
 
+    private static final String USER_EMAIL = "user@example.com";
+    private static final UUID USER_ID = UUID.fromString("d167268d-305b-426e-9f6f-998da4c2ff76");
+    private static final User EXISTING_USER = User.builder()
+            .userId(USER_ID)
+            .email(USER_EMAIL)
+            .passwordHash("Hashed Password")
+            .firstName("First Name")
+            .lastName("Last Name")
+            .userRole(UserRole.CLIENT)
+            .isEnabled(true)
+            .isNonLocked(true)
+            .registeredAt(Instant.parse("2024-01-01T12:00:00Z"))
+            .updatedAt(Instant.parse("2024-01-15T08:30:00Z"))
+            .build();
+    private static final UserDetailsImpl USER_DETAILS = new UserDetailsImpl(EXISTING_USER);
+
 
     // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
     @Test
     void getMyProfile_shouldReturnUser_whenAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserResponse userResponse = UserResponse.builder()
                 .userId(UUID.randomUUID())
-                .email(userEmail)
+                .email(USER_EMAIL)
                 .firstName("First Name")
                 .lastName("Last Name")
                 .userRole(UserRole.CLIENT)
@@ -146,10 +145,10 @@ class UserControllerTest {
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
-        when(userService.getMyProfile(eq(userEmail))).thenReturn(userResponse);
+        when(userService.getMyProfile(eq(USER_EMAIL))).thenReturn(userResponse);
 
-        mockMvc.perform(get("/users/me/profile", userEmail)
-                        .with(user(userDetails))
+        mockMvc.perform(get("/users/me/profile", USER_EMAIL)
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -163,15 +162,13 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.registeredAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).getMyProfile(eq(userEmail));
+        verify(userService, times(1)).getMyProfile(eq(USER_EMAIL));
     }
 
     @Test
     void getMyProfile_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        mockMvc.perform(get("/users/me/profile", userEmail)
+        mockMvc.perform(get("/users/me/profile", USER_EMAIL)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
@@ -180,28 +177,11 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.path").value("/users/me/profile"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).getMyProfile(eq(userEmail));
+        verify(userService, never()).getMyProfile(eq(USER_EMAIL));
     }
 
     @Test
     void getMyWishListItems_shouldReturnPagedWishlistItems_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         ProductResponse product1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -232,10 +212,10 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "addedAt");
         Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
 
-        when(wishListService.getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
+        when(wishListService.getMyWishListItems(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"))).thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -255,7 +235,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(5))
                 .andExpect(jsonPath("$.totalPages").value(3));
 
-        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(2), eq(0), eq("DESC"));
+        verify(wishListService, times(1)).getMyWishListItems(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"));
     }
 
 
@@ -275,24 +255,6 @@ class UserControllerTest {
 
     @Test
     void getMyWishListItems_shouldReturnPagedWishlistItems_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
 
         ProductResponse product1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -323,11 +285,11 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
         Page<WishListItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
 
-        when(wishListService.getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC")))
+        when(wishListService.getMyWishListItems(eq(USER_EMAIL), eq(10), eq(0), eq("ASC")))
                 .thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -344,31 +306,14 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(10))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(wishListService, times(1)).getMyWishListItems(eq(userEmail), eq(10), eq(0), eq("ASC"));
+        verify(wishListService, times(1)).getMyWishListItems(eq(USER_EMAIL), eq(10), eq(0), eq("ASC"));
     }
 
     @Test
     void getMyWishListItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -383,25 +328,8 @@ class UserControllerTest {
     @Test
     void getMyWishListItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -416,25 +344,8 @@ class UserControllerTest {
     @Test
     void getMyWishListItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/wishListItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -448,23 +359,6 @@ class UserControllerTest {
 
     @Test
     void getMyCartItems_shouldReturnPagedCartItems_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         ProductResponse product1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -498,10 +392,10 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "quantity");
         Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
 
-        when(cartService.getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
+        when(cartService.getMyCartItems(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -523,7 +417,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(5))
                 .andExpect(jsonPath("$.totalPages").value(3));
 
-        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("quantity"));
+        verify(cartService, times(1)).getMyCartItems(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"), eq("quantity"));
     }
 
     @Test
@@ -542,23 +436,6 @@ class UserControllerTest {
 
     @Test
     void getMyCartItems_shouldReturnPagedCartItems_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         ProductResponse product1 = ProductResponse.builder()
                 .productId(UUID.randomUUID())
@@ -592,11 +469,11 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "addedAt");
         Page<CartItemResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
 
-        when(cartService.getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt")))
+        when(cartService.getMyCartItems(eq(USER_EMAIL), eq(10), eq(0), eq("ASC"), eq("addedAt")))
                 .thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -615,31 +492,14 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(cartService, times(1)).getMyCartItems(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("addedAt"));
+        verify(cartService, times(1)).getMyCartItems(eq(USER_EMAIL), eq(10), eq(0), eq("ASC"), eq("addedAt"));
     }
 
     @Test
     void getMyCartItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -654,25 +514,8 @@ class UserControllerTest {
     @Test
     void getMyCartItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -687,25 +530,8 @@ class UserControllerTest {
     @Test
     void getMyCartItems_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -720,25 +546,8 @@ class UserControllerTest {
     @Test
     void getMyCartItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/cartItems")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -752,23 +561,6 @@ class UserControllerTest {
 
     @Test
     void getMyOrders_shouldReturnPagedOrders_whenValidParametersAndAuthenticated() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderResponse order1 = OrderResponse.builder()
                 .orderId(UUID.randomUUID())
@@ -802,10 +594,10 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.DESC, "status");
         Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
 
-        when(orderService.getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"))).thenReturn(mockPage);
+        when(orderService.getMyOrders(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"), eq("status"))).thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "2")
                         .param("page", "0")
                         .param("order", "DESC")
@@ -840,7 +632,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(5))
                 .andExpect(jsonPath("$.totalPages").value(3));
 
-        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(2), eq(0), eq("DESC"), eq("status"));
+        verify(orderService, times(1)).getMyOrders(eq(USER_EMAIL), eq(2), eq(0), eq("DESC"), eq("status"));
     }
 
     @Test
@@ -859,23 +651,6 @@ class UserControllerTest {
 
     @Test
     void getMyOrders_shouldReturnPagedOrders_whenDefaultParameters() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderResponse order1 = OrderResponse.builder()
                 .orderId(UUID.randomUUID())
@@ -909,10 +684,10 @@ class UserControllerTest {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "createdAt");
         Page<OrderResponse> mockPage = new PageImpl<>(content, pageRequest, 2);
 
-        when(orderService.getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"))).thenReturn(mockPage);
+        when(orderService.getMyOrders(eq(USER_EMAIL), eq(10), eq(0), eq("ASC"), eq("createdAt"))).thenReturn(mockPage);
 
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -943,31 +718,14 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
-        verify(orderService, times(1)).getMyOrders(eq(userEmail), eq(10), eq(0), eq("ASC"), eq("createdAt"));
+        verify(orderService, times(1)).getMyOrders(eq(USER_EMAIL), eq(10), eq(0), eq("ASC"), eq("createdAt"));
     }
 
     @Test
     void getMyOrders_shouldReturnBadRequest_whenInvalidSize() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("size", "0")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -982,25 +740,8 @@ class UserControllerTest {
     @Test
     void getMyOrders_shouldReturnBadRequest_whenInvalidPage() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("page", "-1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1015,25 +756,8 @@ class UserControllerTest {
     @Test
     void getMyOrders_shouldReturnBadRequest_whenInvalidOrder() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("order", "INVALID_ORDER")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1048,25 +772,8 @@ class UserControllerTest {
     @Test
     void getMyOrders_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(get("/users/me/orders")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .param("sortBy", "INVALID_SORT_BY")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -1081,31 +788,13 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnUpdatedUser_whenValidRequestAndAuthenticated() throws Exception {
 
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("Updated Last Name")
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
+                .userId(USER_ID)
                 .email("email@example.com")
                 .firstName(updateRequest.getFirstName())
                 .lastName(updateRequest.getLastName())
@@ -1116,21 +805,21 @@ class UserControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(USER_EMAIL), eq(updateRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.firstName").value(updateRequest.getFirstName()))
                 .andExpect(jsonPath("$.lastName").value(updateRequest.getLastName()))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateMyProfile(eq(email), any(UserUpdateRequest.class));
+        verify(userService, times(1)).updateMyProfile(eq(USER_EMAIL), any(UserUpdateRequest.class));
     }
 
 
@@ -1158,30 +847,13 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
 
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("A")
                 .lastName("Updated Last Name")
                 .build();
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1197,30 +869,13 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
 
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("A".repeat(31))
                 .lastName("Updated Last Name")
                 .build();
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1236,30 +891,13 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
 
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("A")
                 .build();
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1275,31 +913,13 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
 
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest invalidRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .lastName("A".repeat(31))
                 .build();
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1315,30 +935,12 @@ class UserControllerTest {
     @Test
     void updateMyProfile_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
 
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .firstName("Updated First Name")
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
+                .userId(USER_ID)
                 .firstName(updateRequest.getFirstName())
                 .lastName("Original Last Name")
                 .email("email@example.com")
@@ -1349,16 +951,16 @@ class UserControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateMyProfile(eq(email), eq(updateRequest)))
+        when(userService.updateMyProfile(eq(USER_EMAIL), eq(updateRequest)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.firstName").value("Updated First Name"))
                 .andExpect(jsonPath("$.lastName").value("Original Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1367,36 +969,18 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+        verify(userService, times(1)).updateMyProfile(eq(USER_EMAIL), eq(updateRequest));
     }
 
     @Test
     void updateMyProfile_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
-
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         UserUpdateRequest updateRequest = UserUpdateRequest.builder()
                 .lastName("Updated Last Name")
                 .build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
+                .userId(USER_ID)
                 .firstName("Original First Name")
                 .lastName(updateRequest.getLastName())
                 .email("email@example.com")
@@ -1407,15 +991,15 @@ class UserControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(USER_EMAIL), eq(updateRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.firstName").value("Original First Name"))
                 .andExpect(jsonPath("$.lastName").value("Updated Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1424,34 +1008,16 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+        verify(userService, times(1)).updateMyProfile(eq(USER_EMAIL), eq(updateRequest));
     }
 
     @Test
     void updateMyProfile_shouldReturnOk_whenEmptyRequestBody() throws Exception {
 
-        UUID userId = UUID.randomUUID();
-        String email = "email@example.com";
-
-        User existingUser = User.builder()
-                .userId(userId)
-                .email(email)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         UserUpdateRequest updateRequest = UserUpdateRequest.builder().build();
 
         UserResponse expectedResponse = UserResponse.builder()
-                .userId(userId)
+                .userId(USER_ID)
                 .firstName("Original First Name")
                 .lastName("Original Last Name")
                 .email("email@example.com")
@@ -1462,15 +1028,15 @@ class UserControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(userService.updateMyProfile(eq(email), eq(updateRequest))).thenReturn(expectedResponse);
+        when(userService.updateMyProfile(eq(USER_EMAIL), eq(updateRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/me/profile")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.firstName").value("Original First Name"))
                 .andExpect(jsonPath("$.lastName").value("Original Last Name"))
                 .andExpect(jsonPath("$.email").value("email@example.com"))
@@ -1479,13 +1045,12 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.isNonLocked").value(true))
                 .andExpect(jsonPath("$.updatedAt").exists());
 
-        verify(userService, times(1)).updateMyProfile(eq(email), eq(updateRequest));
+        verify(userService, times(1)).updateMyProfile(eq(USER_EMAIL), eq(updateRequest));
     }
 
     @Test
     void changeMyPassword_shouldReturnOk_whenUserAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "Password123New!";
 
@@ -1495,43 +1060,27 @@ class UserControllerTest {
                 .confirmNewPassword(newPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         MessageResponse messageResponse = MessageResponse.builder()
-                .message(String.format("Password for user with email: %s, has been successfully changed.", userEmail))
+                .message(String.format("Password for user with email: %s, has been successfully changed.", USER_EMAIL))
                 .build();
 
-        when(userService.changeMyPassword(eq(userEmail), eq(request))).thenReturn(messageResponse);
+        when(userService.changeMyPassword(eq(USER_EMAIL), eq(request))).thenReturn(messageResponse);
 
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value(String.format("Password for user with email: %s, has been successfully changed.", userEmail)));
+                .andExpect(jsonPath("$.message").value(String.format("Password for user with email: %s, has been successfully changed.", USER_EMAIL)));
 
-        verify(userService, times(1)).changeMyPassword(eq(userEmail), eq(request));
+        verify(userService, times(1)).changeMyPassword(eq(USER_EMAIL), eq(request));
     }
 
     @Test
     void changeMyPassword_shouldReturnUnauthorized_whenUserNotAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "Password123New!";
 
@@ -1552,13 +1101,12 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.path").value("/users/me/change-password"))
                 .andExpect(jsonPath("$.timestamp").exists());
 
-        verify(userService, never()).getMyProfile(eq(userEmail));
+        verify(userService, never()).getMyProfile(eq(USER_EMAIL));
     }
 
     @Test
     void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "";
         String newPassword = "Password123New!";
 
@@ -1568,23 +1116,8 @@ class UserControllerTest {
                 .confirmNewPassword(newPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1602,7 +1135,6 @@ class UserControllerTest {
     @Test
     void changeMyPassword_shouldBadRequest_whenCurrentMyPasswordIsNotValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Invalid Password";
         String newPassword = "Password123New!";
 
@@ -1612,23 +1144,8 @@ class UserControllerTest {
                 .confirmNewPassword(newPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1646,7 +1163,6 @@ class UserControllerTest {
     @Test
     void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "";
         String confirmPassword = "Password123New!";
@@ -1657,23 +1173,8 @@ class UserControllerTest {
                 .confirmNewPassword(confirmPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1691,7 +1192,6 @@ class UserControllerTest {
     @Test
     void changeMyPassword_shouldBadRequest_whenNewMyPasswordIsNotValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "Invalid Password";
         String confirmPassword = "Password123New!";
@@ -1702,23 +1202,8 @@ class UserControllerTest {
                 .confirmNewPassword(confirmPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1736,7 +1221,6 @@ class UserControllerTest {
     @Test
     void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "Password123New!";
         String confirmPassword = "";
@@ -1747,23 +1231,8 @@ class UserControllerTest {
                 .confirmNewPassword(confirmPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1781,7 +1250,6 @@ class UserControllerTest {
     @Test
     void changeMyPassword_shouldBadRequest_whenConfirmNewMyPasswordIsNotValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String currentPassword = "Password123!";
         String newPassword = "Password123New!";
         String confirmPassword = "Invalid Password";
@@ -1792,23 +1260,8 @@ class UserControllerTest {
                 .confirmNewPassword(confirmPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/change-password")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1826,7 +1279,6 @@ class UserControllerTest {
     @Test
     void unregisterMyAccount_shouldReturnOk_whenUserIsAuthenticatedAndRequestIsValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String validPassword = "Password123!";
 
         UserUnregisterRequest unregisterRequest = UserUnregisterRequest.builder()
@@ -1834,37 +1286,22 @@ class UserControllerTest {
                 .confirmPassword(validPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         MessageResponse expectedResponse = MessageResponse.builder()
-                .message(String.format("User with email: %s, has been unregistered.", userEmail))
+                .message(String.format("User with email: %s, has been unregistered.", USER_EMAIL))
                 .build();
 
-        when(userService.unregisterMyAccount(eq(userEmail), eq(unregisterRequest))).thenReturn(expectedResponse);
+        when(userService.unregisterMyAccount(eq(USER_EMAIL), eq(unregisterRequest))).thenReturn(expectedResponse);
 
         mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(unregisterRequest))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value(String.format("User with email: %s, has been unregistered.", userEmail)));
+                .andExpect(jsonPath("$.message").value(String.format("User with email: %s, has been unregistered.", USER_EMAIL)));
 
-        verify(userService, times(1)).unregisterMyAccount(eq(userEmail), eq(unregisterRequest));
+        verify(userService, times(1)).unregisterMyAccount(eq(USER_EMAIL), eq(unregisterRequest));
     }
 
     @Test
@@ -1893,7 +1330,6 @@ class UserControllerTest {
     @Test
     void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
         String validPassword = "Password123!";
 
         UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
@@ -1901,23 +1337,8 @@ class UserControllerTest {
                 .confirmPassword(validPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1933,7 +1354,6 @@ class UserControllerTest {
     @Test
     void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
         String validPassword = "Password123!";
 
         UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
@@ -1941,23 +1361,8 @@ class UserControllerTest {
                 .confirmPassword("")
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -1973,32 +1378,16 @@ class UserControllerTest {
     @Test
     void unregisterMyAccount_shouldReturnBadRequest_whenPasswordIsNotValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String validPassword = "Password123!";
-        String invalidPassword = "Invalid Password";
+        String invalidPassword = "INVALID_PASSWORD";
 
         UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
                 .password(invalidPassword)
                 .confirmPassword(validPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
@@ -2015,32 +1404,16 @@ class UserControllerTest {
     @Test
     void unregisterMyAccount_shouldReturnBadRequest_whenConfirmPasswordIsNotValid() throws Exception {
 
-        String userEmail = "user@example.com";
         String validPassword = "Password123!";
-        String invalidPassword = "Invalid Password";
+        String invalidPassword = "INVALID_PASSWORD";
 
         UserUnregisterRequest invalidRequest = UserUnregisterRequest.builder()
                 .password(validPassword)
                 .confirmPassword(invalidPassword)
                 .build();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         mockMvc.perform(patch("/users/me/unregister")
-                        .with(user(userDetails))
+                        .with(user(USER_DETAILS))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest))
                         .accept(MediaType.APPLICATION_JSON))
