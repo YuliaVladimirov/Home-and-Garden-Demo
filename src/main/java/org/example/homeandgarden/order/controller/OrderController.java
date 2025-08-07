@@ -41,6 +41,89 @@ public class OrderController {
 
 // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
+    @Operation(summary = "Get order items for the current order", description = "Fetches a paginated and sortable list of order items within a given order for the user currently authenticated in the system.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved order items. Returns an empty page if the order has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderItemResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping(value = "/me/{orderId}/orderItems")
+    public ResponseEntity<Page<OrderItemResponse>> getMyOrderItems(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique order id (UUID)")
+            String orderId,
+
+            @RequestParam(value = "size", defaultValue = "10")
+            @Min(value = 1, message = "Invalid parameter: Size must be greater than or equal to 1")
+            @Parameter(description = "Number of elements per one page")
+            Integer size,
+
+            @RequestParam(value = "page", defaultValue = "0")
+            @Min(value = 0, message = "Invalid parameter: Page numeration starts from 0")
+            @Parameter(description = "Page number to display")
+            Integer page,
+
+            @RequestParam(value = "order", defaultValue = "ASC")
+            @Pattern(regexp = "^(ASC|DESC|asc|desc)$", message = "Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")
+            @Parameter(description = "Sort order: 'asc' for ascending, 'desc' for descending", schema = @Schema(allowableValues = {"ASC", "DESC", "asc", "desc"}))
+            String order,
+
+            @RequestParam(value = "sortBy", defaultValue = "priceAtPurchase")
+            @Pattern(regexp = "^(quantity|priceAtPurchase)$", message = "Invalid value: Must be either: 'quantity' or 'priceAtPurchase'")
+            @Parameter(description = "The field the elements are sorted by", schema = @Schema(allowableValues = {"quantity", "priceAtPurchase"}))
+            String sortBy) {
+
+        String email = userDetails.getUsername();
+        Page<OrderItemResponse> pageResponse = orderItemService.getMyOrderItems(email, orderId, size, page, order, sortBy);
+        return new ResponseEntity<>(pageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get order of current user", description = "Fetches the details of a single order of the user currently authenticated in the system and by order's unique identifier (UUID).")
+    @ApiResponse(responseCode = "200", description = "Order successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping(value = "/me/{orderId}")
+    public ResponseEntity<OrderResponse> getMyOrderById(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique order id (UUID)")
+            String orderId) {
+
+        String email = userDetails.getUsername();
+        OrderResponse orderResponse = orderService.getMyOrderById(email, orderId);
+        return new ResponseEntity<>(orderResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Get the status of an order", description = "Fetches the current status of a specific order identified by its unique ID.")
+    @ApiResponse(responseCode = "200", description = "Order status successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
+    @GroupOneErrorResponses
+    @SecurityRequirement(name = "JWT")
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping(value = "/me/{orderId}/status")
+    public ResponseEntity<MessageResponse> getMyOrderStatus(
+
+            @AuthenticationPrincipal
+            UserDetailsImpl userDetails,
+
+            @PathVariable
+            @Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", message = "Invalid UUID format")
+            @Parameter(description = "Unique order id (UUID)")
+            String orderId) {
+
+        String email = userDetails.getUsername();
+        MessageResponse messageResponse = orderService.getMyOrderStatus(email, orderId);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
     @Operation(summary = "Add a new order for current user", description = "Initiates a new order for the user currently authenticated in the system. The order details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Order successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses

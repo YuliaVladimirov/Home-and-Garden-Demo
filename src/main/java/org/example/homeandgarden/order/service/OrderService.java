@@ -11,7 +11,9 @@ public interface OrderService {
     Page<OrderResponse> getUserOrders (String userId, Integer size, Integer page, String order, String sortBy);
     Page<OrderResponse> getMyOrders(String email, Integer size, Integer page, String order, String sortBy);
     OrderResponse getOrderById(String orderId);
+    OrderResponse getMyOrderById(String email, String orderId);
     MessageResponse getOrderStatus(String orderId);
+    MessageResponse getMyOrderStatus(String email, String orderId);
     OrderResponse addOrder(String email, OrderCreateRequest orderCreateRequest);
     OrderResponse updateOrder(String email, String orderId, OrderUpdateRequest orderUpdateRequest);
     MessageResponse cancelOrder(String email, String orderId);

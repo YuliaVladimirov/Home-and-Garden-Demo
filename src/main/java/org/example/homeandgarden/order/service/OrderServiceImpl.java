@@ -73,10 +73,38 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
+    public OrderResponse getMyOrderById(String email, String orderId) {
+
+        UUID id = UUID.fromString(orderId);
+        Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
+
+        if (!existingOrder.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Order with id: %s, does not belong to the user with email: %s.", orderId, email));
+        }
+
+        return orderMapper.orderToResponse(existingOrder);
+    }
+
+    @Override
     public MessageResponse getOrderStatus(String orderId) {
 
         UUID id = UUID.fromString(orderId);
         Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
+
+        return MessageResponse.builder()
+                .message(String.format("Order with id: %s has status '%s'.", orderId, existingOrder.getOrderStatus().name()))
+                .build();
+    }
+
+    @Override
+    public MessageResponse getMyOrderStatus(String email, String orderId) {
+
+        UUID id = UUID.fromString(orderId);
+        Order existingOrder = orderRepository.findById(id).orElseThrow(() -> new DataNotFoundException(String.format("Order with id: %s, was not found.", orderId)));
+
+        if (!existingOrder.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException(String.format("Order with id: %s, does not belong to the user with email: %s.", orderId, email));
+        }
 
         return MessageResponse.builder()
                 .message(String.format("Order with id: %s has status '%s'.", orderId, existingOrder.getOrderStatus().name()))
