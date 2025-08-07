@@ -464,6 +464,105 @@ class OrderServiceImplTest {
     }
 
 
+
+
+    @Test
+    void getMyOrderById_shouldReturnOrderResponseWhenOrderExists() {
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("Zip Code One")
+                .city("City One")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email(USER_EMAIL).build())
+                .build();
+
+        OrderResponse orderResponse = OrderResponse.builder()
+                .orderId(existingOrder.getOrderId())
+                .firstName(existingOrder.getFirstName())
+                .lastName(existingOrder.getLastName())
+                .address(existingOrder.getAddress())
+                .zipCode(existingOrder.getZipCode())
+                .city(existingOrder.getCity())
+                .phone(existingOrder.getPhone())
+                .deliveryMethod(existingOrder.getDeliveryMethod())
+                .orderStatus(existingOrder.getOrderStatus())
+                .createdAt(existingOrder.getCreatedAt())
+                .updatedAt(existingOrder.getUpdatedAt())
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+        when(orderMapper.orderToResponse(existingOrder)).thenReturn(orderResponse);
+
+        OrderResponse actualResponse = orderService.getMyOrderById(USER_EMAIL, ORDER_ID.toString());
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+        verify(orderMapper, times(1)).orderToResponse(existingOrder);
+
+        assertEquals(orderResponse.getOrderId(), actualResponse.getOrderId());
+        assertEquals(orderResponse.getOrderStatus(), actualResponse.getOrderStatus());
+        assertEquals(orderResponse.getDeliveryMethod(), actualResponse.getDeliveryMethod());
+    }
+
+    @Test
+    void getMyOrderById_shouldThrowIllegalArgumentExceptionWhenOrderIdIsInvalidUuidString() {
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.getMyOrderById(USER_EMAIL, INVALID_ID));
+
+        verify(orderRepository, never()).findById(any(UUID.class));
+        verify(orderMapper, never()).orderToResponse(any(Order.class));
+    }
+
+    @Test
+    void getMyOrderById_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
+
+        when(orderRepository.findById(NON_EXISTING_ORDER_ID)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
+                orderService.getMyOrderById(USER_EMAIL, NON_EXISTING_ORDER_ID.toString()));
+
+        verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
+        verify(orderMapper, never()).orderToResponse(any(Order.class));
+
+        assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void getMyOrderById_shouldReturnAccessDeniedWhenOrderDoesNotBelongToUser() {
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("Zip Code One")
+                .city("City One")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () ->
+                orderService.getMyOrderById(USER_EMAIL, ORDER_ID.toString()));
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+        verify(orderMapper, never()).orderToResponse(any(Order.class));
+
+        assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
+    }
+
     @Test
     void getOrderStatus_shouldReturnMessageResponseWhenOrderExists() {
 
@@ -517,6 +616,86 @@ class OrderServiceImplTest {
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
     }
 
+    @Test
+    void getMyOrderStatus_shouldReturnMessageResponseWhenOrderExists() {
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("Zip Code One")
+                .city("City One")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email(USER_EMAIL).build())
+                .build();
+
+        MessageResponse messageResponse = MessageResponse.builder()
+                .message(String.format("Order with id: %s has status '%s'.", ORDER_ID, existingOrder.getOrderStatus().name()))
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+
+        MessageResponse actualResponse = orderService.getMyOrderStatus(USER_EMAIL, ORDER_ID.toString());
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+
+        assertNotNull(actualResponse);
+        assertEquals(messageResponse.getMessage(), actualResponse.getMessage());
+    }
+
+    @Test
+    void getMyOrderStatus_shouldThrowIllegalArgumentExceptionWhenOrderIdIsInvalidUuidString() {
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.getMyOrderStatus(USER_EMAIL, INVALID_ID));
+
+        verify(orderRepository, never()).findById(any(UUID.class));
+    }
+
+    @Test
+    void getMyOrderStatus_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
+
+        when(orderRepository.findById(NON_EXISTING_ORDER_ID)).thenReturn(Optional.empty());
+
+        DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () ->
+                orderService.getMyOrderStatus(USER_EMAIL, NON_EXISTING_ORDER_ID.toString()));
+
+        verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
+
+        assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
+    }
+
+    @Test
+    void getMyOrderStatus_shouldReturnAccessDeniedWhenOrderDoesNotBelongToUser() {
+
+        Order existingOrder = Order.builder()
+                .orderId(ORDER_ID)
+                .firstName("First Name One")
+                .lastName("Last Name One")
+                .address("Address One")
+                .zipCode("Zip Code One")
+                .city("City One")
+                .phone("123")
+                .deliveryMethod(COURIER_DELIVERY)
+                .orderStatus(ORDER_STATUS_DELIVERED)
+                .createdAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(User.builder().email("anotherUser@example.com").build())
+                .build();
+
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
+
+        AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () ->
+                orderService.getMyOrderStatus(USER_EMAIL, ORDER_ID.toString()));
+
+        verify(orderRepository, times(1)).findById(ORDER_ID);
+
+        assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
+    }
 
     @Test
     void addOrder_shouldAddOrderSuccessfully() {

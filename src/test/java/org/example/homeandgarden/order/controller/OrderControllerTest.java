@@ -90,27 +90,403 @@ class OrderControllerTest {
     }
 
 
+    private final String userEmail = "user@example.com";
+
+    private final User existingUser = User.builder()
+            .userId(UUID.randomUUID())
+            .email(userEmail)
+            .passwordHash("Hashed Password")
+            .firstName("First Name")
+            .lastName("Last Name")
+            .userRole(UserRole.CLIENT)
+            .isEnabled(true)
+            .isNonLocked(true)
+            .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+            .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+            .build();
+
+    private final UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+
+
 // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
     @Test
-    void addOrder_shouldReturnCreatedOrder_whenValidRequestAndClientRole() throws Exception {
+    void getMyOrderItems_shouldReturnPagedUserOrderItems_whenValidParametersAndAuthenticated() throws Exception {
 
-        String userEmail = "user@example.com";
+        String validOrderId = UUID.randomUUID().toString();
 
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        OrderItemResponse item1 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(1)
+                .priceAtPurchase(BigDecimal.valueOf(40.00))
+                .product(productResponse1)
+                .build();
+
+        OrderItemResponse item2 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(2)
+                .priceAtPurchase(BigDecimal.valueOf(50.00))
+                .product(productResponse2)
+                .build();
+
+        List<OrderItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 2, Sort.Direction.ASC, "quantity");
+        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 5);
+
+        when(orderItemService.getMyOrderItems(eq(userEmail), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"))).thenReturn(mockPage);
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "quantity")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(1))
+                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
+
+                .andExpect(jsonPath("$.content[1].orderItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(2))
+                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        verify(orderItemService, times(1)).getMyOrderItems(eq(userEmail), eq(validOrderId), eq(2), eq(0), eq("DESC"), eq("quantity"));
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnPagedUserOrderItems_whenDefaultParameters() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        ProductResponse productResponse1 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product One")
+                .productStatus(ProductStatus.AVAILABLE)
+                .build();
+
+        ProductResponse productResponse2 = ProductResponse.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Two")
+                .productStatus(ProductStatus.OUT_OF_STOCK)
+                .build();
+
+        OrderItemResponse item1 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(1)
+                .priceAtPurchase(BigDecimal.valueOf(40.00))
+                .product(productResponse1)
+                .build();
+
+        OrderItemResponse item2 = OrderItemResponse.builder()
+                .orderItemId(UUID.randomUUID())
+                .quantity(2)
+                .priceAtPurchase(BigDecimal.valueOf(50.00))
+                .product(productResponse2)
+                .build();
+
+
+        List<OrderItemResponse> content = Arrays.asList(item1, item2);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.Direction.ASC, "priceAtPurchase");
+        Page<OrderItemResponse> mockPage = new PageImpl<>(content, pageRequest, 10);
+
+        when(orderItemService.getMyOrderItems(eq(userEmail), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase")))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+
+                .andExpect(jsonPath("$.content[0].orderItemId").exists())
+                .andExpect(jsonPath("$.content[0].quantity").value(1))
+                .andExpect(jsonPath("$.content[0].priceAtPurchase").value(BigDecimal.valueOf(40.00)))
+                .andExpect(jsonPath("$.content[0].product.productName").value("Product One"))
+                .andExpect(jsonPath("$.content[0].product.productStatus").value(ProductStatus.AVAILABLE.name()))
+
+                .andExpect(jsonPath("$.content[1].orderItemId").exists())
+                .andExpect(jsonPath("$.content[1].quantity").value(2))
+                .andExpect(jsonPath("$.content[1].priceAtPurchase").value(BigDecimal.valueOf(50.00)))
+                .andExpect(jsonPath("$.content[1].product.productName").value("Product Two"))
+                .andExpect(jsonPath("$.content[1].product.productStatus").value(ProductStatus.OUT_OF_STOCK.name()))
+
+                .andExpect(jsonPath("$.pageable.pageSize").value(10))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(10))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(orderItemService, times(1)).getMyOrderItems(eq(userEmail), eq(validOrderId), eq(10), eq(0), eq("ASC"), eq("priceAtPurchase"));
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnBadRequest_whenInvalidUserOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", invalidOrderId)
+                        .with(user(userDetails))
+                        .param("size", "2")
+                        .param("page", "0")
+                        .param("order", "DESC")
+                        .param("sortBy", "quantity")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnBadRequest_whenInvalidSize() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .param("size", "0")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Size must be greater than or equal to 1")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnBadRequest_whenInvalidPage() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .param("page", "-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid parameter: Page numeration starts from 0")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnBadRequest_whenInvalidUserOrder() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .param("order", "INVALID_ORDER")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid order: Must be 'ASC' or 'DESC' ('asc' or 'desc')")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderItems_shouldReturnBadRequest_whenInvalidSortBy() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/orderItems", validOrderId)
+                        .with(user(userDetails))
+                        .param("sortBy", "INVALID_SORT_BY")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value: Must be either: 'quantity' or 'priceAtPurchase'")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderItemService, never()).getMyOrderItems(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMyOrderById_shouldReturnOrder_whenValidIdAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        OrderResponse expectedOrder = OrderResponse.builder()
+                .orderId(UUID.fromString(validOrderId))
                 .firstName("First Name")
                 .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .address("Address")
+                .zipCode("12345")
+                .city("City")
+                .phone("+123456789")
+                .deliveryMethod(DeliveryMethod.COURIER_DELIVERY)
+                .orderStatus(OrderStatus.PAID)
+                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
 
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
+        when(orderService.getMyOrderById(eq(userEmail), eq(validOrderId))).thenReturn(expectedOrder);
+
+        mockMvc.perform(get("/orders/me/{orderId}", validOrderId)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(validOrderId))
+                .andExpect(jsonPath("$.firstName").value("First Name"))
+                .andExpect(jsonPath("$.lastName").value("Last Name"))
+                .andExpect(jsonPath("$.address").value("Address"))
+                .andExpect(jsonPath("$.zipCode").value("12345"))
+                .andExpect(jsonPath("$.city").value("City"))
+                .andExpect(jsonPath("$.phone").value("+123456789"))
+                .andExpect(jsonPath("$.deliveryMethod").value(DeliveryMethod.COURIER_DELIVERY.name()))
+                .andExpect(jsonPath("$.orderStatus").value(OrderStatus.PAID.name()))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        verify(orderService, times(1)).getMyOrderById(eq(userEmail), eq(validOrderId));
+    }
+
+    @Test
+    void getMyOrderById_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrderById(any(), any());
+    }
+
+    @Test
+    void getMyOrderById_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/me/{orderId}", invalidOrderId)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrderById(any(), any());
+    }
+
+    @Test
+    void getMyOrderStatus_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+        OrderStatus status = OrderStatus.PAID;
+
+        MessageResponse expectedResponse = MessageResponse.builder()
+                .message(String.format("Order with id: %s has status '%s'.", validOrderId, status.name()))
+                .build();
+
+        when(orderService.getMyOrderStatus(eq(userEmail), eq(validOrderId))).thenReturn(expectedResponse);
+
+        mockMvc.perform(get("/orders/me/{orderId}/status", validOrderId)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(String.format("Order with id: %s has status '%s'.", validOrderId, status.name())));
+
+        verify(orderService, times(1)).getMyOrderStatus(eq(userEmail), eq(validOrderId));
+    }
+
+    @Test
+    void getMyOrderStatus_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+
+        String validOrderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/orders/me/{orderId}/status", validOrderId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("InsufficientAuthenticationException"))
+                .andExpect(jsonPath("$.details").value("Full authentication is required to access this resource"))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrderStatus(any(), any());
+    }
+
+    @Test
+    void getMyOrderStatus_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
+
+        String invalidOrderId = "INVALID_UUID";
+
+        mockMvc.perform(get("/orders/me/{orderId}/status", invalidOrderId)
+                        .with(user(userDetails))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ConstraintViolationException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid UUID format")))
+                .andExpect(jsonPath("$.path").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(orderService, never()).getMyOrderStatus(any(), any());
+    }
+
+    @Test
+    void addOrder_shouldReturnCreatedOrder_whenValidRequestAndClientRole() throws Exception {
 
         OrderCreateRequest createRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -190,23 +566,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenFirstNameIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("")
                 .lastName("Last Name")
@@ -235,23 +594,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("A")
                 .lastName("Last Name")
@@ -279,23 +621,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("A".repeat(31))
                 .lastName("Last Name")
@@ -322,23 +647,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenLastNameIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -368,23 +676,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("A")
@@ -411,23 +702,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -456,23 +730,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenAddressIsBlank() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -500,23 +757,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenAddressIsTooLong() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -543,23 +783,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenZipCodeIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -589,23 +812,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenZipCodeIsInvalidFormat() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -632,23 +838,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenCityIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -678,23 +867,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenCityIsTooShort() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -722,23 +894,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenCityIsTooLong() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -765,23 +920,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenPhoneIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -811,23 +949,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenPhoneIsInvalidFormat() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -854,23 +975,6 @@ class OrderControllerTest {
 
     @Test
     void addOrder_shouldReturnBadRequest_whenDeliveryMethodIsBlank() throws Exception {
-
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -900,23 +1004,6 @@ class OrderControllerTest {
     @Test
     void addOrder_shouldReturnBadRequest_whenDeliveryMethodIsInvalid() throws Exception {
 
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
-
         OrderCreateRequest invalidRequest = OrderCreateRequest.builder()
                 .firstName("First Name")
                 .lastName("Last Name")
@@ -945,22 +1032,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnUpdatedOrder_whenValidRequestAndAuthenticated() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1042,22 +1113,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
 
         String invalidOrderId = "INVALID_UUID";
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1087,22 +1142,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenFirstNameIsTooShort() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("A")
@@ -1132,22 +1171,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenFirstNameIsTooLong() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("A".repeat(31))
@@ -1177,22 +1200,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenLastNameIsTooShort() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1222,22 +1229,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenLastNameIsTooLong() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1267,22 +1258,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenAddressIsTooLong() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1312,22 +1287,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenZipCodeIsInvalidFormat() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1357,22 +1316,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenCityIsTooShort() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1402,22 +1345,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenCityIsTooLong() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1447,22 +1374,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenPhoneIsInvalidFormat() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1492,22 +1403,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnBadRequest_whenDeliveryMethodIsInvalid() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest invalidRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1537,22 +1432,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenEmptyRequestBody() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder().build();
 
@@ -1596,22 +1475,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyFirstNameIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1657,22 +1520,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyLastNameIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .lastName("Updated Last Name")
@@ -1718,22 +1565,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyAddressIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .address("Updated Address")
@@ -1779,22 +1610,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyZipCodeIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .zipCode("12345")
@@ -1840,22 +1655,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyCityIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .city("Updated City")
@@ -1901,22 +1700,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyPhoneIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .phone("+123456789")
@@ -1962,22 +1745,6 @@ class OrderControllerTest {
     void updateOrder_shouldReturnOk_whenOnlyDeliveryMethodIsProvided() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         OrderUpdateRequest updateRequest = OrderUpdateRequest.builder()
                 .deliveryMethod(DeliveryMethod.CUSTOMER_PICKUP.name())
@@ -2023,22 +1790,6 @@ class OrderControllerTest {
     void cancelOrder_shouldReturnOk_whenValidIdAndAuthenticated() throws Exception {
 
         String validOrderId = UUID.randomUUID().toString();
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         MessageResponse expectedResponse = MessageResponse.builder()
                 .message(String.format("Order with id: %s was canceled.", validOrderId))
@@ -2076,22 +1827,6 @@ class OrderControllerTest {
     void cancelOrder_shouldReturnBadRequest_whenInvalidOrderIdFormat() throws Exception {
 
         String validOrderId = "INVALID_UUID";
-        String userEmail = "user@example.com";
-
-        User existingUser = User.builder()
-                .userId(UUID.randomUUID())
-                .email(userEmail)
-                .passwordHash("Hashed Password")
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(UserRole.CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(Instant.now().minus(30, ChronoUnit.DAYS))
-                .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .build();
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(existingUser);
 
         mockMvc.perform(patch("/orders/me/{orderId}/cancel", validOrderId)
                         .with(user(userDetails))
