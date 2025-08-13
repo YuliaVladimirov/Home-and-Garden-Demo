@@ -48,7 +48,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorizeRequests -> authorizeRequests
                 .requestMatchers(HttpMethod.GET, "/products/status", "/products/top", "/products/pending", "/products/profit").authenticated()
                 .requestMatchers(HttpMethod.GET, "/categories", "/categories/*/products", "/products/*").permitAll()
-                .requestMatchers(HttpMethod.POST, "/auth/register","/auth/login", "/auth/token" ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/register","/auth/login", "/auth/token" , "/auth/forgot-password", "/auth/reset-password").permitAll()
                 .requestMatchers("/manage/**", "/swagger-ui.html", "/swagger-ui/**", "/api/v1/auth/**", "/v3/api-docs/**").permitAll()
                 .anyRequest()
                 .authenticated());
