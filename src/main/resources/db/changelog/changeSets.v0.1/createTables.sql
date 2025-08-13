@@ -11,7 +11,8 @@ CREATE TABLE users (user_id UUID PRIMARY KEY,
                     is_non_locked BOOLEAN NOT NULL,
                     registered_at TIMESTAMP NOT NULL,
                     updated_at TIMESTAMP NULL,
-                    refresh_token VARCHAR(255) NULL);
+                    refresh_token VARCHAR(255) NULL,
+                    password_reset_token VARCHAR(255) NULL);
 
 -- changeset yulia:create_table_categories
 CREATE TABLE categories (category_id UUID PRIMARY KEY,
