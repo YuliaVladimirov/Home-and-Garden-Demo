@@ -26,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -48,6 +49,9 @@ class AuthServiceImplTest {
 
     @Mock
     private UserMapper userMapper;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -86,7 +90,7 @@ class AuthServiceImplTest {
         User userToRegister = User.builder()
                 .userId(null)
                 .email(userRegisterRequest.getEmail())
-                .passwordHash(PASSWORD_HASH)
+                .passwordHash(null)
                 .firstName(userRegisterRequest.getFirstName())
                 .lastName(userRegisterRequest.getLastName())
                 .userRole(USER_ROLE_CLIENT)
@@ -125,6 +129,7 @@ class AuthServiceImplTest {
 
         when(userRepository.existsByEmail(userRegisterRequest.getEmail())).thenReturn(false);
         when(userMapper.createRequestToUser(userRegisterRequest)).thenReturn(userToRegister);
+        userToRegister.setPasswordHash(passwordEncoder.encode(userRegisterRequest.getPassword()));
         when(userRepository.saveAndFlush(userCaptor.capture())).thenReturn(registeredUser);
         when(userMapper.userToResponse(registeredUser)).thenReturn(userResponse);
 
@@ -335,7 +340,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).findByEmail(anyString());
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals("Invalid email or password.", thrown.getMessage());
+        assertEquals("Invalid email or password. Please log in again.", thrown.getMessage());
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
@@ -426,7 +431,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals("Refresh token is missing or empty. Please log in again.", thrown.getMessage());
+        assertEquals("Refresh token is missing or empty. Please log in.", thrown.getMessage());
     }
 
     @Test
@@ -445,7 +450,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals("Refresh token is missing or empty. Please log in again.", thrown.getMessage());
+        assertEquals("Refresh token is missing or empty. Please log in.", thrown.getMessage());
     }
 
     @Test
@@ -466,7 +471,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals("Invalid or expired refresh token. Please log in again.", thrown.getMessage());
+        assertEquals("Invalid or expired refresh token. Please log in.", thrown.getMessage());
     }
 
     @Test
@@ -488,7 +493,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals("Token does not contain a user identifier. Please log in again.", thrown.getMessage());
+        assertEquals("Token does not contain a user identifier. Please log in.", thrown.getMessage());
     }
 
     @Test
@@ -511,7 +516,81 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals("User associated with refresh token not found. Please log in again.", thrown.getMessage());
+        assertEquals(String.format("User with email: %s, associated with refresh token, not found. Please log in.", EMAIL), thrown.getMessage());
+    }
+
+    @Test
+    void getNewAccessToken_shouldThrowIllegalArgumentExceptionWhenUserIsUnregistered() {
+
+        RefreshRequest refreshRequest = RefreshRequest.builder()
+                .refreshToken(REFRESH_TOKEN)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(false)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .refreshToken(REFRESH_TOKEN)
+                .build();
+
+        when(jwtService.isRefreshTokenValid(refreshRequest.getRefreshToken())).thenReturn(true);
+        when(jwtService.getUserEmailFromRefreshToken(refreshRequest.getRefreshToken())).thenReturn(EMAIL);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(existingUser));
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+                authService.getNewAccessToken(refreshRequest));
+
+        verify(jwtService, times(1)).isRefreshTokenValid(refreshRequest.getRefreshToken());
+        verify(jwtService, times(1)).getUserEmailFromRefreshToken(REFRESH_TOKEN);
+        verify(userRepository, times(1)).findByEmail(EMAIL);
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(jwtService, never()).generateAccessToken(any(String.class));
+
+        assertEquals(String.format("User with email: %s, is unregistered.", EMAIL), thrown.getMessage());
+    }
+
+    @Test
+    void getNewAccessToken_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+
+        RefreshRequest refreshRequest = RefreshRequest.builder()
+                .refreshToken(REFRESH_TOKEN)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(false)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .refreshToken(REFRESH_TOKEN)
+                .build();
+
+        when(jwtService.isRefreshTokenValid(refreshRequest.getRefreshToken())).thenReturn(true);
+        when(jwtService.getUserEmailFromRefreshToken(refreshRequest.getRefreshToken())).thenReturn(EMAIL);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(existingUser));
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+                authService.getNewAccessToken(refreshRequest));
+
+        verify(jwtService, times(1)).isRefreshTokenValid(refreshRequest.getRefreshToken());
+        verify(jwtService, times(1)).getUserEmailFromRefreshToken(REFRESH_TOKEN);
+        verify(userRepository, times(1)).findByEmail(EMAIL);
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(jwtService, never()).generateAccessToken(any(String.class));
+
+        assertEquals(String.format("User with email: %s, is locked.", EMAIL), thrown.getMessage());
     }
 
     @Test
@@ -548,6 +627,6 @@ class AuthServiceImplTest {
         verify(userRepository, times(1)).saveAndFlush(existingUser);
         verify(jwtService, never()).generateAccessToken(EMAIL);
 
-        assertEquals("Refresh token mismatch or reuse detected. Please log in again.", thrown.getMessage());
+        assertEquals("Refresh token mismatch or reuse detected. Please log in.", thrown.getMessage());
     }
 }
