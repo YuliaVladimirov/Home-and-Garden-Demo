@@ -62,6 +62,9 @@ public class User {
     @Column(name = "refresh_token")
     private String refreshToken;
 
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @Builder.Default
     private Set<WishListItem> wishList = new HashSet<>();
