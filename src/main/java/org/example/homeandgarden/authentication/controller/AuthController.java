@@ -4,15 +4,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.example.homeandgarden.authentication.dto.LoginRequest;
-import org.example.homeandgarden.authentication.dto.RefreshRequest;
-import org.example.homeandgarden.authentication.dto.LoginResponse;
-import org.example.homeandgarden.authentication.dto.RefreshResponse;
+import org.example.homeandgarden.authentication.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.homeandgarden.authentication.service.AuthService;
 import org.example.homeandgarden.shared.ErrorResponse;
+import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.swagger.GroupFourErrorResponses;
 import org.example.homeandgarden.swagger.GroupThreeErrorResponses;
 import org.example.homeandgarden.user.dto.UserRegisterRequest;
@@ -81,6 +79,36 @@ public class AuthController {
 
         RefreshResponse refreshResponse = authService.getNewAccessToken(refreshRequest);
         return new ResponseEntity<>(refreshResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Initiate password reset process", description = "Sends a password reset link to the user's email if the email is registered in the system.")
+    @ApiResponse(responseCode = "200", description = "Password reset link sent.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshResponse.class)))
+    @GroupFourErrorResponses
+    @PreAuthorize("permitAll()")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(
+
+            @RequestBody
+            @Valid
+            ForgotPasswordRequest request) {
+
+        MessageResponse messageResponse = authService.forgotPassword(request.getEmail());
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Reset password", description = "Resets password using a valid reset password token.")
+    @ApiResponse(responseCode = "200", description = "Password successfully reset.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshResponse.class)))
+    @GroupFourErrorResponses
+    @PreAuthorize("permitAll()")
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(
+
+            @RequestBody
+            @Valid
+            PasswordResetRequest resetRequest) {
+
+        MessageResponse messageResponse = authService.resetPassword(resetRequest);
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
 }
