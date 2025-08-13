@@ -133,15 +133,15 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public MessageResponse forgotPassword(String email) {
+    public MessageResponse forgotPassword(ForgotPasswordRequest request) {
 
-        User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+        User existingUser = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", request.getEmail())));
 
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", email));
+            throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", existingUser.getEmail()));
         }
         if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is locked.", email));
+            throw new IllegalArgumentException(String.format("User with email: %s, is locked.", existingUser.getEmail()));
         }
 
         String resetToken = jwtService.generatePasswordResetToken(existingUser.getEmail());

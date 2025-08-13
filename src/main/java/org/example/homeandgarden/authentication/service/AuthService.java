@@ -10,6 +10,6 @@ public interface AuthService {
     UserResponse registerUser(UserRegisterRequest userRegisterRequest);
     LoginResponse login(LoginRequest loginRequest);
     RefreshResponse getNewAccessToken(RefreshRequest refreshRequest);
-    MessageResponse forgotPassword(String email);
+    MessageResponse forgotPassword(ForgotPasswordRequest request);
     MessageResponse resetPassword(PasswordResetRequest resetRequest);
 }

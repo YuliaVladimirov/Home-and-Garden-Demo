@@ -92,7 +92,7 @@ public class AuthController {
             @Valid
             ForgotPasswordRequest request) {
 
-        MessageResponse messageResponse = authService.forgotPassword(request.getEmail());
+        MessageResponse messageResponse = authService.forgotPassword(request);
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
