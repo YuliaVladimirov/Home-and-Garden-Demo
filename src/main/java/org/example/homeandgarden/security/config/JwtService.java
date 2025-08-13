@@ -7,9 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.example.homeandgarden.exception.DataNotFoundException;
-import org.example.homeandgarden.user.entity.User;
-import org.example.homeandgarden.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
@@ -23,19 +20,23 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtService {
 
-    private final UserRepository userRepository;
-
     @Value("${jwt.access-token.secret}")
     private String accessTokenSecretKey;
 
     @Value("${jwt.refresh-token.secret}")
     private String refreshTokenSecretKey;
 
+    @Value("${jwt.password-reset-token.secret}")
+    private String passwordResetTokenSecretKey;
+
     @Value("${jwt.access-token.expiration}")
     private Integer accessTokenExpiration;
 
     @Value("${jwt.refresh-token.expiration}")
     private Integer refreshTokenExpiration;
+
+    @Value("${jwt.password-reset-token.expiration}")
+    private Integer passwordResetTokenExpiration;
 
     public String getTokenFromRequestHeader(HttpServletRequest request) {
         final String token = request.getHeader("Authorization");
@@ -71,29 +72,12 @@ public class JwtService {
         return getUserEmailFromToken(token, refreshTokenSecretKey);
     }
 
+    public String getUserEmailFromPasswordResetToken(String token) {
+        return getUserEmailFromToken(token, passwordResetTokenSecretKey);
+    }
 
     private Key getSignigKey(String jwtSecret) {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
-    }
-
-    public String generateRefreshToken(String email) {
-
-        return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
-                .signWith(getSignigKey(refreshTokenSecretKey))
-                .compact();
-    }
-
-    public String generateAccessToken(String email) {
-
-        return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
-                .signWith(getSignigKey(accessTokenSecretKey))
-                .compact();
     }
 
     public boolean isTokenValid(String token, String secretKey) {
@@ -112,41 +96,44 @@ public class JwtService {
     }
 
     public boolean isAccessTokenValid(String accessToken) {
-
-        if (isTokenValid(accessToken, accessTokenSecretKey)) {
-
-            String email = getUserEmailFromAccessToken(accessToken);
-            if (email == null) {
-                throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
-            }
-            return true;
-        }
-        return false;
+        return isTokenValid(accessToken, accessTokenSecretKey);
     }
 
     public boolean isRefreshTokenValid(String refreshToken) {
+        return isTokenValid(refreshToken, refreshTokenSecretKey);
+    }
 
-        if (isTokenValid(refreshToken, refreshTokenSecretKey)) {
+    public boolean isPasswordResetTokenValid(String passwordResetToken) {
+        return isTokenValid(passwordResetToken, passwordResetTokenSecretKey);
+    }
 
-            String email = getUserEmailFromRefreshToken(refreshToken);
-            if (email == null) {
-                throw new BadCredentialsException("Token does not contain a user identifier. Please log in again.");
-            }
+    public String generateAccessToken(String email) {
 
-            User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", email)));
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                .signWith(getSignigKey(accessTokenSecretKey))
+                .compact();
+    }
 
-            if (!existingUser.getIsEnabled()) {
-                throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", email));
-            }
-            if (!existingUser.getIsNonLocked()) {
-                throw new IllegalArgumentException(String.format("User with email: %s, is locked.", email));
-            }
-            if (!refreshToken.equals(existingUser.getRefreshToken())) {
-                throw new BadCredentialsException("Refresh token does not match the one in the database. Please log in again.");
-            }
+    public String generateRefreshToken(String email) {
 
-            return true;
-        }
-        return false;
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+                .signWith(getSignigKey(refreshTokenSecretKey))
+                .compact();
+    }
+
+    public String generatePasswordResetToken(String email) {
+
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + passwordResetTokenExpiration))
+                .signWith(getSignigKey(passwordResetTokenSecretKey))
+                .compact();
     }
 }
