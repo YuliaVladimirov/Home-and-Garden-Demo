@@ -433,7 +433,7 @@ class CartServiceImplTest {
     }
 
     @Test
-    void addCartItem_shouldAddCartItemSuccessfully() {
+    void addCartItem_shouldAddNewCartItemSuccessfully() {
 
         CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
                 .productId(PRODUCT_ID.toString())
@@ -452,27 +452,6 @@ class CartServiceImplTest {
                 .registeredAt(TIMESTAMP_PAST)
                 .updatedAt(TIMESTAMP_PAST)
                 .build();
-
-        Product existingInCartProduct = Product.builder()
-                .productId(UUID.randomUUID())
-                .productName("Product Name")
-                .listPrice(BigDecimal.valueOf(40.00))
-                .currentPrice(BigDecimal.valueOf(40.00))
-                .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        CartItem existingCartItem = CartItem.builder()
-                .cartItemId(UUID.randomUUID())
-                .quantity(1)
-                .addedAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .user(existingUser)
-                .product(existingInCartProduct)
-                .build();
-
-        existingUser.setCart(Set.of(existingCartItem));
 
         Product productToAdd = Product.builder()
                 .productId(PRODUCT_ID)
@@ -524,6 +503,7 @@ class CartServiceImplTest {
 
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productToAdd));
+        when(cartRepository.findByUserAndProduct(existingUser, productToAdd)).thenReturn(Optional.empty());
         when(cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, productToAdd)).thenReturn(cartItemToAdd);
         when(cartRepository.save(cartItemToAdd)).thenReturn(addedCartItem);
         when(productMapper.productToResponse(productToAdd)).thenReturn(productResponse);
@@ -533,6 +513,7 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(cartRepository, times(1)).findByUserAndProduct(existingUser, productToAdd);
         verify(cartMapper, times(1)).requestToCartItem(cartItemCreateRequest, existingUser, productToAdd);
 
         verify(cartRepository, times(1)).save(cartItemCaptor.capture());
@@ -550,6 +531,103 @@ class CartServiceImplTest {
         assertEquals(cartItemResponse.getProduct(), actualResponse.getProduct());
     }
 
+    @Test
+    void addCartItem_shouldUpdateCartItemQuantitySuccessfully_whenCartItemAlreadyExist() {
+
+        CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
+                .productId(PRODUCT_ID.toString())
+                .quantity(1)
+                .build();
+
+        User existingUser = User.builder()
+                .userId(USER_ID)
+                .email(USER_EMAIL)
+                .passwordHash(PASSWORD_HASH)
+                .firstName("First Name")
+                .lastName("Last Name")
+                .userRole(USER_ROLE_CLIENT)
+                .isEnabled(true)
+                .isNonLocked(true)
+                .registeredAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        Product existingInCartProduct = Product.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product Name")
+                .listPrice(BigDecimal.valueOf(40.00))
+                .currentPrice(BigDecimal.valueOf(40.00))
+                .productStatus(PRODUCT_STATUS_AVAILABLE)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .build();
+
+        CartItem existingCartItem = CartItem.builder()
+                .cartItemId(UUID.randomUUID())
+                .quantity(1)
+                .addedAt(TIMESTAMP_PAST)
+                .updatedAt(TIMESTAMP_PAST)
+                .user(existingUser)
+                .product(existingInCartProduct)
+                .build();
+
+        CartItem addedCartItem = CartItem.builder()
+                .cartItemId(CART_ITEM_ID)
+                .quantity(1)
+                .addedAt(TIMESTAMP_NOW)
+                .updatedAt(TIMESTAMP_NOW)
+                .user(existingUser)
+                .product(existingInCartProduct)
+                .build();
+
+        ProductResponse productResponse = ProductResponse.builder()
+                .productId(existingInCartProduct.getProductId())
+                .productName(existingInCartProduct.getProductName())
+                .listPrice(existingInCartProduct.getListPrice())
+                .currentPrice(existingInCartProduct.getCurrentPrice())
+                .productStatus(existingInCartProduct.getProductStatus())
+                .addedAt(existingInCartProduct.getAddedAt())
+                .updatedAt(existingInCartProduct.getUpdatedAt())
+                .build();
+
+        CartItemResponse cartItemResponse = CartItemResponse.builder()
+                .cartItemId(addedCartItem.getCartItemId())
+                .quantity(addedCartItem.getQuantity())
+                .addedAt(addedCartItem.getAddedAt())
+                .updatedAt(addedCartItem.getUpdatedAt())
+                .product(productResponse)
+                .build();
+
+        ArgumentCaptor<CartItem> cartItemCaptor = ArgumentCaptor.forClass(CartItem.class);
+
+        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingInCartProduct));
+        when(cartRepository.findByUserAndProduct(existingUser, existingInCartProduct)).thenReturn(Optional.of(existingCartItem));
+        when(cartRepository.save(existingCartItem)).thenReturn(addedCartItem);
+        when(productMapper.productToResponse(existingInCartProduct)).thenReturn(productResponse);
+        when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
+
+        CartItemResponse actualResponse = cartService.addCartItem(USER_EMAIL, cartItemCreateRequest);
+
+        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
+        verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(cartRepository, times(1)).findByUserAndProduct(existingUser, existingInCartProduct);
+        verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
+
+        verify(cartRepository, times(1)).save(cartItemCaptor.capture());
+        CartItem capturedCartItem = cartItemCaptor.getValue();
+        assertNotNull(capturedCartItem);
+        assertEquals(existingUser, capturedCartItem.getUser());
+        assertEquals(existingInCartProduct, capturedCartItem.getProduct());
+
+        verify(productMapper, times(1)).productToResponse(existingInCartProduct);
+        verify(cartMapper, times(1)).cartItemToResponse(addedCartItem, productResponse);
+
+        assertNotNull(actualResponse);
+        assertEquals(cartItemResponse.getCartItemId(), actualResponse.getCartItemId());
+        assertEquals(cartItemResponse.getAddedAt(), actualResponse.getAddedAt());
+        assertEquals(cartItemResponse.getProduct(), actualResponse.getProduct());
+    }
 
     @Test
     void addCartItem_shouldThrowDataNotFoundExceptionWhenUserDoesNotExist() {
@@ -565,6 +643,7 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
+        verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).save(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -601,6 +680,7 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, never()).findById(any(UUID.class));
+        verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).save(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -635,6 +715,7 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
+        verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).save(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
@@ -681,114 +762,13 @@ class CartServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(productRepository, times(1)).findById(PRODUCT_ID);
+        verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
         verify(cartRepository, never()).save(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
         assertEquals(String.format("Product with id: %s has status '%s' and can not be added to the cart.", PRODUCT_ID, PRODUCT_STATUS_OUT_OF_STOCK.name()), thrownException.getMessage());
-    }
-
-    @Test
-    void addCartItem_shouldIncreaseQuantityWhenProductIsAlreadyInCart() {
-
-        CartItemCreateRequest cartItemCreateRequest = CartItemCreateRequest.builder()
-                .productId(PRODUCT_ID.toString())
-                .quantity(2)
-                .build();
-
-        User existingUser = User.builder()
-                .userId(USER_ID)
-                .email(USER_EMAIL)
-                .passwordHash(PASSWORD_HASH)
-                .firstName("First Name")
-                .lastName("Last Name")
-                .userRole(USER_ROLE_CLIENT)
-                .isEnabled(true)
-                .isNonLocked(true)
-                .registeredAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        Product existingInCartProduct = Product.builder()
-                .productId(PRODUCT_ID)
-                .productName("Product Name")
-                .listPrice(BigDecimal.valueOf(40.00))
-                .currentPrice(BigDecimal.valueOf(40.00))
-                .productStatus(PRODUCT_STATUS_AVAILABLE)
-                .addedAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .build();
-
-        CartItem existingCartItem = CartItem.builder()
-                .cartItemId(CART_ITEM_ID)
-                .quantity(3)
-                .addedAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_PAST)
-                .user(existingUser)
-                .product(existingInCartProduct)
-                .build();
-
-        existingUser.setCart(Set.of(existingCartItem));
-
-        CartItem addedCartItem = CartItem.builder()
-                .cartItemId(CART_ITEM_ID)
-                .quantity(5)
-                .addedAt(TIMESTAMP_PAST)
-                .updatedAt(TIMESTAMP_NOW)
-                .user(existingUser)
-                .product(existingInCartProduct)
-                .build();
-
-        ProductResponse productResponse = ProductResponse.builder()
-                .productId(existingInCartProduct.getProductId())
-                .productName(existingInCartProduct.getProductName())
-                .listPrice(existingInCartProduct.getListPrice())
-                .currentPrice(existingInCartProduct.getCurrentPrice())
-                .productStatus(existingInCartProduct.getProductStatus())
-                .addedAt(existingInCartProduct.getAddedAt())
-                .updatedAt(existingInCartProduct.getUpdatedAt())
-                .build();
-
-        CartItemResponse cartItemResponse = CartItemResponse.builder()
-                .cartItemId(addedCartItem.getCartItemId())
-                .quantity(addedCartItem.getQuantity())
-                .addedAt(addedCartItem.getAddedAt())
-                .updatedAt(addedCartItem.getUpdatedAt())
-                .product(productResponse)
-                .build();
-
-        ArgumentCaptor<CartItem> cartItemCaptor = ArgumentCaptor.forClass(CartItem.class);
-
-        when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
-        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingInCartProduct));
-
-        existingCartItem.setQuantity(5);
-
-        when(cartRepository.save(existingCartItem)).thenReturn(addedCartItem);
-        when(productMapper.productToResponse(existingInCartProduct)).thenReturn(productResponse);
-        when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
-
-        CartItemResponse actualResponse = cartService.addCartItem(USER_EMAIL, cartItemCreateRequest);
-
-        verify(userRepository, times(1)).findByEmail(USER_EMAIL);
-        verify(productRepository, times(1)).findById(PRODUCT_ID);
-
-        verify(cartRepository, times(1)).save(cartItemCaptor.capture());
-        CartItem capturedCartItem = cartItemCaptor.getValue();
-        assertNotNull(capturedCartItem);
-        assertEquals(existingUser, capturedCartItem.getUser());
-        assertEquals(existingInCartProduct, capturedCartItem.getProduct());
-
-        verify(productMapper, times(1)).productToResponse(existingInCartProduct);
-        verify(cartMapper, times(1)).cartItemToResponse(addedCartItem, productResponse);
-
-        assertNotNull(actualResponse);
-        assertEquals(cartItemResponse.getCartItemId(), actualResponse.getCartItemId());
-        assertEquals(cartItemResponse.getQuantity(), actualResponse.getQuantity());
-        assertEquals(cartItemResponse.getProduct(), actualResponse.getProduct());
-        assertEquals(cartItemResponse.getAddedAt(), actualResponse.getAddedAt());
-        assertTrue(actualResponse.getUpdatedAt().isAfter(existingCartItem.getUpdatedAt()));
     }
 
     @Test
