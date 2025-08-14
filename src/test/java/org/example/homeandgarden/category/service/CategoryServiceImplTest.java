@@ -331,7 +331,7 @@ class CategoryServiceImplTest {
 
         when(categoryRepository.existsByCategoryName(categoryRequest.getCategoryName())).thenReturn(false);
         when(categoryMapper.requestToCategory(categoryRequest)).thenReturn(categoryToSave);
-        when(categoryRepository.saveAndFlush(categoryToSave)).thenReturn(savedCategory);
+        when(categoryRepository.save(categoryToSave)).thenReturn(savedCategory);
         when(categoryMapper.categoryToResponse(savedCategory)).thenReturn(categoryResponse);
 
         CategoryResponse actualResponse = categoryService.addCategory(categoryRequest);
@@ -339,7 +339,7 @@ class CategoryServiceImplTest {
         verify(categoryRepository, times(1)).existsByCategoryName(categoryRequest.getCategoryName());
         verify(categoryMapper, times(1)).requestToCategory(categoryRequest);
 
-        verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
+        verify(categoryRepository, times(1)).save(categoryCaptor.capture());
         Category capturedCategory = categoryCaptor.getValue();
         assertNotNull(capturedCategory);
         assertEquals(categoryRequest.getCategoryName(), capturedCategory.getCategoryName());
@@ -368,7 +368,7 @@ class CategoryServiceImplTest {
 
         verify(categoryRepository, times(1)).existsByCategoryName(categoryRequest.getCategoryName());
         verify(categoryMapper, never()).requestToCategory(any(CategoryRequest.class));
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
         assertEquals(String.format("Category with name: %s, already exists.", categoryRequest.getCategoryName()), thrownException.getMessage());
@@ -409,13 +409,13 @@ class CategoryServiceImplTest {
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
+        when(categoryRepository.save(existingCategory)).thenReturn(updatedCategory);
         when(categoryMapper.categoryToResponse(updatedCategory)).thenReturn(categoryResponse);
 
         CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
+        verify(categoryRepository, times(1)).save(categoryCaptor.capture());
         Category capturedCategory = categoryCaptor.getValue();
         assertNotNull(capturedCategory);
         assertEquals(categoryRequest.getCategoryName(), capturedCategory.getCategoryName());
@@ -465,14 +465,14 @@ class CategoryServiceImplTest {
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
+        when(categoryRepository.save(existingCategory)).thenReturn(updatedCategory);
         when(categoryMapper.categoryToResponse(updatedCategory)).thenReturn(categoryResponse);
 
         CategoryResponse actualResponse = categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest);
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
 
-        verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
+        verify(categoryRepository, times(1)).save(categoryCaptor.capture());
         Category capturedCategory = categoryCaptor.getValue();
         assertNotNull(capturedCategory);
         assertEquals(existingCategory.getCategoryName(), capturedCategory.getCategoryName());
@@ -501,7 +501,7 @@ class CategoryServiceImplTest {
                 categoryService.updateCategory(NON_EXISTING_CATEGORY_ID.toString(), categoryRequest));
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
         assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
@@ -528,7 +528,7 @@ class CategoryServiceImplTest {
                 categoryService.updateCategory(CATEGORY_ID.toString(), categoryRequest));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
 
         assertEquals(String.format("Category with id: %s, is inactive and can not be updated.", CATEGORY_ID), thrownException.getMessage());
@@ -545,7 +545,7 @@ class CategoryServiceImplTest {
                 categoryService.updateCategory(INVALID_ID, categoryRequest));
 
         verify(categoryRepository, never()).findById(any(UUID.class));
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
         verify(categoryMapper, never()).categoryToResponse(any(Category.class));
     }
 
@@ -575,12 +575,12 @@ class CategoryServiceImplTest {
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.saveAndFlush(existingCategory)).thenReturn(updatedCategory);
+        when(categoryRepository.save(existingCategory)).thenReturn(updatedCategory);
 
         MessageResponse actualResponse = categoryService.setCategoryStatus(CATEGORY_ID.toString(), CATEGORY_STATUS_INACTIVE.name());
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, times(1)).saveAndFlush(categoryCaptor.capture());
+        verify(categoryRepository, times(1)).save(categoryCaptor.capture());
         Category capturedCategory = categoryCaptor.getValue();
         assertNotNull(capturedCategory);
         assertEquals(existingCategory.getCategoryName(), capturedCategory.getCategoryName());
@@ -600,7 +600,7 @@ class CategoryServiceImplTest {
                 categoryService.setCategoryStatus(NON_EXISTING_CATEGORY_ID.toString(), CATEGORY_STATUS_INACTIVE.name()));
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
 
         assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
     }
@@ -624,7 +624,7 @@ class CategoryServiceImplTest {
                 categoryService.setCategoryStatus(CATEGORY_ID.toString(), sameStatus));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
 
         assertEquals(String.format("Category with id: %s, already has status '%s'.", CATEGORY_ID, sameStatus), thrownException.getMessage());
     }
@@ -636,7 +636,7 @@ class CategoryServiceImplTest {
                 categoryService.setCategoryStatus(INVALID_ID, CATEGORY_STATUS_INACTIVE.name()));
 
         verify(categoryRepository, never()).findById(any(UUID.class));
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
     }
 
     @Test
@@ -656,6 +656,6 @@ class CategoryServiceImplTest {
                 categoryService.setCategoryStatus(CATEGORY_ID.toString(), INVALID_STATUS));
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
-        verify(categoryRepository, never()).saveAndFlush(any(Category.class));
+        verify(categoryRepository, never()).save(any(Category.class));
     }
 }

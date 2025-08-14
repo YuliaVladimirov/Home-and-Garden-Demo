@@ -498,7 +498,7 @@ class WishListServiceImplTest {
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productToAdd));
         when(wishListMapper.requestToWishListItem(existingUser, productToAdd)).thenReturn(wishListItemToAdd);
-        when(wishListRepository.saveAndFlush(wishListItemToAdd)).thenReturn(savedWishListItem);
+        when(wishListRepository.save(wishListItemToAdd)).thenReturn(savedWishListItem);
         when(productMapper.productToResponse(productToAdd)).thenReturn(productResponse);
         when(wishListMapper.wishListItemToResponse(savedWishListItem, productResponse)).thenReturn(wishListItemResponse);
 
@@ -508,7 +508,7 @@ class WishListServiceImplTest {
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(wishListMapper, times(1)).requestToWishListItem(existingUser, productToAdd);
 
-        verify(wishListRepository, times(1)).saveAndFlush(wishListItemCaptor.capture());
+        verify(wishListRepository, times(1)).save(wishListItemCaptor.capture());
         WishListItem capturedWishListItem = wishListItemCaptor.getValue();
         assertNotNull(capturedWishListItem);
         assertEquals(existingUser, capturedWishListItem.getUser());
