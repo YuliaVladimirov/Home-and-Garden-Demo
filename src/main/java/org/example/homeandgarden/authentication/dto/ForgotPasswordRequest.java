@@ -19,7 +19,7 @@ public class ForgotPasswordRequest {
 
     @JsonProperty("email")
     @NotBlank(message = "Email is required")
-    @Email(regexp = "[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,3}", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Invalid email")
+    @Email(regexp = "[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,3}", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Invalid email format")
     @Schema(description = "User's email")
     private String email;
 
