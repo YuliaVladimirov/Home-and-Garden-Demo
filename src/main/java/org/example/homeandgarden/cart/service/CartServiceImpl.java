@@ -22,7 +22,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -75,17 +75,18 @@ public class CartServiceImpl implements CartService {
             throw new IllegalArgumentException(String.format("Product with id: %s has status '%s' and can not be added to the cart.", existingProduct.getProductId(), existingProduct.getProductStatus().name()));
         }
 
-        Set<CartItem> cart = existingUser.getCart();
-        for (CartItem item : cart) {
-            if (item.getProduct().getProductId().equals(productId)) {
-                item.setQuantity(item.getQuantity() + cartItemCreateRequest.getQuantity());
-                CartItem addedCartItem = cartRepository.save(item);
-                return cartMapper.cartItemToResponse(addedCartItem, productMapper.productToResponse(addedCartItem.getProduct()));
-            }
-        }
+        Optional<CartItem> optionalCartItem  = cartRepository.findByUserAndProduct(existingUser, existingProduct);
 
-        CartItem cartItemToAdd = cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, existingProduct);
-        CartItem addedCartItem = cartRepository.save(cartItemToAdd);
+        CartItem addedCartItem;
+        if (optionalCartItem.isPresent()) {
+            CartItem existingCartItem = optionalCartItem.get();
+            existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItemCreateRequest.getQuantity());
+            addedCartItem = cartRepository.save(existingCartItem);
+
+        } else {
+            CartItem cartItemToAdd = cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, existingProduct);
+            addedCartItem = cartRepository.save(cartItemToAdd);
+        }
 
         return cartMapper.cartItemToResponse(addedCartItem, productMapper.productToResponse(addedCartItem.getProduct()));
     }
