@@ -1,11 +1,9 @@
 package org.example.homeandgarden.authentication.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.homeandgarden.authentication.dto.LoginRequest;
-import org.example.homeandgarden.authentication.dto.LoginResponse;
-import org.example.homeandgarden.authentication.dto.RefreshRequest;
-import org.example.homeandgarden.authentication.dto.RefreshResponse;
+import org.example.homeandgarden.authentication.dto.*;
 import org.example.homeandgarden.authentication.service.AuthServiceImpl;
+import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.user.dto.UserRegisterRequest;
 import org.example.homeandgarden.user.dto.UserResponse;
 import org.example.homeandgarden.user.entity.enums.UserRole;
@@ -516,7 +514,7 @@ class AuthControllerTest {
                 .build();
         
         RefreshResponse expectedResponse = RefreshResponse.builder()
-                .accessToken("newMockedAccessToken789")
+                .accessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2lkX3Rlc3QiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNzMwNDAwMDAwLCJleHAiOjE3MzA0ODAwMDB9.dGVzdF9zaWduYXR1cmVfbm90X3ZhbGlk")
                 .build();
 
         when(authService.getNewAccessToken(any(RefreshRequest.class))).thenReturn(expectedResponse);
@@ -528,7 +526,7 @@ class AuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.type").value("Bearer"))
-                .andExpect(jsonPath("$.accessToken").value("newMockedAccessToken789"));
+                .andExpect(jsonPath("$.accessToken").value("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2lkX3Rlc3QiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNzMwNDAwMDAwLCJleHAiOjE3MzA0ODAwMDB9.dGVzdF9zaWduYXR1cmVfbm90X3ZhbGlk"));
 
         verify(authService, times(1)).getNewAccessToken(any(RefreshRequest.class));
     }
@@ -571,5 +569,228 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.timestamp").exists());
 
         verify(authService, never()).getNewAccessToken(any());
+    }
+
+    @Test
+    void forgotPassword_shouldReturnOk_whenValidEmail() throws Exception {
+
+        ForgotPasswordRequest resetRequest = ForgotPasswordRequest.builder()
+                .email("test.user@example.com")
+                .build();
+
+        MessageResponse messageResponse = MessageResponse.builder()
+                .message("Password reset link sent to user's email.")
+                .build();
+
+        when(authService.forgotPassword(eq(resetRequest))).thenReturn(messageResponse);
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(resetRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset link sent to user's email."));
+
+        verify(authService, times(1)).forgotPassword(eq(resetRequest));
+    }
+
+    @Test
+    void forgotPassword_shouldReturnBadRequest_whenEmailIsBlank() throws Exception {
+
+        ForgotPasswordRequest invalidRequest = ForgotPasswordRequest.builder()
+                .email("")
+                .build();
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Email is required", "Invalid email format")))
+                .andExpect(jsonPath("$.path").value("/auth/forgot-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).forgotPassword(any());
+    }
+
+    @Test
+    void forgotPassword_shouldReturnBadRequest_whenEmailIsInvalidFormat() throws Exception {
+
+        ForgotPasswordRequest invalidRequest = ForgotPasswordRequest.builder()
+                .email("INVALID_EMAIL")
+                .build();
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid email format")))
+                .andExpect(jsonPath("$.path").value("/auth/forgot-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).forgotPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnOk_whenValidPasswordResetRequest() throws Exception {
+
+        PasswordResetRequest resetRequest = PasswordResetRequest.builder()
+                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .newPassword("NewPassword123!")
+                .confirmPassword("NewPassword123!")
+                .build();
+
+
+        MessageResponse messageResponse = MessageResponse.builder()
+                .message("Password has been successfully reset.")
+                .build();
+
+        when(authService.resetPassword(eq(resetRequest))).thenReturn(messageResponse);
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(resetRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password has been successfully reset."));
+
+        verify(authService, times(1)).resetPassword(eq(resetRequest));
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenTokenIsBlank() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("")
+                .newPassword("NewPassword123!")
+                .confirmPassword("NewPassword123!")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Token is required to reset password", "Invalid reset password token format")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).resetPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenTokenIsInvalidFormat() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("INVALID_TOKEN")
+                .newPassword("NewPassword123!")
+                .confirmPassword("NewPassword123!")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid reset password token format")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).forgotPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenNewPasswordIsBlank() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .newPassword("")
+                .confirmPassword("NewPassword123!")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("New password is required", "Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).resetPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenNewPasswordIsInvalidFormat() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .newPassword("INVALID_EMAIL")
+                .confirmPassword("NewPassword123!")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value for 'new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).forgotPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenConfirmNewPasswordIsBlank() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .newPassword("NewPassword123!")
+                .confirmPassword("")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Confirm new password field is required", "Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).resetPassword(any());
+    }
+
+    @Test
+    void resetPassword_shouldReturnBadRequest_whenConfirmNewPasswordIsInvalidFormat() throws Exception {
+
+        PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
+                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .newPassword("NewPassword123!")
+                .confirmPassword("INVALID_EMAIL")
+                .build();
+
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("MethodArgumentNotValidException"))
+                .andExpect(jsonPath("$.details", containsInAnyOrder("Invalid value for 'confirm new password': Must contain at least one digit, one lowercase letter, one uppercase letter, one special character, no whitespace, and be at least 8 characters long")))
+                .andExpect(jsonPath("$.path").value("/auth/reset-password"))
+                .andExpect(jsonPath("$.timestamp").exists());
+
+        verify(authService, never()).forgotPassword(any());
     }
 }
