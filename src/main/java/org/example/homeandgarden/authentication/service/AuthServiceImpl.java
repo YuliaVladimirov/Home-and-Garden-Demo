@@ -93,6 +93,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public RefreshResponse getNewAccessToken(@NonNull RefreshRequest refreshRequest) {
 
         if (refreshRequest.getRefreshToken() == null || refreshRequest.getRefreshToken().isBlank()) {
@@ -131,8 +132,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-
     @Override
+    @Transactional
     public MessageResponse forgotPassword(ForgotPasswordRequest request) {
 
         User existingUser = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", request.getEmail())));
@@ -159,6 +160,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public MessageResponse resetPassword(PasswordResetRequest resetRequest) {
 
         if (!resetRequest.getNewPassword().equals(resetRequest.getConfirmPassword())) {

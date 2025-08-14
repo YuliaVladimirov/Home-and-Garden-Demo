@@ -63,6 +63,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public MessageResponse changeMyPassword(String email, ChangePasswordRequest changePasswordRequest) {
 
         if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmNewPassword())) {

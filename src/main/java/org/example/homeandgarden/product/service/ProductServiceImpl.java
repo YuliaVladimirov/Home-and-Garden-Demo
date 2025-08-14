@@ -107,6 +107,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse addProduct(ProductCreateRequest productCreateRequest) {
 
         UUID id = UUID.fromString(productCreateRequest.getCategoryId());
