@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
 
         User userToRegister = userMapper.createRequestToUser(userRegisterRequest);
         userToRegister.setPasswordHash(passwordEncoder.encode(userRegisterRequest.getPassword()));
-        User registeredUser = userRepository.saveAndFlush(userToRegister);
+        User registeredUser = userRepository.save(userToRegister);
 
         return userMapper.userToResponse(registeredUser);
     }
@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         User logedInUser = userRepository.findByEmail(userDetails.getUsername()).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", userDetails.getUsername())));
 
         logedInUser.setRefreshToken(refreshToken);
-        userRepository.saveAndFlush(logedInUser);
+        userRepository.save(logedInUser);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -120,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!refreshToken.equals(existingUser.getRefreshToken())) {
             existingUser.setRefreshToken(null);
-            userRepository.saveAndFlush(existingUser);
+            userRepository.save(existingUser);
             throw new BadCredentialsException("Refresh token mismatch or reuse detected. Please log in.");
         }
 
@@ -190,13 +190,13 @@ public class AuthServiceImpl implements AuthService {
 
         if (!passwordResetToken.equals(existingUser.getPasswordResetToken())) {
             existingUser.setPasswordResetToken(null);
-            userRepository.saveAndFlush(existingUser);
+            userRepository.save(existingUser);
             throw new BadCredentialsException("Password reset token mismatch or reuse detected. Please try resetting your password again.");
         }
 
         existingUser.setPasswordHash(passwordEncoder.encode(resetRequest.getNewPassword()));
         existingUser.setPasswordResetToken(null);
-        userRepository.saveAndFlush(existingUser);
+        userRepository.save(existingUser);
 
         return MessageResponse.builder()
                 .message("Password has been successfully reset.")

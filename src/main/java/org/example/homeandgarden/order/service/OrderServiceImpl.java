@@ -124,13 +124,13 @@ public class OrderServiceImpl implements OrderService{
         }
 
         Order orderToAdd = orderMapper.orderRequestToOrder(orderCreateRequest, existingUser);
-        Order addedOrder = orderRepository.saveAndFlush(orderToAdd);
+        Order addedOrder = orderRepository.save(orderToAdd);
 
         for (CartItem cartItem : cart) {
             OrderItem orderItemToAdd = orderItemMapper.cartItemToOrderItem(cartItem,addedOrder,cartItem.getProduct());
 
             addedOrder.getOrderItems().add(orderItemToAdd);
-            orderItemRepository.saveAndFlush(orderItemToAdd);
+            orderItemRepository.save(orderItemToAdd);
         }
 
         cartRepository.deleteAll(cart);
@@ -166,7 +166,7 @@ public class OrderServiceImpl implements OrderService{
         Optional.ofNullable(orderUpdateRequest.getPhone()).ifPresent(existingOrder::setPhone);
         Optional.of(DeliveryMethod.valueOf(orderUpdateRequest.getDeliveryMethod())).ifPresent(existingOrder::setDeliveryMethod);
 
-        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
+        Order updatedOrder = orderRepository.save(existingOrder);
         return orderMapper.orderToResponse(updatedOrder);
     }
 
@@ -185,7 +185,7 @@ public class OrderServiceImpl implements OrderService{
         }
 
         existingOrder.setOrderStatus(OrderStatus.CANCELED);
-        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
+        Order updatedOrder = orderRepository.save(existingOrder);
 
         return MessageResponse.builder()
                 .message(String.format("Order with id: %s was canceled.", updatedOrder.getOrderId().toString()))
@@ -216,7 +216,7 @@ public class OrderServiceImpl implements OrderService{
             case OrderStatus.DELIVERED -> existingOrder.setOrderStatus(OrderStatus.RETURNED);
         }
 
-        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
+        Order updatedOrder = orderRepository.save(existingOrder);
 
         return MessageResponse.builder()
                 .message(String.format("Order with id: %s was updated from status '%s' to status '%s'.", orderId, initialStatus, updatedOrder.getOrderStatus().name()))
