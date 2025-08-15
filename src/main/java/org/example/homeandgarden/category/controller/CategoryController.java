@@ -162,6 +162,7 @@ public class CategoryController {
         Page<CategoryResponse> pageResponse = categoryService.getCategoriesByStatus(categoryStatus, size, page, order, sortBy);
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
+
     @Operation(summary = "Add a new category", description = "Adds a new category to the system. The category details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Category successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CategoryResponse.class)))
     @ApiResponse(responseCode = "409", description = "Conflict: A category with the provided name already exists.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
