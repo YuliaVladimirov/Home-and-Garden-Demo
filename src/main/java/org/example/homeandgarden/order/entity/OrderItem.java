@@ -18,13 +18,13 @@ public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "order_item_id")
+    @Column(name = "order_item_id", updatable = false, nullable = false)
     private UUID orderItemId;
 
-    @Column(name = "quantity")
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "price_at_purchase")
+    @Column(name = "price_at_purchase", nullable = false)
     private BigDecimal priceAtPurchase;
 
     @ManyToOne

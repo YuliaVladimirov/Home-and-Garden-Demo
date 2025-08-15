@@ -27,32 +27,32 @@ public class User {
     @Column(name = "user_id", updatable = false, nullable = false)
     private UUID userId;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "first_name")
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
+    @Column(name = "role", nullable = false)
     private UserRole userRole;
 
-    @Column(name = "is_enabled")
+    @Column(name = "is_enabled", nullable = false)
     @Builder.Default
     private Boolean isEnabled = true;
 
-    @Column(name = "is_non_locked")
+    @Column(name = "is_non_locked", nullable = false)
     @Builder.Default
     private Boolean isNonLocked = true;
 
     @CreationTimestamp
-    @Column(name = "registered_at")
+    @Column(name = "registered_at", nullable = false)
     private Instant registeredAt;
 
     @UpdateTimestamp

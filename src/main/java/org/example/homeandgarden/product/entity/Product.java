@@ -27,23 +27,23 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "product_id")
+    @Column(name = "product_id", updatable = false, nullable = false)
     private UUID productId;
 
-    @Column(name = "product_name")
+    @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "description")
+    @Column(name = "description", nullable = false)
     private String description;
 
-    @Column(name = "list_price")
+    @Column(name = "list_price", nullable = false)
     private BigDecimal listPrice;
 
     @Column(name = "current_price")
     private BigDecimal currentPrice;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "product_status")
+    @Column(name = "product_status", nullable = false)
     @Builder.Default
     private ProductStatus productStatus = ProductStatus.AVAILABLE;
 
@@ -51,7 +51,7 @@ public class Product {
     private String imageUrl;
 
     @CreationTimestamp
-    @Column(name = "added_at")
+    @Column(name = "added_at", nullable = false)
     private Instant addedAt;
 
     @UpdateTimestamp

@@ -23,19 +23,19 @@ public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "category_id")
+    @Column(name = "category_id", updatable = false, nullable = false)
     private UUID categoryId;
 
-    @Column(name = "category_name")
+    @Column(name = "category_name", nullable = false)
     private String categoryName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "category_status")
+    @Column(name = "category_status", nullable = false)
     @Builder.Default
     private CategoryStatus categoryStatus = CategoryStatus.ACTIVE;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @UpdateTimestamp

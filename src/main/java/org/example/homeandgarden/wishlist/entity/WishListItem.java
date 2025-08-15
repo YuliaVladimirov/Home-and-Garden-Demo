@@ -20,11 +20,11 @@ public class WishListItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "wish_list_item_id")
+    @Column(name = "wish_list_item_id", updatable = false, nullable = false)
     private UUID wishListItemId;
 
     @CreationTimestamp
-    @Column(name = "added_at")
+    @Column(name = "added_at", nullable = false)
     private Instant addedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)

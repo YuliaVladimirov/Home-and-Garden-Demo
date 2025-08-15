@@ -21,14 +21,14 @@ public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "cart_item_id")
+    @Column(name = "cart_item_id", updatable = false, nullable = false)
     private UUID cartItemId;
 
-    @Column(name = "quantity")
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
     @CreationTimestamp
-    @Column(name = "added_at")
+    @Column(name = "added_at", nullable = false)
     private Instant addedAt;
 
     @UpdateTimestamp
