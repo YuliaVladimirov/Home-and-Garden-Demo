@@ -12,7 +12,6 @@ import org.example.homeandgarden.order.entity.enums.DeliveryMethod;
 import org.example.homeandgarden.order.entity.enums.OrderStatus;
 import org.example.homeandgarden.order.mapper.OrderItemMapper;
 import org.example.homeandgarden.order.mapper.OrderMapper;
-import org.example.homeandgarden.order.repository.OrderItemRepository;
 import org.example.homeandgarden.order.repository.OrderRepository;
 import org.example.homeandgarden.product.entity.Product;
 import org.example.homeandgarden.product.entity.enums.ProductStatus;
@@ -48,9 +47,6 @@ class OrderServiceImplTest {
 
     @Mock
     private OrderRepository orderRepository;
-
-    @Mock
-    private OrderItemRepository orderItemRepository;
 
     @Mock
     private OrderMapper orderMapper;
@@ -698,7 +694,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void addOrder_shouldAddOrderSuccessfully() {
+    void addOrder_ShouldReturnOrderResponseWhenCartHasItems() {
 
         OrderCreateRequest orderCreateRequest =  OrderCreateRequest.builder()
                 .firstName("First Name")
@@ -742,7 +738,9 @@ class OrderServiceImplTest {
                 .product(existingInCartProduct)
                 .build();
 
-        existingUser.setCart(Set.of(existingCartItem));
+        Set<CartItem> cartItems = new HashSet<>();
+        cartItems.add(existingCartItem);
+        existingUser.setCart(cartItems);
 
         Order orderToAdd = Order.builder()
                 .orderId(null)
@@ -759,6 +757,18 @@ class OrderServiceImplTest {
                 .user(existingUser)
                 .build();
 
+        OrderItem orderItemToAdd = OrderItem.builder()
+                .orderItemId(null)
+                .quantity(existingCartItem.getQuantity())
+                .priceAtPurchase(existingInCartProduct.getCurrentPrice())
+                .order(orderToAdd)
+                .product(existingInCartProduct)
+                .build();
+
+        Set<OrderItem> orderItems = new HashSet<>();
+        orderItems.add(orderItemToAdd);
+        orderToAdd.setOrderItems(orderItems);
+
         Order addedOrder = Order.builder()
                 .orderId(ORDER_ID)
                 .firstName(orderToAdd.getFirstName())
@@ -772,14 +782,6 @@ class OrderServiceImplTest {
                 .createdAt(TIMESTAMP_NOW)
                 .updatedAt(TIMESTAMP_NOW)
                 .user(orderToAdd.getUser())
-                .build();
-
-        OrderItem orderItemToAdd = OrderItem.builder()
-                .orderItemId(null)
-                .quantity(existingCartItem.getQuantity())
-                .priceAtPurchase(existingInCartProduct.getCurrentPrice())
-                .order(addedOrder)
-                .product(existingInCartProduct)
                 .build();
 
         OrderResponse orderResponse = OrderResponse.builder()
@@ -797,18 +799,18 @@ class OrderServiceImplTest {
                 .build();
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        ArgumentCaptor<OrderItem> orderItemCaptor = ArgumentCaptor.forClass(OrderItem.class);
 
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(orderMapper.orderRequestToOrder(orderCreateRequest, existingUser)).thenReturn(orderToAdd);
+        when(orderItemMapper.cartItemToOrderItem(existingCartItem, orderToAdd, existingCartItem.getProduct())).thenReturn(orderItemToAdd);
         when(orderRepository.save(orderToAdd)).thenReturn(addedOrder);
-        when(orderItemMapper.cartItemToOrderItem(existingCartItem, addedOrder, existingCartItem.getProduct())).thenReturn(orderItemToAdd);
         when(orderMapper.orderToResponse(addedOrder)).thenReturn(orderResponse);
 
         OrderResponse actualResponse = orderService.addOrder(USER_EMAIL, orderCreateRequest);
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(orderMapper, times(1)).orderRequestToOrder(orderCreateRequest, existingUser);
+        verify(orderItemMapper, times(1)).cartItemToOrderItem(existingCartItem, orderToAdd, existingCartItem.getProduct());
 
         verify(orderRepository, times(1)).save(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
@@ -817,15 +819,7 @@ class OrderServiceImplTest {
         assertEquals(ORDER_STATUS_CREATED, capturedOrder.getOrderStatus());
         assertEquals(COURIER_DELIVERY, capturedOrder.getDeliveryMethod());
 
-        verify(orderItemMapper, times(1)).cartItemToOrderItem(existingCartItem, addedOrder, existingCartItem.getProduct());
-
-        verify(orderItemRepository, times(1)).save(orderItemCaptor.capture());
-        OrderItem capturedOrderItem = orderItemCaptor.getValue();
-        assertNotNull(capturedOrder);
-        assertEquals(addedOrder, capturedOrderItem.getOrder());
-        assertEquals(existingInCartProduct, capturedOrderItem.getProduct());
-
-        verify(cartRepository, times(1)).deleteAll(Set.of(existingCartItem));
+        verify(cartRepository, times(1)).deleteAllInBatch(cartItems);
         verify(orderMapper, times(1)).orderToResponse(addedOrder);
 
         assertNotNull(actualResponse);
@@ -854,10 +848,9 @@ class OrderServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
-        verify(orderRepository, never()).save(any(Order.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
-        verify(orderItemRepository, never()).save(any(OrderItem.class));
-        verify(cartRepository, never()).deleteAll(any(Set.class));
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(cartRepository, never()).deleteAllInBatch(any());
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
@@ -897,10 +890,9 @@ class OrderServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
-        verify(orderRepository, never()).save(any(Order.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
-        verify(orderItemRepository, never()).save(any(OrderItem.class));
-        verify(cartRepository, never()).deleteAll(any(Set.class));
+        verify(orderRepository, never()).save(any(Order.class));
+        verify(cartRepository, never()).deleteAllInBatch(any());
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertEquals(String.format("Cannot place order: user with email %s has an empty cart.", USER_EMAIL), thrownException.getMessage());
@@ -1105,7 +1097,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void updateUser_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
+    void updateOrder_shouldThrowDataNotFoundExceptionWhenOrderDoesNotExist() {
 
         OrderUpdateRequest orderUpdateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1129,7 +1121,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void updateUser_shouldThrowIllegalArgumentExceptionWhenOrderDoesNotBelongToUser() {
+    void updateOrder_shouldThrowIllegalArgumentExceptionWhenOrderDoesNotBelongToUser() {
 
         OrderUpdateRequest orderUpdateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
@@ -1168,7 +1160,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void updateUser_shouldThrowIllegalArgumentExceptionWhenOrderCanNotBeUpdated() {
+    void updateOrder_shouldThrowIllegalArgumentExceptionWhenOrderCanNotBeUpdated() {
 
         OrderUpdateRequest orderUpdateRequest = OrderUpdateRequest.builder()
                 .firstName("Updated First Name")
