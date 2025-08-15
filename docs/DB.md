@@ -30,6 +30,7 @@ erDiagram
         registered_at TIMESTAMP
         updated_at TIMESTAMP "NULL"
         refresh_token VARCHAR(255) "NULL"
+        password_reset_token VARCHAR(255) "NULL"
     }
 
     wish_list_items {
