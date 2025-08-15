@@ -7,6 +7,6 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: "home_and_garden"
-      POSTGRES_USER: "USERNAME"
-      POSTGRES_PASSWORD: "PASSWORD"
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     restart: "unless-stopped"
