@@ -23,10 +23,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,16 +122,15 @@ public class OrderServiceImpl implements OrderService{
         }
 
         Order orderToAdd = orderMapper.orderRequestToOrder(orderCreateRequest, existingUser);
+
+        Set<OrderItem> orderItems = cart.stream()
+                .map(item -> orderItemMapper.cartItemToOrderItem(item, orderToAdd, item.getProduct()))
+                .collect(Collectors.toSet());
+
+        orderToAdd.getOrderItems().addAll(orderItems);
         Order addedOrder = orderRepository.save(orderToAdd);
 
-        for (CartItem cartItem : cart) {
-            OrderItem orderItemToAdd = orderItemMapper.cartItemToOrderItem(cartItem,addedOrder,cartItem.getProduct());
-
-            addedOrder.getOrderItems().add(orderItemToAdd);
-            orderItemRepository.save(orderItemToAdd);
-        }
-
-        cartRepository.deleteAll(cart);
+        cartRepository.deleteAllInBatch(cart);
         return orderMapper.orderToResponse(addedOrder);
     }
 

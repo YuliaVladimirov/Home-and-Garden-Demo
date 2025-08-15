@@ -77,12 +77,13 @@ public class WishListServiceImpl implements WishListService {
             throw new IllegalArgumentException(String.format("Product with id: %s has status '%s' and can not be added to the wish list.", existingProduct.getProductId(), existingProduct.getProductStatus().name()));
         }
 
-        Set<WishListItem> wishList = existingUser.getWishList();
-        for (WishListItem item : wishList) {
-            if (item.getProduct().getProductId().equals(productId)) {
-                throw new DataAlreadyExistsException(String.format("Product with id: %s is already in wish list.", wishListItemRequest.getProductId()));
-            }
+        if (existingUser.getWishList().stream()
+                .anyMatch(item -> item.getProduct().getProductId().equals(productId))) {
+            throw new DataAlreadyExistsException(
+                    String.format("Product with id: %s is already in wish list.", wishListItemRequest.getProductId())
+            );
         }
+
         WishListItem wishListItemToAdd = wishListMapper.requestToWishListItem(existingUser, existingProduct);
         WishListItem addedWishListItem = wishListRepository.save(wishListItemToAdd);
 
