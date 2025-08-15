@@ -9,7 +9,6 @@ import org.example.homeandgarden.order.entity.enums.DeliveryMethod;
 import org.example.homeandgarden.order.entity.enums.OrderStatus;
 import org.example.homeandgarden.order.mapper.OrderItemMapper;
 import org.example.homeandgarden.order.mapper.OrderMapper;
-import org.example.homeandgarden.order.repository.OrderItemRepository;
 import org.example.homeandgarden.order.repository.OrderRepository;
 import org.example.homeandgarden.exception.*;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,6 @@ public class OrderServiceImpl implements OrderService{
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
