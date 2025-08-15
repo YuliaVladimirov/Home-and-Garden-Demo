@@ -23,7 +23,7 @@ The application allows customers to select a product from the catalog, add it to
 
 The project was designed as Spring Boot Web Application:
 - __Java 23__
-- __Spring Boot 3.5.0__
+- __Spring Boot 3.4.6__
 
 The data is stored in the database:
 - __PostgresSQL__
