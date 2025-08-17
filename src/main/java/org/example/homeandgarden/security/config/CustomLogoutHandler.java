@@ -46,7 +46,7 @@ public class CustomLogoutHandler implements LogoutHandler {
         }
 
         existingUser.setRefreshToken(null);
-        userRepository.save(existingUser);
+        userRepository.saveAndFlush(existingUser);
     }
 }
 

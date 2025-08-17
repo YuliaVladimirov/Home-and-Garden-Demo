@@ -81,11 +81,11 @@ public class CartServiceImpl implements CartService {
         if (optionalCartItem.isPresent()) {
             CartItem existingCartItem = optionalCartItem.get();
             existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItemCreateRequest.getQuantity());
-            addedCartItem = cartRepository.save(existingCartItem);
+            addedCartItem = cartRepository.saveAndFlush(existingCartItem);
 
         } else {
             CartItem cartItemToAdd = cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, existingProduct);
-            addedCartItem = cartRepository.save(cartItemToAdd);
+            addedCartItem = cartRepository.saveAndFlush(cartItemToAdd);
         }
 
         return cartMapper.cartItemToResponse(addedCartItem, productMapper.productToResponse(addedCartItem.getProduct()));
@@ -104,7 +104,7 @@ public class CartServiceImpl implements CartService {
 
         existingCartItem.setQuantity(cartItemUpdateRequest.getQuantity());
 
-        CartItem updatedCartItem = cartRepository.save(existingCartItem);
+        CartItem updatedCartItem = cartRepository.saveAndFlush(existingCartItem);
         return cartMapper.cartItemToResponse(updatedCartItem, productMapper.productToResponse(updatedCartItem.getProduct()));
     }
 

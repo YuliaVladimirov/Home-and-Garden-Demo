@@ -126,7 +126,7 @@ public class OrderServiceImpl implements OrderService{
                 .collect(Collectors.toSet());
 
         orderToAdd.getOrderItems().addAll(orderItems);
-        Order addedOrder = orderRepository.save(orderToAdd);
+        Order addedOrder = orderRepository.saveAndFlush(orderToAdd);
 
         cartRepository.deleteAllInBatch(cart);
         return orderMapper.orderToResponse(addedOrder);
@@ -161,7 +161,7 @@ public class OrderServiceImpl implements OrderService{
         Optional.ofNullable(orderUpdateRequest.getPhone()).ifPresent(existingOrder::setPhone);
         Optional.of(DeliveryMethod.valueOf(orderUpdateRequest.getDeliveryMethod())).ifPresent(existingOrder::setDeliveryMethod);
 
-        Order updatedOrder = orderRepository.save(existingOrder);
+        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
         return orderMapper.orderToResponse(updatedOrder);
     }
 
@@ -180,7 +180,7 @@ public class OrderServiceImpl implements OrderService{
         }
 
         existingOrder.setOrderStatus(OrderStatus.CANCELED);
-        Order updatedOrder = orderRepository.save(existingOrder);
+        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
 
         return MessageResponse.builder()
                 .message(String.format("Order with id: %s was canceled.", updatedOrder.getOrderId().toString()))
@@ -211,7 +211,7 @@ public class OrderServiceImpl implements OrderService{
             case OrderStatus.DELIVERED -> existingOrder.setOrderStatus(OrderStatus.RETURNED);
         }
 
-        Order updatedOrder = orderRepository.save(existingOrder);
+        Order updatedOrder = orderRepository.saveAndFlush(existingOrder);
 
         return MessageResponse.builder()
                 .message(String.format("Order with id: %s was updated from status '%s' to status '%s'.", orderId, initialStatus, updatedOrder.getOrderStatus().name()))

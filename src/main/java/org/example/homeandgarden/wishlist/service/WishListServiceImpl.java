@@ -84,7 +84,7 @@ public class WishListServiceImpl implements WishListService {
         }
 
         WishListItem wishListItemToAdd = wishListMapper.requestToWishListItem(existingUser, existingProduct);
-        WishListItem addedWishListItem = wishListRepository.save(wishListItemToAdd);
+        WishListItem addedWishListItem = wishListRepository.saveAndFlush(wishListItemToAdd);
 
         return wishListMapper.wishListItemToResponse(addedWishListItem, productMapper.productToResponse(addedWishListItem.getProduct()));
     }

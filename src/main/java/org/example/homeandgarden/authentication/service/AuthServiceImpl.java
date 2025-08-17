@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
 
         User userToRegister = userMapper.createRequestToUser(userRegisterRequest);
         userToRegister.setPasswordHash(passwordEncoder.encode(userRegisterRequest.getPassword()));
-        User registeredUser = userRepository.save(userToRegister);
+        User registeredUser = userRepository.saveAndFlush(userToRegister);
 
         return userMapper.userToResponse(registeredUser);
     }
@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         User logedInUser = userRepository.findByEmail(userDetails.getUsername()).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", userDetails.getUsername())));
 
         logedInUser.setRefreshToken(refreshToken);
-        userRepository.save(logedInUser);
+        userRepository.saveAndFlush(logedInUser);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -121,7 +121,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!refreshToken.equals(existingUser.getRefreshToken())) {
             existingUser.setRefreshToken(null);
-            userRepository.save(existingUser);
+            userRepository.saveAndFlush(existingUser);
             throw new BadCredentialsException("Refresh token mismatch or reuse detected. Please log in.");
         }
 
@@ -148,7 +148,7 @@ public class AuthServiceImpl implements AuthService {
         String resetToken = jwtService.generatePasswordResetToken(existingUser.getEmail());
 
         existingUser.setPasswordResetToken(resetToken);
-        userRepository.save(existingUser);
+        userRepository.saveAndFlush(existingUser);
 
         String resetLink = resetBaseUrl + "?token=" + resetToken;
         emailService.sendPasswordResetEmail(existingUser.getEmail(), "Password Reset Request", resetLink);
@@ -192,13 +192,13 @@ public class AuthServiceImpl implements AuthService {
 
         if (!passwordResetToken.equals(existingUser.getPasswordResetToken())) {
             existingUser.setPasswordResetToken(null);
-            userRepository.save(existingUser);
+            userRepository.saveAndFlush(existingUser);
             throw new BadCredentialsException("Password reset token mismatch or reuse detected. Please try resetting your password again.");
         }
 
         existingUser.setPasswordHash(passwordEncoder.encode(resetRequest.getNewPassword()));
         existingUser.setPasswordResetToken(null);
-        userRepository.save(existingUser);
+        userRepository.saveAndFlush(existingUser);
 
         return MessageResponse.builder()
                 .message("Password has been successfully reset.")

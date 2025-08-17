@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         Optional.ofNullable(userUpdateRequest.getFirstName()).ifPresent(existingUser::setFirstName);
         Optional.ofNullable(userUpdateRequest.getLastName()).ifPresent(existingUser::setLastName);
 
-        User updatedUser = userRepository.save(existingUser);
+        User updatedUser = userRepository.saveAndFlush(existingUser);
 
         return userMapper.userToResponse(updatedUser);
     }
@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
         }
 
         existingUser.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
-        User updatedUser = userRepository.save(existingUser);
+        User updatedUser = userRepository.saveAndFlush(existingUser);
 
         return MessageResponse.builder()
                 .message(String.format("Password for user with email: %s, has been successfully changed.", updatedUser.getEmail()))
@@ -103,7 +103,7 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException(String.format("User with id: %s, already has userRole '%s'.", userId, userRole));
         }
         existingUser.setUserRole(role);
-        User promotedUser = userRepository.save(existingUser);
+        User promotedUser = userRepository.saveAndFlush(existingUser);
 
         return MessageResponse.builder()
                 .message(String.format("UserRole %s was set for user with id: %s.", promotedUser.getUserRole().name(), promotedUser.getUserId().toString()))
@@ -124,7 +124,7 @@ public class UserServiceImpl implements UserService {
         Boolean lockState = existingUser.getIsNonLocked();
         existingUser.setIsNonLocked(!lockState);
 
-        User lockedUser = userRepository.save(existingUser);
+        User lockedUser = userRepository.saveAndFlush(existingUser);
         return MessageResponse.builder()
                 .message(String.format("User with id: %s has been %s.", lockedUser.getUserId().toString(), lockState ? "locked" : "unlocked"))
                 .build();
@@ -149,7 +149,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setLastName("Disabled User");
         existingUser.setRefreshToken(null);
         existingUser.setIsEnabled(Boolean.FALSE);
-        userRepository.save(existingUser);
+        userRepository.saveAndFlush(existingUser);
 
         return MessageResponse.builder()
                 .message(String.format("User with email: %s, has been unregistered.", email))

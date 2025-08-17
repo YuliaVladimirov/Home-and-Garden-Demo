@@ -48,7 +48,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new DataAlreadyExistsException(String.format("Category with name: %s, already exists.", categoryRequest.getCategoryName()));
         }
         Category categoryToAdd = categoryMapper.requestToCategory(categoryRequest);
-        Category addedCategory = categoryRepository.save(categoryToAdd);
+        Category addedCategory = categoryRepository.saveAndFlush(categoryToAdd);
         return categoryMapper.categoryToResponse(addedCategory);
     }
 
@@ -65,7 +65,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         existingCategory.setCategoryName(categoryRequest.getCategoryName());
 
-        Category updatedCategory = categoryRepository.save(existingCategory);
+        Category updatedCategory = categoryRepository.saveAndFlush(existingCategory);
         return categoryMapper.categoryToResponse(updatedCategory);
     }
 
@@ -82,7 +82,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         existingCategory.setCategoryStatus(status);
-        Category updatedCategory = categoryRepository.save(existingCategory);
+        Category updatedCategory = categoryRepository.saveAndFlush(existingCategory);
 
         return MessageResponse.builder()
                 .message(String.format("Status '%s' was set for category with id: %s.", updatedCategory.getCategoryStatus().name(), updatedCategory.getCategoryId().toString()))

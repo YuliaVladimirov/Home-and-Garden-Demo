@@ -117,7 +117,7 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException(String.format("Category with id: %s, is disabled and no product can be added to this category.", productCreateRequest.getCategoryId()));
         }
         Product productToAdd = productMapper.requestToProduct(productCreateRequest, existingCategory);
-        Product addedProduct = productRepository.save(productToAdd);
+        Product addedProduct = productRepository.saveAndFlush(productToAdd);
         return productMapper.productToResponse(addedProduct);
     }
 
@@ -137,7 +137,7 @@ public class ProductServiceImpl implements ProductService {
         Optional.ofNullable(productUpdateRequest.getCurrentPrice()).ifPresent(existingProduct::setCurrentPrice);
         Optional.ofNullable(productUpdateRequest.getImageUrl()).ifPresent(existingProduct::setImageUrl);
 
-        Product updatedProduct = productRepository.save(existingProduct);
+        Product updatedProduct = productRepository.saveAndFlush(existingProduct);
         return productMapper.productToResponse(updatedProduct);
     }
 
@@ -155,7 +155,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         existingProduct.setProductStatus(status);
-        Product updatedProduct = productRepository.save(existingProduct);
+        Product updatedProduct = productRepository.saveAndFlush(existingProduct);
 
         return MessageResponse.builder()
                 .message(String.format("Status '%s' was set for the product with id: %s.", updatedProduct.getProductStatus().name(), updatedProduct.getProductId().toString()))
