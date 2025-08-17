@@ -30,6 +30,8 @@ public class UserMapper {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .userRole(user.getUserRole())
+                .isEnabled(user.getIsEnabled())
+                .isNonLocked(user.getIsNonLocked())
                 .registeredAt(user.getRegisteredAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
