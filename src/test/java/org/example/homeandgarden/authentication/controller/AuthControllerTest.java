@@ -507,12 +507,14 @@ class AuthControllerTest {
     @Test
     void getNewAccessToken_shouldReturnOk_whenValidRefreshToken() throws Exception {
 
+        String mockRefreshToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         RefreshRequest refreshRequest = RefreshRequest.builder()
-                .refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .refreshToken(mockRefreshToken)
                 .build();
         
         RefreshResponse expectedResponse = RefreshResponse.builder()
-                .accessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2lkX3Rlc3QiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNzMwNDAwMDAwLCJleHAiOjE3MzA0ODAwMDB9.dGVzdF9zaWduYXR1cmVfbm90X3ZhbGlk")
+                .accessToken("mockedAccessToken123")
                 .build();
 
         when(authService.getNewAccessToken(any(RefreshRequest.class))).thenReturn(expectedResponse);
@@ -524,7 +526,7 @@ class AuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.type").value("Bearer"))
-                .andExpect(jsonPath("$.accessToken").value("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2lkX3Rlc3QiLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNzMwNDAwMDAwLCJleHAiOjE3MzA0ODAwMDB9.dGVzdF9zaWduYXR1cmVfbm90X3ZhbGlk"));
+                .andExpect(jsonPath("$.accessToken").value("mockedAccessToken123"));
 
         verify(authService, times(1)).getNewAccessToken(any(RefreshRequest.class));
     }
@@ -636,8 +638,10 @@ class AuthControllerTest {
     @Test
     void resetPassword_shouldReturnOk_whenValidPasswordResetRequest() throws Exception {
 
+        String mockPasswordResetToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         PasswordResetRequest resetRequest = PasswordResetRequest.builder()
-                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .passwordResetToken(mockPasswordResetToken)
                 .newPassword("NewPassword123!")
                 .confirmPassword("NewPassword123!")
                 .build();
@@ -707,8 +711,10 @@ class AuthControllerTest {
     @Test
     void resetPassword_shouldReturnBadRequest_whenNewPasswordIsBlank() throws Exception {
 
+        String mockPasswordResetToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
-                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .passwordResetToken(mockPasswordResetToken)
                 .newPassword("")
                 .confirmPassword("NewPassword123!")
                 .build();
@@ -729,8 +735,10 @@ class AuthControllerTest {
     @Test
     void resetPassword_shouldReturnBadRequest_whenNewPasswordIsInvalidFormat() throws Exception {
 
+        String mockPasswordResetToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
-                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .passwordResetToken(mockPasswordResetToken)
                 .newPassword("INVALID_EMAIL")
                 .confirmPassword("NewPassword123!")
                 .build();
@@ -751,8 +759,10 @@ class AuthControllerTest {
     @Test
     void resetPassword_shouldReturnBadRequest_whenConfirmNewPasswordIsBlank() throws Exception {
 
+        String mockPasswordResetToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
-                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .passwordResetToken(mockPasswordResetToken)
                 .newPassword("NewPassword123!")
                 .confirmPassword("")
                 .build();
@@ -773,8 +783,10 @@ class AuthControllerTest {
     @Test
     void resetPassword_shouldReturnBadRequest_whenConfirmNewPasswordIsInvalidFormat() throws Exception {
 
+        String mockPasswordResetToken = "abc123_DEF-456.ghi789-JKL_mno.OPQ_rstUVW-xyz";
+
         PasswordResetRequest invalidRequest = PasswordResetRequest.builder()
-                .passwordResetToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+                .passwordResetToken(mockPasswordResetToken)
                 .newPassword("NewPassword123!")
                 .confirmPassword("INVALID_EMAIL")
                 .build();

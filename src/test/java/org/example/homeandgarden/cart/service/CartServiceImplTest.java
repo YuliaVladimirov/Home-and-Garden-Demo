@@ -505,7 +505,7 @@ class CartServiceImplTest {
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(productToAdd));
         when(cartRepository.findByUserAndProduct(existingUser, productToAdd)).thenReturn(Optional.empty());
         when(cartMapper.requestToCartItem(cartItemCreateRequest, existingUser, productToAdd)).thenReturn(cartItemToAdd);
-        when(cartRepository.save(cartItemToAdd)).thenReturn(addedCartItem);
+        when(cartRepository.saveAndFlush(cartItemToAdd)).thenReturn(addedCartItem);
         when(productMapper.productToResponse(productToAdd)).thenReturn(productResponse);
         when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
 
@@ -516,7 +516,7 @@ class CartServiceImplTest {
         verify(cartRepository, times(1)).findByUserAndProduct(existingUser, productToAdd);
         verify(cartMapper, times(1)).requestToCartItem(cartItemCreateRequest, existingUser, productToAdd);
 
-        verify(cartRepository, times(1)).save(cartItemCaptor.capture());
+        verify(cartRepository, times(1)).saveAndFlush(cartItemCaptor.capture());
         CartItem capturedCartItem = cartItemCaptor.getValue();
         assertNotNull(capturedCartItem);
         assertEquals(existingUser, capturedCartItem.getUser());
@@ -603,7 +603,7 @@ class CartServiceImplTest {
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingInCartProduct));
         when(cartRepository.findByUserAndProduct(existingUser, existingInCartProduct)).thenReturn(Optional.of(existingCartItem));
-        when(cartRepository.save(existingCartItem)).thenReturn(addedCartItem);
+        when(cartRepository.saveAndFlush(existingCartItem)).thenReturn(addedCartItem);
         when(productMapper.productToResponse(existingInCartProduct)).thenReturn(productResponse);
         when(cartMapper.cartItemToResponse(addedCartItem, productResponse)).thenReturn(cartItemResponse);
 
@@ -614,7 +614,7 @@ class CartServiceImplTest {
         verify(cartRepository, times(1)).findByUserAndProduct(existingUser, existingInCartProduct);
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
 
-        verify(cartRepository, times(1)).save(cartItemCaptor.capture());
+        verify(cartRepository, times(1)).saveAndFlush(cartItemCaptor.capture());
         CartItem capturedCartItem = cartItemCaptor.getValue();
         assertNotNull(capturedCartItem);
         assertEquals(existingUser, capturedCartItem.getUser());
@@ -645,7 +645,7 @@ class CartServiceImplTest {
         verify(productRepository, never()).findById(any(UUID.class));
         verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
@@ -682,7 +682,7 @@ class CartServiceImplTest {
         verify(productRepository, never()).findById(any(UUID.class));
         verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
     }
@@ -717,7 +717,7 @@ class CartServiceImplTest {
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
         verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
@@ -764,7 +764,7 @@ class CartServiceImplTest {
         verify(productRepository, times(1)).findById(PRODUCT_ID);
         verify(cartRepository, never()).findByUserAndProduct(any(User.class), any(Product.class));
         verify(cartMapper, never()).requestToCartItem(any(CartItemCreateRequest.class), any(User.class), any(Product.class));
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
@@ -828,7 +828,7 @@ class CartServiceImplTest {
 
         when(cartRepository.findById(CART_ITEM_ID)).thenReturn(Optional.of(existingCartItem));
         existingCartItem.setQuantity(cartItemUpdateRequest.getQuantity());
-        when(cartRepository.save(existingCartItem)).thenReturn(updatedCartItem);
+        when(cartRepository.saveAndFlush(existingCartItem)).thenReturn(updatedCartItem);
         when(cartMapper.cartItemToResponse(updatedCartItem, productResponse)).thenReturn(cartItemResponse);
         when(productMapper.productToResponse(existingProduct)).thenReturn(productResponse);
 
@@ -836,7 +836,7 @@ class CartServiceImplTest {
 
         verify(cartRepository, times(1)).findById(CART_ITEM_ID);
 
-        verify(cartRepository, times(1)).save(cartItemCaptor.capture());
+        verify(cartRepository, times(1)).saveAndFlush(cartItemCaptor.capture());
         CartItem capturedCartItem = cartItemCaptor.getValue();
         assertNotNull(capturedCartItem);
         assertEquals(cartItemUpdateRequest.getQuantity(), capturedCartItem.getQuantity());
@@ -865,7 +865,7 @@ class CartServiceImplTest {
                 cartService.updateCartItem(USER_EMAIL, INVALID_ID, cartItemUpdateRequest));
 
         verify(cartRepository, never()).findById(any(UUID.class));
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
     }
@@ -882,7 +882,7 @@ class CartServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> cartService.updateCartItem(USER_EMAIL, NON_EXISTING_CART_ITEM_ID.toString(), cartItemUpdateRequest));
 
         verify(cartRepository, times(1)).findById(NON_EXISTING_CART_ITEM_ID);
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 
@@ -920,7 +920,7 @@ class CartServiceImplTest {
         AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> cartService.updateCartItem(USER_EMAIL, CART_ITEM_ID.toString(), cartItemUpdateRequest));
 
         verify(cartRepository, times(1)).findById(CART_ITEM_ID);
-        verify(cartRepository, never()).save(any(CartItem.class));
+        verify(cartRepository, never()).saveAndFlush(any(CartItem.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
         verify(cartMapper, never()).cartItemToResponse(any(CartItem.class), any(ProductResponse.class));
 

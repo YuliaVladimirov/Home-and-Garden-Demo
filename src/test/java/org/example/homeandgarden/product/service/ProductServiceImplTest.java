@@ -931,7 +931,7 @@ class ProductServiceImplTest {
 
         when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(existingCategory));
         when(productMapper.requestToProduct(productCreateRequest, existingCategory)).thenReturn(productToSave);
-        when(productRepository.save(productToSave)).thenReturn(addedProduct);
+        when(productRepository.saveAndFlush(productToSave)).thenReturn(addedProduct);
         when(productMapper.productToResponse(addedProduct)).thenReturn(productResponse);
 
         ProductResponse actualResponse = productService.addProduct(productCreateRequest);
@@ -939,7 +939,7 @@ class ProductServiceImplTest {
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productMapper, times(1)).requestToProduct(productCreateRequest, existingCategory);
 
-        verify(productRepository, times(1)).save(productCaptor.capture());
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertNotNull(capturedProduct);
         assertEquals(productCreateRequest.getProductName(), capturedProduct.getProductName());
@@ -969,7 +969,7 @@ class ProductServiceImplTest {
 
         verify(categoryRepository, never()).findById(any(UUID.class));
         verify(productMapper, never()).requestToProduct(any(ProductCreateRequest.class), any(Category.class));
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
     }
 
@@ -989,7 +989,7 @@ class ProductServiceImplTest {
 
         verify(categoryRepository, times(1)).findById(NON_EXISTING_CATEGORY_ID);
         verify(productMapper, never()).requestToProduct(any(ProductCreateRequest.class), any(Category.class));
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
         assertEquals(String.format("Category with id: %s, was not found.", NON_EXISTING_CATEGORY_ID), thrownException.getMessage());
@@ -1018,7 +1018,7 @@ class ProductServiceImplTest {
 
         verify(categoryRepository, times(1)).findById(CATEGORY_ID);
         verify(productMapper, never()).requestToProduct(any(ProductCreateRequest.class), any(Category.class));
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
     }
 
@@ -1066,14 +1066,14 @@ class ProductServiceImplTest {
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.save(existingProduct)).thenReturn(updatedProduct);
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
         ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID.toString(), updateRequest);
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
 
-        verify(productRepository, times(1)).save(productCaptor.capture());
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertNotNull(capturedProduct);
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
@@ -1138,13 +1138,13 @@ class ProductServiceImplTest {
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.save(existingProduct)).thenReturn(updatedProduct);
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
         when(productMapper.productToResponse(updatedProduct)).thenReturn(productResponse);
 
         ProductResponse actualResponse = productService.updateProduct(PRODUCT_ID.toString(), updateRequest);
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, times(1)).save(productCaptor.capture());
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
         assertEquals(updateRequest.getProductName(), capturedProduct.getProductName());
@@ -1179,7 +1179,7 @@ class ProductServiceImplTest {
                 productService.updateProduct(NON_EXISTING_PRODUCT_ID.toString(), updateRequest));
 
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
         assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID), thrownException.getMessage());
@@ -1210,7 +1210,7 @@ class ProductServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> productService.updateProduct(PRODUCT_ID.toString(), updateRequest));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
 
         assertEquals(String.format("Product with id: %s, is sold out and can not be updated.", PRODUCT_ID), thrownException.getMessage());
@@ -1229,7 +1229,7 @@ class ProductServiceImplTest {
                 productService.updateProduct(INVALID_ID, updateRequest));
 
         verify(productRepository, never()).findById(any(UUID.class));
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
         verify(productMapper, never()).productToResponse(any(Product.class));
     }
 
@@ -1265,12 +1265,12 @@ class ProductServiceImplTest {
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.save(existingProduct)).thenReturn(updatedProduct);
+        when(productRepository.saveAndFlush(existingProduct)).thenReturn(updatedProduct);
 
         MessageResponse actualResponse = productService.setProductStatus(PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name());
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, times(1)).save(productCaptor.capture());
+        verify(productRepository, times(1)).saveAndFlush(productCaptor.capture());
         Product capturedProduct = productCaptor.getValue();
 
         assertEquals(existingProduct.getProductId(), capturedProduct.getProductId());
@@ -1289,7 +1289,7 @@ class ProductServiceImplTest {
                 productService.setProductStatus(INVALID_ID, PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, never()).findById(any(UUID.class));
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
     }
 
     @Test
@@ -1301,7 +1301,7 @@ class ProductServiceImplTest {
                 productService.setProductStatus(NON_EXISTING_PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, times(1)).findById(NON_EXISTING_PRODUCT_ID);
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
 
         assertEquals(String.format("Product with id: %s, was not found.", NON_EXISTING_PRODUCT_ID), thrownException.getMessage());
     }
@@ -1326,7 +1326,7 @@ class ProductServiceImplTest {
                 productService.setProductStatus(PRODUCT_ID.toString(), INVALID_STATUS));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
     }
 
     @Test
@@ -1349,7 +1349,7 @@ class ProductServiceImplTest {
                 productService.setProductStatus(PRODUCT_ID.toString(), PRODUCT_STATUS_OUT_OF_STOCK.name()));
 
         verify(productRepository, times(1)).findById(PRODUCT_ID);
-        verify(productRepository, never()).save(any(Product.class));
+        verify(productRepository, never()).saveAndFlush(any(Product.class));
 
         assertEquals(String.format("Product with id: %s, already has status '%s'.", PRODUCT_ID, PRODUCT_STATUS_OUT_OF_STOCK.name()), thrownException.getMessage());
     }

@@ -803,7 +803,7 @@ class OrderServiceImplTest {
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(orderMapper.orderRequestToOrder(orderCreateRequest, existingUser)).thenReturn(orderToAdd);
         when(orderItemMapper.cartItemToOrderItem(existingCartItem, orderToAdd, existingCartItem.getProduct())).thenReturn(orderItemToAdd);
-        when(orderRepository.save(orderToAdd)).thenReturn(addedOrder);
+        when(orderRepository.saveAndFlush(orderToAdd)).thenReturn(addedOrder);
         when(orderMapper.orderToResponse(addedOrder)).thenReturn(orderResponse);
 
         OrderResponse actualResponse = orderService.addOrder(USER_EMAIL, orderCreateRequest);
@@ -812,7 +812,7 @@ class OrderServiceImplTest {
         verify(orderMapper, times(1)).orderRequestToOrder(orderCreateRequest, existingUser);
         verify(orderItemMapper, times(1)).cartItemToOrderItem(existingCartItem, orderToAdd, existingCartItem.getProduct());
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingUser, capturedOrder.getUser());
@@ -849,7 +849,7 @@ class OrderServiceImplTest {
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(cartRepository, never()).deleteAllInBatch(any());
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
@@ -891,7 +891,7 @@ class OrderServiceImplTest {
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(orderMapper, never()).orderRequestToOrder(any(OrderCreateRequest.class), any(User.class));
         verify(orderItemMapper, never()).cartItemToOrderItem(any(CartItem.class), any(Order.class), any(Product.class));
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(cartRepository, never()).deleteAllInBatch(any());
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
@@ -958,13 +958,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
         when(orderMapper.orderToResponse(updatedOrder)).thenReturn(orderResponse);
 
         OrderResponse actualResponse = orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest);
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1047,13 +1047,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
         when(orderMapper.orderToResponse(updatedOrder)).thenReturn(orderResponse);
 
         OrderResponse actualResponse = orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest);
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1092,7 +1092,7 @@ class OrderServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(USER_EMAIL, INVALID_ID, orderUpdateRequest));
 
         verify(orderRepository, never()).findById(any(UUID.class));
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderMapper, never()).orderToResponse(any(Order.class));
     }
 
@@ -1114,7 +1114,7 @@ class OrderServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.updateOrder(USER_EMAIL, NON_EXISTING_ORDER_ID.toString(), orderUpdateRequest));
 
         verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderMapper, never()).orderToResponse(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
@@ -1153,7 +1153,7 @@ class OrderServiceImplTest {
         AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderMapper, never()).orderToResponse(existingOrder);
 
         assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
@@ -1192,7 +1192,7 @@ class OrderServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.updateOrder(USER_EMAIL, ORDER_ID.toString(), orderUpdateRequest));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
         verify(orderMapper, never()).orderToResponse(existingOrder);
 
         assertEquals(String.format("Order with id: %s is already in status '%s' and can not be updated.", ORDER_ID, existingOrder.getOrderStatus().name()), thrownException.getMessage());
@@ -1238,13 +1238,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
         MessageResponse actualResponse = orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1262,7 +1262,7 @@ class OrderServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(USER_EMAIL, INVALID_ID));
 
         verify(orderRepository, never()).findById(any(UUID.class));
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
     }
 
     @Test
@@ -1273,7 +1273,7 @@ class OrderServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.cancelOrder(USER_EMAIL, NON_EXISTING_ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
     }
@@ -1301,7 +1301,7 @@ class OrderServiceImplTest {
         AccessDeniedException thrownException = assertThrows(AccessDeniedException.class, () -> orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, does not belong to the user with email: %s.", ORDER_ID, USER_EMAIL), thrownException.getMessage());
     }
@@ -1329,7 +1329,7 @@ class OrderServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.cancelOrder(USER_EMAIL, ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s is already in status '%s' and can not be canceled.", ORDER_ID, existingOrder.getOrderStatus().name()), thrownException.getMessage());
     }
@@ -1374,13 +1374,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
         MessageResponse actualResponse = orderService.toggleOrderStatus(ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1432,13 +1432,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
         MessageResponse actualResponse = orderService.toggleOrderStatus(ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1490,13 +1490,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
         MessageResponse actualResponse = orderService.toggleOrderStatus(ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1548,13 +1548,13 @@ class OrderServiceImplTest {
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(existingOrder));
-        when(orderRepository.save(existingOrder)).thenReturn(updatedOrder);
+        when(orderRepository.saveAndFlush(existingOrder)).thenReturn(updatedOrder);
 
         MessageResponse actualResponse = orderService.toggleOrderStatus(ORDER_ID.toString());
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
 
-        verify(orderRepository, times(1)).save(orderCaptor.capture());
+        verify(orderRepository, times(1)).saveAndFlush(orderCaptor.capture());
         Order capturedOrder = orderCaptor.getValue();
         assertNotNull(capturedOrder);
         assertEquals(existingOrder.getOrderId(), capturedOrder.getOrderId());
@@ -1572,7 +1572,7 @@ class OrderServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> orderService.toggleOrderStatus(INVALID_ID));
 
         verify(orderRepository, never()).findById(any(UUID.class));
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
     }
 
     @Test
@@ -1583,7 +1583,7 @@ class OrderServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> orderService.toggleOrderStatus(NON_EXISTING_ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(NON_EXISTING_ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s, was not found.", NON_EXISTING_ORDER_ID), thrownException.getMessage());
     }
@@ -1611,7 +1611,7 @@ class OrderServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> orderService.toggleOrderStatus(ORDER_ID.toString()));
 
         verify(orderRepository, times(1)).findById(ORDER_ID);
-        verify(orderRepository, never()).save(any(Order.class));
+        verify(orderRepository, never()).saveAndFlush(any(Order.class));
 
         assertEquals(String.format("Order with id: %s is in final status %s and the status can not be changed.", ORDER_ID, existingOrder.getOrderStatus().name()), thrownException.getMessage());
     }

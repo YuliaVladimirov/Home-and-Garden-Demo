@@ -663,14 +663,14 @@ class UserServiceImplTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
         UserResponse actualResponse = userService.updateMyProfile(USER_EMAIL, userUpdateRequest);
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
 
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
         assertNotNull(capturedUser);
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
@@ -742,14 +742,14 @@ class UserServiceImplTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
         when(userMapper.userToResponse(updatedUser)).thenReturn(userResponse);
 
         UserResponse actualResponse = userService.updateMyProfile(USER_EMAIL, userUpdateRequest);
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
 
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
         assertNotNull(capturedUser);
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
@@ -787,7 +787,7 @@ class UserServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.updateMyProfile(NON_EXISTING_USER_EMAIL, userUpdateRequest));
 
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
         assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrownException.getMessage());
@@ -833,14 +833,14 @@ class UserServiceImplTest {
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
         when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
         MessageResponse messageResponse = userService.changeMyPassword(USER_EMAIL, request);
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
         verify(passwordEncoder, times(1)).encode(NEW_PASSWORD);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
 
         User capturedUser = userCaptor.getValue();
         assertEquals(existingUser.getEmail(), capturedUser.getEmail());
@@ -866,7 +866,7 @@ class UserServiceImplTest {
         verify(userRepository, never()).findByEmail(anyString());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Password doesn't match the CONFIRM NEW PASSWORD field.", thrown.getMessage());
     }
@@ -888,7 +888,7 @@ class UserServiceImplTest {
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
     }
@@ -927,7 +927,7 @@ class UserServiceImplTest {
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(invalidPassword, PASSWORD_HASH);
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Given current password doesn't match the one in database.", thrown.getMessage());
     }
@@ -968,12 +968,12 @@ class UserServiceImplTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
         MessageResponse actualResponse = userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name());
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
         assertNotNull(capturedUser);
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
@@ -997,7 +997,7 @@ class UserServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(INVALID_ID, USER_ROLE_ADMIN.name()));
 
         verify(userRepository, never()).findById(any(UUID.class));
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
     }
 
@@ -1009,7 +1009,7 @@ class UserServiceImplTest {
         DataNotFoundException thrownException = assertThrows(DataNotFoundException.class, () -> userService.setUserRole(NON_EXISTING_USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrownException.getMessage());
     }
@@ -1035,7 +1035,7 @@ class UserServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, is locked and his userRole can not be changed.", USER_ID), thrownException.getMessage());
     }
@@ -1061,7 +1061,7 @@ class UserServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, is unregistered and his userRole can not be changed.", USER_ID), thrownException.getMessage());
     }
@@ -1089,7 +1089,7 @@ class UserServiceImplTest {
         IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), sameRole));
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, already has userRole '%s'.", USER_ID, sameRole), thrownException.getMessage());
     }
@@ -1130,12 +1130,12 @@ class UserServiceImplTest {
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
         MessageResponse actualResponse = userService.toggleUserLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
         assertNotNull(capturedUser);
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
@@ -1189,12 +1189,12 @@ class UserServiceImplTest {
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(updatedUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(updatedUser);
 
         MessageResponse actualResponse = userService.toggleUserLockState(USER_ID.toString());
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
         assertNotNull(capturedUser);
         assertEquals(existingUser.getUserId(), capturedUser.getUserId());
@@ -1230,7 +1230,7 @@ class UserServiceImplTest {
                 userService.toggleUserLockState(NON_EXISTING_USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(NON_EXISTING_USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, was not found.", NON_EXISTING_USER_ID), thrown.getMessage());
     }
@@ -1256,7 +1256,7 @@ class UserServiceImplTest {
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleUserLockState(USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(USER_ID);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", USER_ID), thrown.getMessage());
     }
@@ -1299,13 +1299,13 @@ class UserServiceImplTest {
 
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(PASSWORD, PASSWORD_HASH)).thenReturn(true);
-        when(userRepository.save(existingUser)).thenReturn(unregisteredUser);
+        when(userRepository.saveAndFlush(existingUser)).thenReturn(unregisteredUser);
 
         MessageResponse messageResponse = userService.unregisterMyAccount(USER_EMAIL, request);
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(PASSWORD, PASSWORD_HASH);
-        verify(userRepository, times(1)).save(userCaptor.capture());
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
 
         User capturedUser = userCaptor.getValue();
         assertEquals(String.format("%s@example.com", USER_ID), capturedUser.getEmail());
@@ -1330,7 +1330,7 @@ class UserServiceImplTest {
 
         verify(userRepository, never()).findByEmail(anyString());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Password doesn't match the CONFIRM PASSWORD field.", thrown.getMessage());
     }
@@ -1350,7 +1350,7 @@ class UserServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(NON_EXISTING_USER_EMAIL);
         verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals(String.format("User with email: %s, was not found.", NON_EXISTING_USER_EMAIL), thrown.getMessage());
     }
@@ -1387,7 +1387,7 @@ class UserServiceImplTest {
 
         verify(userRepository, times(1)).findByEmail(USER_EMAIL);
         verify(passwordEncoder, times(1)).matches(incorrectPassword, PASSWORD_HASH);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
 
         assertEquals("Given password doesn't match the password saved in database.", thrown.getMessage());
     }
