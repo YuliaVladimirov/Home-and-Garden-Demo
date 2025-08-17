@@ -42,11 +42,11 @@ public class UserResponse {
 
     @JsonProperty("isEnabled")
     @Schema(description = "User's 'enabled' status in the system")
-    private Boolean isEnabled = true;
+    private Boolean isEnabled;
 
     @JsonProperty("isNonLocked")
     @Schema(description = "User's 'non-locked' status in the system")
-    private Boolean isNonLocked = true;
+    private Boolean isNonLocked;
 
     @JsonProperty("registeredAt")
     @Schema(description = "Date the user was registered")
