@@ -49,7 +49,7 @@ public class OrderCreateRequest {
 
     @JsonProperty("phone")
     @NotBlank(message = "Phone is required")
-    @Pattern(regexp = "^\\+\\d{9,15}$", message = "Invalid phone number: Must be of 9 - 15 digits")
+    @Pattern(regexp = "^\\+?\\d{9,15}$", message = "Invalid phone number: Must be of 9 - 15 digits")
     @Schema(description = "Recipient phone number")
     private String phone;
 
