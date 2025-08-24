@@ -89,7 +89,8 @@ public class ProductServiceImpl implements ProductService {
             default -> throw new IllegalArgumentException(String.format("Unexpected value: %s", timeUnit));
         };
 
-        BigDecimal profit = productRepository.findProfitByPeriod(OrderStatus.DELIVERED, cutoff);
+        BigDecimal profit = Optional.ofNullable(productRepository.findProfitByPeriod(OrderStatus.DELIVERED, cutoff))
+                .orElse(BigDecimal.ZERO);
 
         return ProductProfitResponse.builder()
                 .timeUnit(timeUnit.toUpperCase())
