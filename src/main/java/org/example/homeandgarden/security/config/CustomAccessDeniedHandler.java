@@ -21,6 +21,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
 
         ErrorResponse errorResponse = new ErrorResponse(
                 accessDeniedException.getClass().getSimpleName(),

@@ -71,6 +71,7 @@ public class SecurityConfig {
                             MessageResponse messageResponse = new MessageResponse(
                                     "Logout successful.");
                             response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
                             response.getWriter().write(objectMapper.writeValueAsString(messageResponse));
                             SecurityContextHolder.clearContext();
                         }));
