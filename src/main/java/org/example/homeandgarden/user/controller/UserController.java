@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "User controller", description = "Controller fo managing user's accounts")
+@Tag(name = "User controller", description = "Controller fo managing user accounts")
 public class UserController {
 
     private final UserService userService;
@@ -47,7 +47,7 @@ public class UserController {
 
     // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
-    @Operation(summary = "Get current user's profile", description = "Fetches the profile details of the user currently authenticated in the system.")
+    @Operation(summary = "Get current user's profile", description = "Retrieves detailed profile information of the user currently authenticated in the system.")
     @ApiResponse(responseCode = "200", description = "User successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -186,7 +186,7 @@ public class UserController {
         return new ResponseEntity<>(userResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Change user password", description = "Changes user password. The required confirmation should be provided in the request body")
+    @Operation(summary = "Change current user's password", description = "Changes current user's password. The required confirmation should be provided in the request body")
     @ApiResponse(responseCode = "200", description = "User password successfully changed.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -206,7 +206,7 @@ public class UserController {
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Unregister a user", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
+    @Operation(summary = "Deactivate user account", description = "Deactivates a user account in the system. The required confirmation should be provided in the request body")
     @ApiResponse(responseCode = "200", description = "User successfully unregistered.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -229,7 +229,7 @@ public class UserController {
 
     // 👮 Admin access endpoints — restricted to users with administrative privileges
 
-    @Operation(summary = "Get users with filtering, pagination and sorting", description = "Fetches a paginated and sortable list of user accounts. Results can be filtered by their enabled status ('true' for active users, 'false' for disabled users).")
+    @Operation(summary = "Get users with filtering, pagination and sorting", description = "Fetches a paginated and sortable list of user accounts. Results can be filtered by their enabled status ('true' for active users, 'false' for disabled users) and by their non-locked status ('true' for non-locked users, 'false' for locked users).")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved users, possibly an empty list if no matches.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupTwoErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -269,7 +269,7 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get user by its id", description = "Fetches the details of a single user account using their unique identifier (UUID).")
+    @Operation(summary = "Get user by id", description = "Fetches the details of a single user account using their unique identifier (UUID).")
     @ApiResponse(responseCode = "200", description = "User successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -392,7 +392,7 @@ public class UserController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Assign a role to a user ('CLIENT' or 'ADMINISTRATOR')", description = "Updates the role of a specific user identified by their unique Id. A user can be set to 'CLIENT' or 'ADMINISTRATOR'.")
+    @Operation(summary = "Assign a role to a user ('CLIENT' or 'ADMINISTRATOR')", description = "Updates the role of a specific user identified by their unique Id. A user can be set either to 'CLIENT' or 'ADMINISTRATOR'.")
     @ApiResponse(responseCode = "200", description = "User role successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")

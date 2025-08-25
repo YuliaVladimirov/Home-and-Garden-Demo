@@ -33,7 +33,7 @@ import java.math.BigDecimal;
 @RequestMapping(value = "/categories")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Category controller", description = "Controller for managing product's category")
+@Tag(name = "Category controller", description = "Controller for managing product categories")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -201,7 +201,7 @@ public class CategoryController {
         return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
     }
 
-    @Operation(summary = "Set category status ('ACTIVE' or 'INACTIVE')", description = "Updates the status of a specific category identified by its unique Id. A category can be set to 'ACTIVE' or 'INACTIVE'.")
+    @Operation(summary = "Set category status ('ACTIVE' or 'INACTIVE')", description = "Updates the status of a specific category identified by its unique id. A category can be set to 'ACTIVE' or 'INACTIVE'.")
     @ApiResponse(responseCode = "200", description = "Category status successfully updated.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")

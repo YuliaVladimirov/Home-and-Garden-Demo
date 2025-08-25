@@ -36,7 +36,7 @@ public class ProductController {
 
     // 🌐 Public access endpoints — no authentication required (accessible to all users)
 
-    @Operation(summary = "Get product by its id", description = "Fetches the details of a single product using its unique identifier (UUID).")
+    @Operation(summary = "Get product by id", description = "Fetches the details of a single product using its unique identifier (UUID).")
     @ApiResponse(responseCode = "200", description = "Product successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductResponse.class)))
     @GroupThreeErrorResponses
     @PreAuthorize("permitAll()")

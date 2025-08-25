@@ -36,7 +36,7 @@ public class CartController {
 
     // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
-    @Operation(summary = "Add an item to current user's shopping cart", description = "Adds a specified product with a given quantity to the shopping cart of the user currently authenticated in the system. The details are provided in the request body.")
+    @Operation(summary = "Add an product to current user's shopping cart", description = "Adds a specified product with a given quantity to the shopping cart of the user currently authenticated in the system. The details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Cart item successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")

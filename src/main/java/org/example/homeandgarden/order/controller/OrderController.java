@@ -41,7 +41,7 @@ public class OrderController {
 
 // 🔐 Self-access endpoints — available only to the authenticated user (operates on their own data)
 
-    @Operation(summary = "Get order items for the current order", description = "Fetches a paginated and sortable list of order items within a given order for the user currently authenticated in the system.")
+    @Operation(summary = "Get order items of the current order", description = "Fetches a paginated and sortable list of order items within a given order for the user currently authenticated in the system.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved order items. Returns an empty page if the order has no items.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderItemResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -82,7 +82,7 @@ public class OrderController {
         return new ResponseEntity<>(pageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Get order of current user", description = "Fetches the details of a single order of the user currently authenticated in the system and by order's unique identifier (UUID).")
+    @Operation(summary = "Get current user's order", description = "Fetches the details of a single order of the user currently authenticated in the system and by order's unique identifier (UUID).")
     @ApiResponse(responseCode = "200", description = "Order successfully retrieved.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -124,7 +124,7 @@ public class OrderController {
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Add a new order for current user", description = "Initiates a new order for the user currently authenticated in the system. The order details are provided in the request body.")
+    @Operation(summary = "Add a new order for current user", description = "Places a new order for the user currently authenticated in the system. The order details are provided in the request body.")
     @ApiResponse(responseCode = "201", description = "Order successfully added.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
@@ -169,7 +169,7 @@ public class OrderController {
         return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 
-    @Operation(summary = "Cancel an existing order of current user", description = "Changes the status of a specific order to 'CANCELED', user is currently authenticated in the system.")
+    @Operation(summary = "Cancel an order for the current user", description = "Updates the status of a specific order to 'CANCELED' for the user currently authenticated in the system.")
     @ApiResponse(responseCode = "200", description = "Order successfully canceled.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class)))
     @GroupOneErrorResponses
     @SecurityRequirement(name = "JWT")
