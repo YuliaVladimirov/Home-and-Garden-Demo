@@ -11,29 +11,35 @@ import java.util.Collection;
 import java.util.List;
 
 @Getter
-@Setter
-@Builder
 public class UserDetailsImpl implements UserDetails {
 
-    private User user;
+    private final String email;
+    private final String passwordHash;
+    private final String role;
+    private final boolean isEnabled;
+    private final boolean isNonLocked;
 
     public UserDetailsImpl(User user) {
-        this.user = user;
+        this.email = user.getEmail();
+        this.passwordHash = user.getPasswordHash();
+        this.role = "ROLE_" + user.getUserRole().name();
+        this.isEnabled = user.getIsEnabled();
+        this.isNonLocked = user.getIsNonLocked();
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name()));
+        return List.of(new SimpleGrantedAuthority(role));
     }
 
     @Override
     public String getPassword() {
-        return user.getPasswordHash();
+        return passwordHash;
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return email;
     }
 
     @Override
@@ -43,7 +49,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getIsNonLocked();
+        return isNonLocked;
     }
 
     @Override
@@ -53,7 +59,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getIsEnabled();
+        return isEnabled;
     }
 }
 
