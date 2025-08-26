@@ -17,6 +17,8 @@ import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -319,12 +321,41 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException exception, HttpServletRequest request) {
+
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                exception.getClass().getSimpleName(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponse> handleLockedException(LockedException exception, HttpServletRequest request) {
+
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                exception.getClass().getSimpleName(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
     /**
      * Handles security errors.
      * Re-throws errors to allow Spring Security's ExceptionTranslationFilter handle these and delegate to AuthenticationEntryPoint and AccessDeniedHandler.
      */
     @ExceptionHandler({ AuthenticationException.class, AccessDeniedException.class })
-    public void handleSecurityExceptions(Exception exception) throws Exception {
+    public ResponseEntity<ErrorResponse> handleSecurityExceptions(Exception exception) throws Exception {
 
         log.warn("⚠️ GlobalExceptionHandler caught a security exception, re-throwing: {}", exception.getClass().getSimpleName());
         throw exception;
