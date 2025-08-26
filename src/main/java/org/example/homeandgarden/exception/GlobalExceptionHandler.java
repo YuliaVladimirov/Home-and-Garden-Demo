@@ -109,6 +109,39 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles business-layer user status exceptions when user is disabled in database.
+     */
+    @ExceptionHandler(UserDisabledException.class)
+    public ResponseEntity<ErrorResponse> handleUserDisabledException(UserDisabledException exception, HttpServletRequest request) {
+
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                exception.getClass().getSimpleName(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    /**
+     * Handles business-layer user status exceptions when user is locked in database.
+     */
+    @ExceptionHandler(UserLockedException.class)
+    public ResponseEntity<ErrorResponse> handleUserLockedException(UserLockedException exception, HttpServletRequest request) {
+
+        log.warn("⚠️ Error: {} | Message: {} | Endpoint: {}", exception.getClass().getSimpleName(), exception.getMessage(), request.getRequestURI());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                exception.getClass().getSimpleName(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+
+    /**
      * Handles errors when the provided authentication credentials are invalid or in other credential validation scenarios.
      */
     @ExceptionHandler(BadCredentialsException.class)
