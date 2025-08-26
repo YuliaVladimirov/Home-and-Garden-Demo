@@ -4,6 +4,8 @@ import org.example.homeandgarden.authentication.dto.*;
 import org.example.homeandgarden.email.service.EmailService;
 import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
+import org.example.homeandgarden.exception.UserDisabledException;
+import org.example.homeandgarden.exception.UserLockedException;
 import org.example.homeandgarden.security.config.JwtService;
 import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.user.dto.UserRegisterRequest;
@@ -226,7 +228,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void registerUser_shouldThrowDataAlreadyExistsExceptionWhenUserExistsAndIsDisabled() {
+    void registerUser_shouldThrowUserDisabledExceptionWhenUserExistsAndIsDisabled() {
 
         UserRegisterRequest userRegisterRequest = UserRegisterRequest.builder()
                 .email(USER_EMAIL)
@@ -239,7 +241,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByEmail(userRegisterRequest.getEmail())).thenReturn(true);
         when(userRepository.existsByEmailAndIsEnabledFalse(userRegisterRequest.getEmail())).thenReturn(true);
 
-        DataAlreadyExistsException thrownException = assertThrows(DataAlreadyExistsException.class, () -> authService.registerUser(userRegisterRequest));
+        UserDisabledException thrownException = assertThrows(UserDisabledException.class, () -> authService.registerUser(userRegisterRequest));
 
         verify(userRepository, times(1)).existsByEmail(userRegisterRequest.getEmail());
         verify(userRepository, times(1)).existsByEmailAndIsEnabledFalse(any(String.class));
@@ -248,11 +250,11 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with email: %s, already exists and is disabled.", userRegisterRequest.getEmail()), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, is disabled.", userRegisterRequest.getEmail()), thrownException.getMessage());
     }
 
     @Test
-    void registerUser_shouldThrowDataAlreadyExistsExceptionWhenUserExistsAndIsLocked() {
+    void registerUser_shouldThrowUserLockedExceptionWhenUserExistsAndIsLocked() {
 
         UserRegisterRequest userRegisterRequest = UserRegisterRequest.builder()
                 .email(USER_EMAIL)
@@ -266,7 +268,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByEmailAndIsEnabledFalse(userRegisterRequest.getEmail())).thenReturn(false);
         when(userRepository.existsByEmailAndIsNonLockedFalse(userRegisterRequest.getEmail())).thenReturn(true);
 
-        DataAlreadyExistsException thrownException = assertThrows(DataAlreadyExistsException.class, () -> authService.registerUser(userRegisterRequest));
+        UserLockedException thrownException = assertThrows(UserLockedException.class, () -> authService.registerUser(userRegisterRequest));
 
         verify(userRepository, times(1)).existsByEmail(userRegisterRequest.getEmail());
         verify(userRepository, times(1)).existsByEmailAndIsEnabledFalse(any(String.class));
@@ -275,7 +277,7 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(userMapper, never()).userToResponse(any(User.class));
 
-        assertEquals(String.format("User with email: %s, already exists and is locked.", userRegisterRequest.getEmail()), thrownException.getMessage());
+        assertEquals(String.format("User with email: %s, is locked.", userRegisterRequest.getEmail()), thrownException.getMessage());
     }
 
     @Test
@@ -530,7 +532,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void getNewAccessToken_shouldThrowIllegalArgumentExceptionWhenUserIsUnregistered() {
+    void getNewAccessToken_shouldThrowUserDisabledExceptionWhenUserIsUnregistered() {
 
         RefreshRequest refreshRequest = RefreshRequest.builder()
                 .refreshToken(REFRESH_TOKEN)
@@ -554,7 +556,7 @@ class AuthServiceImplTest {
         when(jwtService.getUserEmailFromRefreshToken(refreshRequest.getRefreshToken())).thenReturn(USER_EMAIL);
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+        UserDisabledException thrown = assertThrows(UserDisabledException.class, () ->
                 authService.getNewAccessToken(refreshRequest));
 
         verify(jwtService, times(1)).isRefreshTokenValid(refreshRequest.getRefreshToken());
@@ -563,11 +565,11 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(jwtService, never()).generateAccessToken(any(String.class));
 
-        assertEquals(String.format("User with email: %s, is unregistered.", USER_EMAIL), thrown.getMessage());
+        assertEquals(String.format("User with email: %s, is disabled.", USER_EMAIL), thrown.getMessage());
     }
 
     @Test
-    void getNewAccessToken_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+    void getNewAccessToken_shouldThrowUserLockedExceptionWhenUserIsLocked() {
 
         RefreshRequest refreshRequest = RefreshRequest.builder()
                 .refreshToken(REFRESH_TOKEN)
@@ -591,7 +593,7 @@ class AuthServiceImplTest {
         when(jwtService.getUserEmailFromRefreshToken(refreshRequest.getRefreshToken())).thenReturn(USER_EMAIL);
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () ->
+        UserLockedException thrown = assertThrows(UserLockedException.class, () ->
                 authService.getNewAccessToken(refreshRequest));
 
         verify(jwtService, times(1)).isRefreshTokenValid(refreshRequest.getRefreshToken());
@@ -699,7 +701,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void forgotPassword__shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
+    void forgotPassword__shouldThrowUserDisabledExceptionWhenUserIsDisabled() {
 
         ForgotPasswordRequest request = ForgotPasswordRequest.builder()
                 .email(USER_EMAIL)
@@ -721,18 +723,18 @@ class AuthServiceImplTest {
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(disabledUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> authService.forgotPassword(request));
+        UserDisabledException thrown = assertThrows(UserDisabledException.class, () -> authService.forgotPassword(request));
 
         verify(userRepository, times(1)).findByEmail(request.getEmail());
         verify(jwtService, never()).generatePasswordResetToken(any(String.class));
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(emailService, never()).sendPasswordResetEmail(any(String.class), any(String.class), any(String.class));
 
-        assertEquals(String.format("User with email: %s, is unregistered.", USER_EMAIL), thrown.getMessage());
+        assertEquals(String.format("User with email: %s, is disabled.", USER_EMAIL), thrown.getMessage());
     }
 
     @Test
-    void forgotPassword_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+    void forgotPassword_shouldThrowUserLockedExceptionWhenUserIsLocked() {
 
         ForgotPasswordRequest request = ForgotPasswordRequest.builder()
                 .email(USER_EMAIL)
@@ -754,7 +756,7 @@ class AuthServiceImplTest {
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(lockedUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> authService.forgotPassword(request));
+        UserLockedException thrown = assertThrows(UserLockedException.class, () -> authService.forgotPassword(request));
 
         verify(userRepository, times(1)).findByEmail(request.getEmail());
         verify(jwtService, never()).generatePasswordResetToken(any(String.class));
@@ -941,7 +943,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void resetPassword_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
+    void resetPassword_shouldThrowUserDisabledExceptionWhenUserIsDisabled() {
 
         PasswordResetRequest resetRequest = PasswordResetRequest.builder()
                 .passwordResetToken(PASSWORD_RESET_TOKEN)
@@ -968,7 +970,7 @@ class AuthServiceImplTest {
         when(jwtService.getUserEmailFromPasswordResetToken(resetRequest.getPasswordResetToken())).thenReturn(USER_EMAIL);
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(disabledUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(resetRequest));
+        UserDisabledException thrown = assertThrows(UserDisabledException.class, () -> authService.resetPassword(resetRequest));
 
         verify(jwtService, times(1)).isPasswordResetTokenValid(resetRequest.getPasswordResetToken());
         verify(jwtService, times(1)).isPasswordResetTokenValid(resetRequest.getPasswordResetToken());
@@ -977,11 +979,11 @@ class AuthServiceImplTest {
         verify(userRepository, never()).saveAndFlush(any(User.class));
         verify(passwordEncoder, never()).encode(any(String.class));
 
-        assertEquals(String.format("User with email: %s, is unregistered.", USER_EMAIL), thrown.getMessage());
+        assertEquals(String.format("User with email: %s, is disabled.", USER_EMAIL), thrown.getMessage());
     }
 
     @Test
-    void resetPassword_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+    void resetPassword_shouldThrowUserLockedExceptionWhenUserIsLocked() {
 
         PasswordResetRequest resetRequest = PasswordResetRequest.builder()
                 .passwordResetToken(PASSWORD_RESET_TOKEN)
@@ -1008,7 +1010,7 @@ class AuthServiceImplTest {
         when(jwtService.getUserEmailFromPasswordResetToken(resetRequest.getPasswordResetToken())).thenReturn(USER_EMAIL);
         when(userRepository.findByEmail(USER_EMAIL)).thenReturn(Optional.of(lockedUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(resetRequest));
+        UserLockedException thrown = assertThrows(UserLockedException.class, () -> authService.resetPassword(resetRequest));
 
         verify(jwtService, times(1)).isPasswordResetTokenValid(resetRequest.getPasswordResetToken());
         verify(jwtService, times(1)).isPasswordResetTokenValid(resetRequest.getPasswordResetToken());

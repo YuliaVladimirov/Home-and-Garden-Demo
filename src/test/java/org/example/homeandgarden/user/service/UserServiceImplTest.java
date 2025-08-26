@@ -1,6 +1,8 @@
 package org.example.homeandgarden.user.service;
 
 import org.example.homeandgarden.exception.DataNotFoundException;
+import org.example.homeandgarden.exception.UserDisabledException;
+import org.example.homeandgarden.exception.UserLockedException;
 import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.user.dto.ChangePasswordRequest;
 import org.example.homeandgarden.user.dto.UserResponse;
@@ -1015,7 +1017,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIsLocked() {
+    void setUserRole_shouldThrowUserLockedExceptionWhenUserIsLocked() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1032,7 +1034,7 @@ class UserServiceImplTest {
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
+        UserLockedException thrownException = assertThrows(UserLockedException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -1041,7 +1043,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void setUserRole_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
+    void setUserRole_shouldThrowUserDisabledExceptionWhenUserIsDisabled() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1058,12 +1060,12 @@ class UserServiceImplTest {
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
+        UserDisabledException thrownException = assertThrows(UserDisabledException.class, () -> userService.setUserRole(USER_ID.toString(), USER_ROLE_ADMIN.name()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is unregistered and his userRole can not be changed.", USER_ID), thrownException.getMessage());
+        assertEquals(String.format("User with id: %s, is disabled and his userRole can not be changed.", USER_ID), thrownException.getMessage());
     }
 
     @Test
@@ -1236,7 +1238,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void toggleUserLockState_shouldThrowIllegalArgumentExceptionWhenUserIsDisabled() {
+    void toggleUserLockState_shouldThrowUserDisabledExceptionWhenUserIsDisabled() {
 
         User existingUser = User.builder()
                 .userId(USER_ID)
@@ -1253,12 +1255,12 @@ class UserServiceImplTest {
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(existingUser));
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userService.toggleUserLockState(USER_ID.toString()));
+        UserDisabledException thrown = assertThrows(UserDisabledException.class, () -> userService.toggleUserLockState(USER_ID.toString()));
 
         verify(userRepository, times(1)).findById(USER_ID);
         verify(userRepository, never()).saveAndFlush(any(User.class));
 
-        assertEquals(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", USER_ID), thrown.getMessage());
+        assertEquals(String.format("User with id: %s, is disabled and can not be locked or unlocked.", USER_ID), thrown.getMessage());
     }
 
     @Test
