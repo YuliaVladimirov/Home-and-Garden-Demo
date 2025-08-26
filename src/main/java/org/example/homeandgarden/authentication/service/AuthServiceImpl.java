@@ -6,6 +6,8 @@ import org.example.homeandgarden.authentication.dto.*;
 import org.example.homeandgarden.email.service.EmailService;
 import org.example.homeandgarden.exception.DataAlreadyExistsException;
 import org.example.homeandgarden.exception.DataNotFoundException;
+import org.example.homeandgarden.exception.UserDisabledException;
+import org.example.homeandgarden.exception.UserLockedException;
 import org.example.homeandgarden.security.config.JwtService;
 import org.example.homeandgarden.shared.MessageResponse;
 import org.example.homeandgarden.user.dto.UserRegisterRequest;
@@ -48,10 +50,10 @@ public class AuthServiceImpl implements AuthService {
         }
         if (userRepository.existsByEmail(userRegisterRequest.getEmail())) {
             if (userRepository.existsByEmailAndIsEnabledFalse(userRegisterRequest.getEmail())) {
-                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is disabled.", userRegisterRequest.getEmail()));
+                throw new UserDisabledException(String.format("User with email: %s, is disabled.", userRegisterRequest.getEmail()));
             }
             if (userRepository.existsByEmailAndIsNonLockedFalse(userRegisterRequest.getEmail())) {
-                throw new DataAlreadyExistsException(String.format("User with email: %s, already exists and is locked.", userRegisterRequest.getEmail()));
+                throw new UserLockedException(String.format("User with email: %s, is locked.", userRegisterRequest.getEmail()));
             }
             throw new DataAlreadyExistsException(String.format("User with email: %s, already registered.", userRegisterRequest.getEmail()));
         }
@@ -113,10 +115,10 @@ public class AuthServiceImpl implements AuthService {
         User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, associated with refresh token, not found. Please log in.", email)));
 
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", email));
+            throw new UserDisabledException(String.format("User with email: %s, is disabled.", email));
         }
         if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is locked.", email));
+            throw new UserLockedException(String.format("User with email: %s, is locked.", email));
         }
 
         if (!refreshToken.equals(existingUser.getRefreshToken())) {
@@ -139,10 +141,10 @@ public class AuthServiceImpl implements AuthService {
         User existingUser = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, was not found.", request.getEmail())));
 
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", existingUser.getEmail()));
+            throw new UserDisabledException(String.format("User with email: %s, is disabled.", existingUser.getEmail()));
         }
         if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is locked.", existingUser.getEmail()));
+            throw new UserLockedException(String.format("User with email: %s, is locked.", existingUser.getEmail()));
         }
 
         String resetToken = jwtService.generatePasswordResetToken(existingUser.getEmail());
@@ -184,10 +186,10 @@ public class AuthServiceImpl implements AuthService {
         User existingUser = userRepository.findByEmail(email).orElseThrow(() -> new DataNotFoundException(String.format("User with email: %s, associated with password reset token, not found.", email)));
 
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is unregistered.", email));
+            throw new UserDisabledException(String.format("User with email: %s, is disabled.", email));
         }
         if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with email: %s, is locked.", email));
+            throw new UserLockedException(String.format("User with email: %s, is locked.", email));
         }
 
         if (!passwordResetToken.equals(existingUser.getPasswordResetToken())) {

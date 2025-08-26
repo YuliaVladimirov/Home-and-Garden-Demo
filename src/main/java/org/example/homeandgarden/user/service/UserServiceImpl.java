@@ -94,10 +94,10 @@ public class UserServiceImpl implements UserService {
         UserRole role = UserRole.valueOf(userRole.toUpperCase());
 
         if (!existingUser.getIsNonLocked()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is locked and his userRole can not be changed.", userId));
+            throw new UserLockedException(String.format("User with id: %s, is locked and his userRole can not be changed.", userId));
         }
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is unregistered and his userRole can not be changed.", userId));
+            throw new UserDisabledException(String.format("User with id: %s, is disabled and his userRole can not be changed.", userId));
         }
         if (existingUser.getUserRole().equals(role)) {
             throw new IllegalArgumentException(String.format("User with id: %s, already has userRole '%s'.", userId, userRole));
@@ -118,7 +118,7 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException (String.format("User with id: %s, was not found.", userId)));
 
         if (!existingUser.getIsEnabled()) {
-            throw new IllegalArgumentException(String.format("User with id: %s, is unregistered and can not be locked or unlocked.", userId));
+            throw new UserDisabledException(String.format("User with id: %s, is disabled and can not be locked or unlocked.", userId));
         }
 
         Boolean lockState = existingUser.getIsNonLocked();
