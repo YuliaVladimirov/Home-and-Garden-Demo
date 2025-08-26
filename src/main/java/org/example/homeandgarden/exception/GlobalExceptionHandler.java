@@ -321,6 +321,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Handles account-related security exceptions during authentication.
+     */
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException exception, HttpServletRequest request) {
 
@@ -336,6 +339,9 @@ public class GlobalExceptionHandler {
 
     }
 
+    /**
+     * Handles account-related security exceptions during authentication.
+     */
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<ErrorResponse> handleLockedException(LockedException exception, HttpServletRequest request) {
 
