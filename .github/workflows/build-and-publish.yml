@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  jar-build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,6 +55,7 @@ jobs:
     env:
       DB_USER: "USERNAME"
       DB_PASSWORD: "PASSWORD"
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
 
     steps:
       - name: Check Out
