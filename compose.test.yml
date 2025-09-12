@@ -2,11 +2,11 @@
 services:
 
   hurl-tests:
-    image: ghcr.io/Orange-OpenSource/hurl:7.0.0
+    image: ghcr.io/orange-opensource/hurl:7.0.0
     volumes:
       - ./tests:/tests
-    working_dir: /tests
+#    working_dir: /tests
     depends_on:
       app:
         condition: service_healthy
-    entrypoint: [ "sh", "-c", "hurl --test --continue-on-error *.hurl" ]
+    command: ["--test", "--verbose", "--color", "/tests/*.hurl"]
