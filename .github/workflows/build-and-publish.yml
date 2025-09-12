@@ -55,7 +55,6 @@ jobs:
     env:
       DB_USER: "USERNAME"
       DB_PASSWORD: "PASSWORD"
-      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
 
     steps:
       - name: Check Out
