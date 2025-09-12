@@ -1,9 +1,9 @@
 name: Build and Publish to CR
 
 on:
-   push:
-     branches: [ "main" ]
-   workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,7 +11,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
 
     services:
       home-and-garden-test-db:
@@ -54,8 +53,6 @@ jobs:
       contents: read
       packages: write
     env:
-      # Normally this would go into the secrets storage, but because
-      # it is a short-lived environment, we can simplify a little bit.
       DB_USER: "USERNAME"
       DB_PASSWORD: "PASSWORD"
 
@@ -76,18 +73,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
 
-      - name: Build the Docker image
-        uses: docker/build-action@v5
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          tags: ghcr.io/yuliavladimirov/home-and-garden-demo:latest
+          context: .
           file: ./Dockerfile
+          push: false
+          tags: ghcr.io/yuliavladimirov/home-and-garden-demo:latest
 
       - name: Run hurl integration tests
         run: |
           echo "${{ secrets.SECRET_PROPERTIES }}" > secret.properties
           docker compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from hurl-runner --build
 
-      - name: Push the Docker image to Container Registry
-        uses: docker/push-action@v5
+      - name: Push Docker image
+        uses: docker/build-push-action@v5
         with:
+          context: .
+          file: ./Dockerfile
+          push: true
           tags: ghcr.io/yuliavladimirov/home-and-garden-demo:latest
