@@ -2,7 +2,6 @@ name: "home_and_garden"
 services:
   db:
     image: postgres
-    container_name: "home_and_garden_db"
     restart: "unless-stopped"
     environment:
       POSTGRES_DB: "home_and_garden"
@@ -18,7 +17,6 @@ services:
 
   app:
     image: ghcr.io/yuliavladimirov/home-and-garden-demo
-    container_name: "home_and_garden_app"
     restart: "unless-stopped"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/home_and_garden

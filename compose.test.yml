@@ -3,7 +3,6 @@ services:
 
   hurl-tests:
     image: ghcr.io/Orange-OpenSource/hurl:7.0.0
-    container_name: hurl_runner
     volumes:
       - ./tests:/tests
     working_dir: /tests
