@@ -64,7 +64,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: home-and-garden-jar
-          path: .
+          path: target
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
