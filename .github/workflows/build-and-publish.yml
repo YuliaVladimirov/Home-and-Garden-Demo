@@ -47,7 +47,7 @@ jobs:
           path: target/*.jar
 
   docker-build:
-    needs: build
+    needs: jar-build
     runs-on: ubuntu-latest
     permissions:
       contents: read
