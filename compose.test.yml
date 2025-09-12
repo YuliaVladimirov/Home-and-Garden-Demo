@@ -1,0 +1,11 @@
+
+services:
+
+  hurl-tests:
+    image: ghcr.io/orange-opensource/hurl:7.0.0
+    volumes:
+      - ./tests:/tests
+    depends_on:
+      app:
+        condition: service_healthy
+    command: ["--test", "--verbose", "--color", "--connect-to", "localhost:8080:app:8080", "/tests/api-tests.hurl"]
