@@ -84,7 +84,7 @@ jobs:
       - name: Run hurl integration tests
         run: |
           echo "${{ secrets.SECRET_PROPERTIES }}" > secret.properties
-          docker compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from hurl-runner --build
+          docker compose -f compose.yml -f compose.test.yml up --abort-on-container-exit --exit-code-from hurl-runner --build
 
       - name: Push Docker image
         uses: docker/build-push-action@v5
