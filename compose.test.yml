@@ -9,4 +9,4 @@ services:
     depends_on:
       app:
         condition: service_healthy
-    command: ["--test", "--verbose", "--color", "/tests/*.hurl"]
+    command: ["--test", "--verbose", "--color", "--glob", "/tests/*.hurl"]
