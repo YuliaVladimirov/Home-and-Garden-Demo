@@ -9,4 +9,4 @@ services:
     depends_on:
       app:
         condition: service_healthy
-    command: ["--test", "--verbose", "--color", "--glob", "/tests/*.hurl"]
+    command: ["--test", "--verbose", "--color", "--glob", "--connect-to", "localhost:8080:app:8080", "/tests/*.hurl"]
